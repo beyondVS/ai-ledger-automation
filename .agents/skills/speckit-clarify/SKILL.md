@@ -1,33 +1,33 @@
 ---
 name: "speckit-clarify"
-description: "Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec."
-compatibility: "Requires spec-kit project structure with .specify/ directory"
+description: "현재 피처 기획 사양에서 모호한 부분을 식별하기 위해 최대 5개의 고도로 타겟팅된 명확화 질문을 던지고, 그 답변을 사양서(spec)에 다시 기록하여 반영합니다."
+compatibility: "프로젝트 루트에 .specify/ 디렉토리가 있는 spec-kit 프로젝트 구조가 필요합니다."
 metadata:
   author: "github-spec-kit"
   source: "templates/commands/clarify.md"
 ---
 
 
-## User Input
+## 사용자 입력
 
 ```text
 $ARGUMENTS
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+진행하기 전에 사용자 입력이 비어있지 않다면 **반드시** 고려해야 합니다.
 
-## Pre-Execution Checks
+## 실행 전 확인 사항
 
-**Check for extension hooks (before clarification)**:
-- Check if `.specify/extensions.yml` exists in the project root.
-- If it exists, read it and look for entries under the `hooks.before_clarify` key
-- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
-- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
-- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
-  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
-  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
-- For each executable hook, output the following based on its `optional` flag:
-  - **Optional hook** (`optional: true`):
+**확장 기능 훅 확인 (명확화 시작 전)**:
+- 프로젝트 루트에 `.specify/extensions.yml`이 존재하는지 확인합니다.
+- 존재할 경우, 파일을 읽고 `hooks.before_clarify` 키 아래의 항목들을 찾습니다.
+- YAML 파싱이 불가능하거나 유효하지 않은 경우, 훅 확인을 자동으로 건너뛰고 정상적으로 진행합니다.
+- `enabled`가 명시적으로 `false`인 훅은 제외합니다. `enabled` 필드가 없는 훅은 기본적으로 활성화된 것으로 간주합니다.
+- 남은 훅들에 대해, 훅의 `condition` 표현식을 해석하거나 평가하려고 시도하지 **마십시오**:
+  - 훅에 `condition` field가 없거나 비어있는(null/empty) 경우, 실행 가능한 훅으로 처리합니다.
+  - 훅에 비어있지 않은 `condition`이 정의되어 있다면, 훅 실행을 건너뛰고 조건 평가를 HookExecutor 구현체에 위임합니다.
+- 실행 가능한 각 훅에 대해 `optional` 플래그를 기준으로 아래 내용을 출력합니다:
+  - **선택적 훅 (Optional hook)** (`optional: true`):
     ```
     ## Extension Hooks
 
@@ -38,7 +38,7 @@ You **MUST** consider the user input before proceeding (if not empty).
     Prompt: {prompt}
     To execute: `/{command}`
     ```
-  - **Mandatory hook** (`optional: false`):
+  - **필수 훅 (Mandatory hook)** (`optional: false`):
     ```
     ## Extension Hooks
 
@@ -48,186 +48,187 @@ You **MUST** consider the user input before proceeding (if not empty).
 
     Wait for the result of the hook command before proceeding to the Outline.
     ```
-- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+- 등록된 훅이 없거나 `.specify/extensions.yml`이 존재하지 않는 경우 자동으로 건너뜁니다.
 
-## Outline
+## 개요
 
-Goal: Detect and reduce ambiguity or missing decision points in the active feature specification and record the clarifications directly in the spec file.
+목표: 진행 중인 피처 기획 사양서(spec.md)에서 모호함이나 누락된 의사결정 지점을 감지하여 해소하고, 명확해진 내용을 사양서 파일에 직접 기록하여 영구 반영합니다.
 
-Note: This clarification workflow is expected to run (and be completed) BEFORE invoking `/speckit-plan`. If the user explicitly states they are skipping clarification (e.g., exploratory spike), you may proceed, but must warn that downstream rework risk increases.
+참고: 이 명확화 워크플로우는 `/speckit-plan`을 호출하기 **전**에 실행(및 완료)되는 것이 권장됩니다. 사용자가 명확화 단계를 건너뛰겠다고 명시적으로 밝히는 경우(예: 탐색적 스파이크 개발 등)에는 진행할 수 있지만, 후속 단계에서 재작업(Rework) 리스크가 증가할 수 있음을 경고해야 합니다.
 
-Execution steps:
+실행 단계:
 
-1. Run `.specify/scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly` from repo root **once** (combined `--json --paths-only` mode / `-Json -PathsOnly`). Parse minimal JSON payload fields:
+1. 저장소 루트에서 `.specify/scripts/powershell/check-prerequisites.ps1 -Json -PathsOnly`를 **단 한 번** 실행합니다. (결합된 `-Json -PathsOnly` 모드). 출력된 최소 JSON 페이로드 필드를 파싱합니다:
    - `FEATURE_DIR`
    - `FEATURE_SPEC`
-   - (Optionally capture `IMPL_PLAN`, `TASKS` for future chained flows.)
-   - If JSON parsing fails, abort and instruct user to re-run `/speckit-specify` or verify feature branch environment.
-   - For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+   - (향후 체인 흐름을 위해 `IMPL_PLAN`, `TASKS`도 선택적으로 캡처합니다.)
+   - JSON 파싱에 실패하면 작업을 중단하고 사용자에게 `/speckit-specify`를 재실행하거나 피처 브랜치 환경을 확인하라고 안내합니다.
+   - "I'm Groot"와 같이 인자 값에 단일 인용부호가 들어가는 경우 이스케이프 구문을 사용합니다: 예: 'I'\''m Groot' (또는 가급적 큰따옴표 사용: "I'm Groot").
 
-2. Load the current spec file. Perform a structured ambiguity & coverage scan using this taxonomy. For each category, mark status: Clear / Partial / Missing. Produce an internal coverage map used for prioritization (do not output raw map unless no questions will be asked).
+2. 현재 기획 사양서(spec.md) 파일을 로드합니다. 아래의 분류 체계를 사용하여 구조화된 모호성 및 커버리지 스캔을 수행합니다. 각 카테고리에 대해 명확성 상태를 `Clear`(명확), `Partial`(부분 모호), `Missing`(누락)으로 표시합니다. 질문 우선순위를 설정하기 위한 내부 커버리지 맵을 구성합니다 (질문을 전혀 던질 필요가 없는 경우가 아니라면, 가공되지 않은 생 내부 맵을 화면에 그대로 출력하지 마십시오).
 
-   Functional Scope & Behavior:
-   - Core user goals & success criteria
-   - Explicit out-of-scope declarations
-   - User roles / personas differentiation
+   기능적 범위 및 동작 (Functional Scope & Behavior):
+   - 핵심 사용자 목표 및 성공 기준 (Core user goals & success criteria)
+   - 명시적인 아웃오브스코프 선언 (Explicit out-of-scope declarations)
+   - 사용자 역할 / 페르소나 세분화 (User roles / personas differentiation)
 
-   Domain & Data Model:
-   - Entities, attributes, relationships
-   - Identity & uniqueness rules
-   - Lifecycle/state transitions
-   - Data volume / scale assumptions
+   도메인 및 데이터 모델 (Domain & Data Model):
+   - 엔티티, 속성, 관계 (Entities, attributes, relationships)
+   - 식별자 및 고유성 규칙 (Identity & uniqueness rules)
+   - 생명주기 / 상태 전이 (Lifecycle/state transitions)
+   - 데이터 볼륨 / 확장 규모 가정 (Data volume / scale assumptions)
 
-   Interaction & UX Flow:
-   - Critical user journeys / sequences
-   - Error/empty/loading states
-   - Accessibility or localization notes
+   상호작용 및 UX 흐름 (Interaction & UX Flow):
+   - 핵심 사용자 여정 / 시퀀스 (Critical user journeys / sequences)
+   - 에러 / 빈 화면 / 로딩 상태 요건 (Error/empty/loading states)
+   - 접근성 또는 다국어 로컬라이징 명세 (Accessibility or localization notes)
 
-   Non-Functional Quality Attributes:
-   - Performance (latency, throughput targets)
-   - Scalability (horizontal/vertical, limits)
-   - Reliability & availability (uptime, recovery expectations)
-   - Observability (logging, metrics, tracing signals)
-   - Security & privacy (authN/Z, data protection, threat assumptions)
-   - Compliance / regulatory constraints (if any)
+   비기능적 품질 속성 (Non-Functional Quality Attributes):
+   - 성능 (대기시간, 처리량 목표) (Performance - latency, throughput targets)
+   - 확장성 (수평/수직 확장성, 제약 한계) (Scalability - horizontal/vertical, limits)
+   - 신뢰성 및 가용성 (가동 시간, 예외 복구 기대치) (Reliability & availability - uptime, recovery expectations)
+   - 관측 가능성 (로그, 메트릭, 트레이싱 시그널) (Observability - logging, metrics, tracing signals)
+   - 보안 및 개인정보 (인증/인가, 데이터 보호, 위협 모델 가정) (Security & privacy - authN/Z, data protection, threat assumptions)
+   - 컴플라이언스 / 규제 제약 사항 (Compliance / regulatory constraints)
 
-   Integration & External Dependencies:
-   - External services/APIs and failure modes
-   - Data import/export formats
-   - Protocol/versioning assumptions
+   통합 및 외부 종속성 (Integration & External Dependencies):
+   - 외부 서비스/API 및 실패 모드 (External services/APIs and failure modes)
+   - 데이터 임포트/익스포트 포맷 (Data import/export formats)
+   - 프로토콜/버전 관리 가정 (Protocol/versioning assumptions)
 
-   Edge Cases & Failure Handling:
-   - Negative scenarios
-   - Rate limiting / throttling
-   - Conflict resolution (e.g., concurrent edits)
+   예외 케이스 및 오류 처리 (Edge Cases & Failure Handling):
+   - 부정적인 시나리오 (Negative scenarios)
+   - 트래픽 제한 / 스로틀링 (Rate limiting / throttling)
+   - 충돌 해결 정책 (예: 동시 편집 충돌) (Conflict resolution - e.g., concurrent edits)
 
-   Constraints & Tradeoffs:
-   - Technical constraints (language, storage, hosting)
-   - Explicit tradeoffs or rejected alternatives
+   제약 사항 및 트레이드오프 (Constraints & Tradeoffs):
+   - 기술적 제약 (개발 언어, 스토리지, 호스팅 환경) (Technical constraints - language, storage, hosting)
+   - 명시적인 트레이드오프 또는 기각된 대안 (Explicit tradeoffs or rejected alternatives)
 
-   Terminology & Consistency:
-   - Canonical glossary terms
-   - Avoided synonyms / deprecated terms
+   용어 정의 및 일관성 (Terminology & Consistency):
+   - 표준 글로서리 용어 정의 (Canonical glossary terms)
+   - 기피/대체해야 할 유사어 또는 구버전 용어 (Avoided synonyms / deprecated terms)
 
-   Completion Signals:
-   - Acceptance criteria testability
-   - Measurable Definition of Done style indicators
+   완료 신호 (Completion Signals):
+   - 인수 기준의 테스트 가능성 (Acceptance criteria testability)
+   - 측정 가능한 '완료 정의(Definition of Done)' 스타일 지표 (Measurable Definition of Done style indicators)
 
-   Misc / Placeholders:
-   - TODO markers / unresolved decisions
-   - Ambiguous adjectives ("robust", "intuitive") lacking quantification
+   기타 / 플레이스홀더 (Misc / Placeholders):
+   - TODO 마커 / 미해결 의사결정 사항 (TODO markers / unresolved decisions)
+   - 구체적 수치 없이 사용된 모호한 형용사 ("견고한", "직관적인") (Ambiguous adjectives lacking quantification)
 
-   For each category with Partial or Missing status, add a candidate question opportunity unless:
-   - Clarification would not materially change implementation or validation strategy
-   - Information is better deferred to planning phase (note internally)
+   상태가 `Partial` 또는 `Missing`인 각 카테고리에 대해 잠재적인 질문 후보군을 추가합니다. 단, 아래의 경우는 예외로 합니다:
+   - 기획을 구체화하더라도 실제 아키텍처나 검증 전략을 실질적으로 바꾸지 못하는 사소한 사항인 경우
+   - 설계(plan) 단계에서 다루는 것이 훨씬 더 자연스러운 기술 사양 정보인 경우 (내부 메모로 기록해 둠)
 
-3. Generate (internally) a prioritized queue of candidate clarification questions (maximum 5). Do NOT output them all at once. Apply these constraints:
-    - Maximum of 5 total questions across the whole session.
-    - Each question must be answerable with EITHER:
-       - A short multiple‑choice selection (2–5 distinct, mutually exclusive options), OR
-       - A one-word / short‑phrase answer (explicitly constrain: "Answer in <=5 words").
-    - Only include questions whose answers materially impact architecture, data modeling, task decomposition, test design, UX behavior, operational readiness, or compliance validation.
-    - Ensure category coverage balance: attempt to cover the highest impact unresolved categories first; avoid asking two low-impact questions when a single high-impact area (e.g., security posture) is unresolved.
-    - Exclude questions already answered, trivial stylistic preferences, or plan-level execution details (unless blocking correctness).
-    - Favor clarifications that reduce downstream rework risk or prevent misaligned acceptance tests.
-    - If more than 5 categories remain unresolved, select the top 5 by (Impact * Uncertainty) heuristic.
+3. 최대 5개의 질문 후보군을 우선순위에 맞게 내부적으로 정렬하여 큐(Queue)를 구성합니다. **절대로 질문을 한꺼번에 노출하지 마십시오.** 아래의 제약 사항을 엄격히 준수하십시오:
+    - 전체 세션을 통틀어 던지는 총 질문 개수는 **최대 5개**로 제한합니다.
+    - 각 질문은 반드시 다음 둘 중 하나의 형식으로만 답변할 수 있어야 합니다:
+       - 콤팩트한 객관식 선택 (2~5개의 명확하고 상호 배타적인 옵션 제공)
+       - 한 단어 또는 짧은 구문 답변 (답변의 길이를 "5단어 이내로 답변해 주십시오"로 명시적으로 제한)
+    - 오직 아키텍처 설계, 데이터 모델링, 태스크 분할, 테스트 설계, UX 동작, 운영 준비도, 또는 컴플라이언스 검증에 실질적인 영향을 미치는 질문만 포함하십시오.
+    - 카테고리 간 커버리지 균형을 유지하십시오: 해결되지 않은 고영향(High-impact) 카테고리를 최우선으로 다루며, 단일 고영향 영역(예: 보안 정책)이 비어있는데 저영향 질문 두 개를 연달아 던지는 비효율을 방지하십시오.
+    - 이미 기획에 답변이 나와있는 내용, 단순한 디자인 취향, 또는 세부 구현 실행 계획(동작 정합성을 해치지 않는 사소한 것)에 대한 질문은 배제하십시오.
+    - 다운스트림의 재작업 리스크를 현격히 낮추거나, 잘못 설계된 인수 테스트를 예방할 수 있는 정밀한 명확화 질문에 집중하십시오.
+    - 만약 미해결 카테고리가 5개를 초과한다면, `(영향도 * 불확실성)` 휴리스틱에 따라 가장 가치가 높은 상위 5개를 추출하십시오.
 
-4. Sequential questioning loop (interactive):
-    - Present EXACTLY ONE question at a time.
-    - For multiple‑choice questions:
-       - **Analyze all options** and determine the **most suitable option** based on:
-          - Best practices for the project type
-          - Common patterns in similar implementations
-          - Risk reduction (security, performance, maintainability)
-          - Alignment with any explicit project goals or constraints visible in the spec
-       - Present your **recommended option prominently** at the top with clear reasoning (1-2 sentences explaining why this is the best choice).
-       - Format as: `**Recommended:** Option [X] - <reasoning>`
-       - Then render all options as a Markdown table:
+4. 순차적인 인터랙티브 질문 루프 (Sequential questioning loop):
+    - **한 번에 오직 단 하나의 질문**만 제시해야 합니다.
+    - 객관식 질문의 경우:
+       - **모든 옵션을 정밀 분석**하여 아래 기준을 바탕으로 **가장 최적의 권장 옵션**을 도출하십시오:
+          - 해당 프로젝트 유형에 가장 권장되는 업계 베스트 프랙티스
+          - 유사한 기능 구현에서 널리 검증된 보편적인 패턴
+          - 리스크 완화 관점 (보안 강화, 성능 최적화, 유지보수 용이성)
+          - 기획서 사양에서 파악할 수 있는 명시적인 프로젝트 목표 및 제약과의 부합성
+       - 도출한 **권장 옵션을 명확한 근거와 함께 본문 최상단에 눈에 띄게 제시**하십시오 (이 선택지가 왜 최선인지 1-2문장으로 설득력 있게 설명).
+       - 표기 형식: `**권장 선택지:** 옵션 [X] - <추천 사유>`
+       - 그 아래에 제공하는 모든 옵션을 마크다운 테이블 형식으로 렌더링하십시오:
 
-       | Option | Description |
-       |--------|-------------|
-       | A | <Option A description> |
-       | B | <Option B description> |
-       | C | <Option C description> (add D/E as needed up to 5) |
-       | Short | Provide a different short answer (<=5 words) (Include only if free-form alternative is appropriate) |
+       | 옵션 | 상세 설명 |
+       |------|-----------|
+       | A | <옵션 A 설명> |
+       | B | <옵션 B 설명> |
+       | C | <옵션 C 설명> (필요에 따라 D, E까지 최대 5개 구성) |
+       | 기타 | 다른 의견이 있다면 단답형(5단어 이내)으로 입력해 주십시오 (주관식 대안이 적절한 경우에만 포함) |
 
-       - After the table, add: `You can reply with the option letter (e.g., "A"), accept the recommendation by saying "yes" or "recommended", or provide your own short answer.`
-    - For short‑answer style (no meaningful discrete options):
-       - Provide your **suggested answer** based on best practices and context.
-       - Format as: `**Suggested:** <your proposed answer> - <brief reasoning>`
-       - Then output: `Format: Short answer (<=5 words). You can accept the suggestion by saying "yes" or "suggested", or provide your own answer.`
-    - After the user answers:
-       - If the user replies with "yes", "recommended", or "suggested", use your previously stated recommendation/suggestion as the answer.
-       - Otherwise, validate the answer maps to one option or fits the <=5 word constraint.
-       - If ambiguous, ask for a quick disambiguation (count still belongs to same question; do not advance).
-       - Once satisfactory, record it in working memory (do not yet write to disk) and move to the next queued question.
-    - Stop asking further questions when:
-       - All critical ambiguities resolved early (remaining queued items become unnecessary), OR
-       - User signals completion ("done", "good", "no more"), OR
-       - You reach 5 asked questions.
-    - Never reveal future queued questions in advance.
-    - If no valid questions exist at start, immediately report no critical ambiguities.
+       - 테이블 아래에 다음 안내 문구를 추가하십시오: `제공된 옵션 알파벳(예: "A")으로 답변하시거나, "yes" 또는 "추천안 적용"을 통해 권장안을 그대로 수락하실 수 있습니다. 혹은 원하시는 다른 단답형 의견을 적어주셔도 좋습니다.`
+    - 단답형 주관식 질문의 경우 (명확한 객관식 옵션화가 어려운 경우):
+       - 베스트 프랙티스와 맥락에 부합하는 **제안 답변**을 미리 도출하여 제시하십시오.
+       - 표기 형식: `**제안 답변:** <권장 답변 내용> - <간단한 제안 사유>`
+       - 그 아래에 다음 안내 문구를 출력하십시오: `답변 형식: 단답형 (5단어 이내). "yes" 또는 "제안 수락"을 통해 제안 답변을 그대로 수락하시거나, 직접 다른 의견을 짧게 적어주실 수 있습니다.`
+    - 사용자가 답변한 이후 처리:
+       - 사용자가 "yes", "recommended"(추천안 적용), "suggested"(제안 수락) 등으로 대답한 경우, 사전에 도출해 두었던 권장/제안 답변을 최종 답변으로 확정합니다.
+       - 그 외 직접 답변을 작성한 경우, 답변이 지정된 옵션 중 하나에 매핑되거나 5단어 이내 제약에 충족하는지 검증합니다.
+       - 답변이 모호한 경우, 가볍게 되물어 명확히 짚고 넘어갑니다 (동일 질문에 대한 조율 과정이므로 총 질문 수 카운트에는 누적되지 않으며, 다음 질문으로 넘어가지 않습니다).
+       - 최종 답변이 만족스럽게 확정되면, 이를 임시 작업 메모리에 기록하고(아직 디스크에 즉시 쓰지 않음) 다음 우선순위 질문으로 나아갑니다.
+    - 다음의 경우에 더 이상의 질문을 던지지 않고 명확화 단계를 즉시 완료합니다:
+       - 모든 핵심적인 모호함이 조기에 해소되어 대기 중인 잔여 질문들이 불필요해진 경우
+       - 사용자가 완료 의사를 표시한 경우 ("완료", "됐음", "이대로 진행")
+       - 총 5개의 질문을 모두 수행한 경우
+    - 미래에 대기 중인 질문 큐의 내용을 미리 노출하는 행위를 엄격히 금지합니다.
+    - 시작 시점에 검출된 유의미한 모호성이 전혀 없다면, 즉시 모호성이 발견되지 않았음을 보고하고 단계를 종료합니다.
 
-5. Integration after EACH accepted answer (incremental update approach):
-    - Maintain in-memory representation of the spec (loaded once at start) plus the raw file contents.
-    - For the first integrated answer in this session:
-       - Ensure a `## Clarifications` section exists (create it just after the highest-level contextual/overview section per the spec template if missing).
-       - Under it, create (if not present) a `### Session YYYY-MM-DD` subheading for today.
-    - Append a bullet line immediately after acceptance: `- Q: <question> → A: <final answer>`.
-    - Then immediately apply the clarification to the most appropriate section(s):
-       - Functional ambiguity → Update or add a bullet in Functional Requirements.
-       - User interaction / actor distinction → Update User Stories or Actors subsection (if present) with clarified role, constraint, or scenario.
-       - Data shape / entities → Update Data Model (add fields, types, relationships) preserving ordering; note added constraints succinctly.
-       - Non-functional constraint → Add/modify measurable criteria in Success Criteria > Measurable Outcomes (convert vague adjective to metric or explicit target).
-       - Edge case / negative flow → Add a new bullet under Edge Cases / Error Handling (or create such subsection if template provides placeholder for it).
-       - Terminology conflict → Normalize term across spec; retain original only if necessary by adding `(formerly referred to as "X")` once.
-    - If the clarification invalidates an earlier ambiguous statement, replace that statement instead of duplicating; leave no obsolete contradictory text.
-    - Save the spec file AFTER each integration to minimize risk of context loss (atomic overwrite).
-    - Preserve formatting: do not reorder unrelated sections; keep heading hierarchy intact.
-    - Keep each inserted clarification minimal and testable (avoid narrative drift).
+5. 각 질문에 대한 답변이 확정될 때마다 즉시 사양서에 동적으로 반영 (Incremental update):
+    - 처음에 로드해 둔 기획 사양서 데이터 및 원본 파일 내용을 메모리에 유지합니다.
+    - 이번 명확화 세션에서 확정된 최초의 답변을 기록할 때:
+       - 사양서 서식 템플릿에 맞추어 `## Clarifications` (명확해진 요건) 섹션이 존재하는지 확인합니다. (없다면, 템플릿 표준에 따라 가장 상위 개요/컨텍스트 섹션 바로 아래에 새로 생성합니다.)
+       - 해당 섹션 하위에 오늘 날짜를 기준으로 `### Session YYYY-MM-DD` 서브헤더를 구축합니다 (존재하지 않는 경우).
+    - 사용자의 승인이 완료될 때마다 즉시 다음 서식의 글머리 기호를 아래에 덧붙여 기록합니다: `- Q: <명확화 질문> → A: <최종 확정 답변>`.
+    - 이와 동시에, 확정된 기획 사양 정보를 사양서 내의 가장 알맞은 문서 단락에 즉시 반영 및 녹여냅니다:
+       - 기능적 모호함 해소 -> Functional Requirements(기능 요구사항) 단락에 내용을 업데이트하거나 명확해진 규칙을 글머리 기호로 추가.
+       - 상호작용 및 액터 구분 -> User Stories(사용자 시나리오) 또는 Actors(액터) 서브 섹션에 명확해진 역할, 제약, 혹은 예외 흐름을 보강.
+       - 데이터 엔티티 및 스키마 -> Data Model(데이터 모델) 단락의 엔티티 명세에 필드, 타입, 관계 등을 기존 정렬을 해치지 않으며 안전하게 보완 및 제약 기술.
+       - 비기능적 제약 요건 -> Success Criteria > Measurable Outcomes (성공 기준 > 측정 가능한 지표) 단락에 모호했던 형용사구를 구체적인 정량적 수치나 목표 임계치로 변환/보완.
+       - 예외 케이스 및 오류 흐름 -> Edge Cases / Error Handling 단락에 새로운 시나리오 세부 규칙을 덧붙임 (없다면 서브 섹션을 구축).
+       - 용어의 충돌 -> 전체 사양서 텍스트를 검색하여 용어를 표준어로 일괄 통일. 필요한 경우 최초 출현 지점에 한하여 `(이전 통칭 "X")` 형태로 레거시 흔적을 정합성 있게 보정.
+    - 명확해진 새 요건이 이전의 모호하거나 상충되는 레거시 설명문을 무효화하는 경우, 중복해서 남겨두지 말고 해당 레거시 구문을 지우고 새 문장으로 완벽히 교체하십시오. 사양서 내부에 모순되는 이전 문장이 잔존해서는 절대 안 됩니다.
+    - **각 질문 수락/반영 단계마다 사양서 파일에 즉각 물리적으로 저장**하여 (원자적 덮어쓰기) 컨텍스트 유실 리스크를 최소화하십시오.
+    - 기존 마크다운 포맷팅 규격 준수: 무관한 다른 섹션의 순서를 섞거나 계층을 무너뜨리지 마십시오.
+    - 삽입하는 요건 문구는 군더더기 없이 간결하고 객관적으로 테스트 가능한 검증문 형태로 정제하여 작성하십시오.
 
-6. Validation (performed after EACH write plus final pass):
-   - Clarifications session contains exactly one bullet per accepted answer (no duplicates).
-   - Total asked (accepted) questions ≤ 5.
-   - Updated sections contain no lingering vague placeholders the new answer was meant to resolve.
-   - No contradictory earlier statement remains (scan for now-invalid alternative choices removed).
-   - Markdown structure valid; only allowed new headings: `## Clarifications`, `### Session YYYY-MM-DD`.
-   - Terminology consistency: same canonical term used across all updated sections.
+6. 검증 (매 기록 시점 및 최종 마감 시점 수행):
+    - 명확화 세션 단락 하위에 각 질문당 정확히 1개의 매핑 내역만 누적되었는지 검사합니다 (중복 제거).
+    - 던져진 총 누적 질문의 수가 ≤ 5개인지 확인합니다.
+    - 보완 업데이트된 본문 단락 전반에 애매모호한 플레이스홀더나 지칭 문구들이 완벽하게 해소 및 정제되었는지 검토합니다.
+    - 모순이 발생하는 과거의 기획 문장이 본문 어딘가에 잔존해 있는지 전수 스캔 및 제거합니다.
+    - 마크다운 문서의 구문 계층이 깨지지 않았는지 점검합니다. 오직 표준 헤더인 `## Clarifications` 및 하위 `### Session YYYY-MM-DD`만 명확화 관련 헤더로 새로 허용됩니다.
+    - 정제된 표준 용어가 모든 장표에서 철저하게 일관되게 차용되었는지 점검합니다.
 
-7. Write the updated spec back to `FEATURE_SPEC`.
+7. 업데이트 완료된 최종 데이터를 `FEATURE_SPEC` 파일에 물리적으로 기록합니다.
 
-8. Report completion (after questioning loop ends or early termination):
-   - Number of questions asked & answered.
-   - Path to updated spec.
-   - Sections touched (list names).
-   - Coverage summary table listing each taxonomy category with Status: Resolved (was Partial/Missing and addressed), Deferred (exceeds question quota or better suited for planning), Clear (already sufficient), Outstanding (still Partial/Missing but low impact).
-   - If any Outstanding or Deferred remain, recommend whether to proceed to `/speckit-plan` or run `/speckit-clarify` again later post-plan.
-   - Suggested next command.
+8. 세션 종료 후 최종 완료 보고 (질문 루프가 끝났거나 조기 중단된 경우):
+    - 실제 수행되어 답변이 확정된 총 질문 개수 보고.
+    - 업데이트 반영된 사양서 파일의 절대 경로 명시.
+    - 변경 및 보강이 일어난 사양서 본문 섹션명 목록 나열.
+    - 아래 양식에 맞춘 세분화된 요구사항 커버리지 요약 테이블 출력:
+      각 카테고리별 상태: `Resolved` (모호/누락이었으나 이번에 해결됨), `Deferred` (질문 개수 제한을 초과했거나 설계 단계에서 다루기로 유예함), `Clear` (기존 사양으로도 충분히 명확함), `Outstanding` (여전히 모호/누락 상태이나 리스크가 낮아 질문하지 않음).
+    - 만약 `Outstanding` 또는 `Deferred` 상태로 남아있는 잔여 주요 쟁점이 있다면, 이대로 `/speckit-plan` 단계로 나아가도 괜찮은지 아니면 추후 기획을 보강한 뒤 `/speckit-clarify`를 재수행해야 하는지 엔지니어링 권장 의견을 덧붙이십시오.
+    - 다음에 실행해야 할 추천 명령어 안내.
 
-Behavior rules:
+행동 규칙:
 
-- If no meaningful ambiguities found (or all potential questions would be low-impact), respond: "No critical ambiguities detected worth formal clarification." and suggest proceeding.
-- If spec file missing, instruct user to run `/speckit-specify` first (do not create a new spec here).
-- Never exceed 5 total asked questions (clarification retries for a single question do not count as new questions).
-- Avoid speculative tech stack questions unless the absence blocks functional clarity.
-- Respect user early termination signals ("stop", "done", "proceed").
-- If no questions asked due to full coverage, output a compact coverage summary (all categories Clear) then suggest advancing.
-- If quota reached with unresolved high-impact categories remaining, explicitly flag them under Deferred with rationale.
+- 모호한 지점이 전혀 발견되지 않거나 질문할 만한 가치가 낮은 경미한 사안만 남은 경우, 인위적인 질문을 억지로 꾸며내지 말고 다음과 같이 즉시 리포트하고 다음 단계로 진입할 것을 권장하십시오: "검토 결과 정밀 명확화가 필요한 크리티컬한 기획 모호성이 발견되지 않았습니다."
+- 사양서(spec.md) 파일 자체가 아예 물리적으로 누락된 경우, 임의로 문서를 창조하지 말고 사용자에게 먼저 `/speckit-specify`를 가동하라고 명확하게 에러 안내를 띄우십시오.
+- 어떠한 상황에서도 5개를 초과하는 질문을 던져 사용자의 피로도를 가중시키지 마십시오. (단일 질문에 대해 사용자가 잘못 답변하여 보정 재질문을 던지는 것은 신규 질문 개수로 가산하지 않습니다.)
+- 기능 동작을 논하는 기획의 본질을 벗어난 지나치게 기술 세부적인 아키텍처 스택 선택 질문은, 기획 사양의 모호함을 해소하는 데 필수적인 경우가 아니라면 가급적 배제하십시오.
+- 사용자가 질문 중단 의사를 나타내는 힌트 명령어("그만", "완료", "이대로 진행해")를 보내면 즉시 루프를 탈출하고 현재까지 확정된 내용만 정합성 있게 사양서에 패치한 뒤 마무리하십시오.
+- 기획 완성도가 완벽하여 질문 없이 바로 통과한 경우, 간결한 테이블 리포트(모든 카테고리가 Clear 상태)를 보여준 뒤 즉시 다음 설계 단계 추천 명령을 제시하십시오.
+- 질문 개수 한계(5개)에 도달해 핵심 쟁점인데 미처 묻지 못하고 남겨진 카테고리는 보고서의 `Deferred` 섹션에 합리적 이유와 함께 명시하십시오.
 
-Context for prioritization: $ARGUMENTS
+우선순위 설정을 위한 컨텍스트: $ARGUMENTS
 
-## Post-Execution Checks
+## 실행 후 확인 사항
 
-**Check for extension hooks (after clarification)**:
-Check if `.specify/extensions.yml` exists in the project root.
-- If it exists, read it and look for entries under the `hooks.after_clarify` key
-- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
-- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
-- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
-  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
-  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
-- For each executable hook, output the following based on its `optional` flag:
-  - **Optional hook** (`optional: true`):
+**확장 기능 훅 확인 (명확화 완료 후)**:
+- 프로젝트 루트에 `.specify/extensions.yml`이 존재하는지 확인합니다.
+- 존재할 경우, 파일을 읽고 `hooks.after_clarify` 키 아래 of 항목들을 찾습니다.
+- YAML 파싱이 불가능하거나 유효하지 않은 경우, 훅 확인을 자동으로 건너뛰고 정상적으로 진행합니다.
+- `enabled`가 명시적으로 `false`인 훅은 제외합니다. `enabled` 필드가 없는 훅은 기본적으로 활성화된 것으로 간주합니다.
+- 남은 훅들에 대해, 훅의 `condition` 표현식을 해석하거나 평가하려고 시도하지 **마십시오**:
+  - 훅에 `condition` field가 없거나 비어있는(null/empty) 경우, 실행 가능한 훅으로 처리합니다.
+  - 훅에 비어있지 않은 `condition`이 정의되어 있다면, 훅 실행을 건너뛰고 조건 평가를 HookExecutor 구현체에 위임합니다.
+- 실행 가능한 각 훅에 대해 `optional` 플래그를 기준으로 아래 내용을 출력합니다:
+  - **선택적 훅 (Optional hook)** (`optional: true`):
     ```
     ## Extension Hooks
 
@@ -238,7 +239,7 @@ Check if `.specify/extensions.yml` exists in the project root.
     Prompt: {prompt}
     To execute: `/{command}`
     ```
-  - **Mandatory hook** (`optional: false`):
+  - **필수 훅 (Mandatory hook)** (`optional: false`):
     ```
     ## Extension Hooks
 
@@ -246,4 +247,4 @@ Check if `.specify/extensions.yml` exists in the project root.
     Executing: `/{command}`
     EXECUTE_COMMAND: {command}
     ```
-- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+- 등록된 훅이 없거나 `.specify/extensions.yml`이 존재하지 않는 경우 자동으로 건너뜁니다.

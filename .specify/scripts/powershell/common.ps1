@@ -1,13 +1,13 @@
 #!/usr/bin/env pwsh
-# Common PowerShell functions analogous to common.sh
+# common.sh에 해당하는 공통 PowerShell 함수들
 
-# Find repository root by searching upward for .specify directory
-# This is the primary marker for spec-kit projects
+# .specify 디렉토리를 상위로 검색하여 저장소 루트 찾기
+# 이것은 spec-kit 프로젝트의 기본 마커입니다.
 function Find-SpecifyRoot {
     param([string]$StartDir = (Get-Location).Path)
 
-    # Normalize to absolute path to prevent issues with relative paths
-    # Use -LiteralPath to handle paths with wildcard characters ([, ], *, ?)
+    # 상대 경로 문제 예방을 위해 절대 경로로 정규화
+    # 와일드카드 문자([, ], *, ?)가 포함된 경로 처리를 위해 -LiteralPath 사용
     $resolved = Resolve-Path -LiteralPath $StartDir -ErrorAction SilentlyContinue
     $current = if ($resolved) { $resolved.Path } else { $null }
     if (-not $current) { return $null }
@@ -24,37 +24,37 @@ function Find-SpecifyRoot {
     }
 }
 
-# Get repository root, prioritizing .specify directory over git
-# This prevents using a parent git repo when spec-kit is initialized in a subdirectory
+# git보다 .specify 디렉토리를 우선시하여 저장소 루트 가져오기
+# spec-kit이 하위 디렉토리에 초기화된 경우 부모 git 저장소가 선택되는 것을 예방합니다.
 function Get-RepoRoot {
-    # First, look for .specify directory (spec-kit's own marker)
+    # 먼저 spec-kit 자체 마커인 .specify 디렉토리를 찾습니다.
     $specifyRoot = Find-SpecifyRoot
     if ($specifyRoot) {
         return $specifyRoot
     }
 
-    # Fallback to git if no .specify found
+    # .specify가 감지되지 않으면 git으로 포백
     try {
         $result = git rev-parse --show-toplevel 2>$null
         if ($LASTEXITCODE -eq 0) {
             return $result
         }
     } catch {
-        # Git command failed
+        # Git 명령 실패
     }
 
-    # Final fallback to script location for non-git repos
-    # Use -LiteralPath to handle paths with wildcard characters
+    # git 저장소가 아닌 경우 최종적으로 스크립트 위치로 포백
+    # 와일드카드 문자가 포함된 경로 처리를 위해 -LiteralPath 사용
     return (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "../../..")).Path
 }
 
 function Get-CurrentBranch {
-    # First check if SPECIFY_FEATURE environment variable is set
+    # 먼저 SPECIFY_FEATURE 환경 변수가 설정되었는지 확인
     if ($env:SPECIFY_FEATURE) {
         return $env:SPECIFY_FEATURE
     }
 
-    # Then check git if available at the spec-kit root (not parent)
+    # 그 후 부모가 아닌 spec-kit 루트 기준 git이 사용 가능한지 확인
     $repoRoot = Get-RepoRoot
     if (Test-HasGit) {
         try {
@@ -63,11 +63,11 @@ function Get-CurrentBranch {
                 return $result
             }
         } catch {
-            # Git command failed
+            # Git 명령 실패
         }
     }
 
-    # For non-git repos, try to find the latest feature directory
+    # git 저장소가 아닌 경우, 가장 최신의 피처 디렉토리 찾기 시도
     $specsDir = Join-Path $repoRoot "specs"
     
     if (Test-Path $specsDir) {
@@ -77,7 +77,7 @@ function Get-CurrentBranch {
 
         Get-ChildItem -Path $specsDir -Directory | ForEach-Object {
             if ($_.Name -match '^(\d{8}-\d{6})-') {
-                # Timestamp-based branch: compare lexicographically
+                # 타임스탬프 기반 브랜치: 사전 순으로 비교
                 $ts = $matches[1]
                 if ($ts -gt $latestTimestamp) {
                     $latestTimestamp = $ts
@@ -87,7 +87,7 @@ function Get-CurrentBranch {
                 $num = [long]$matches[1]
                 if ($num -gt $highest) {
                     $highest = $num
-                    # Only update if no timestamp branch found yet
+                    # 타임스탬프 브랜치가 아직 감지되지 않은 경우에만 업데이트
                     if (-not $latestTimestamp) {
                         $latestFeature = $_.Name
                     }
@@ -100,25 +100,25 @@ function Get-CurrentBranch {
         }
     }
     
-    # Final fallback
+    # 최종 포백
     return "main"
 }
 
-# Check if we have git available at the spec-kit root level
-# Returns true only if git is installed and the repo root is inside a git work tree
-# Handles both regular repos (.git directory) and worktrees/submodules (.git file)
+# spec-kit 루트 레벨에 git을 사용할 수 있는지 확인
+# git이 설치되어 있고 저장소 루트가 git 작업 트리 내에 있는 경우에만 true 반환
+# 일반 저장소(.git 디렉토리) 및 작업 트리/서브모듈(.git 파일) 모두 처리
 function Test-HasGit {
-    # First check if git command is available (before calling Get-RepoRoot which may use git)
+    # (git을 사용하는 Get-RepoRoot 호출 전) 먼저 git 명령이 사용 가능한지 확인
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         return $false
     }
     $repoRoot = Get-RepoRoot
-    # Check if .git exists (directory or file for worktrees/submodules)
-    # Use -LiteralPath to handle paths with wildcard characters
+    # .git 존재 여부 확인 (작업 트리/서브모듈의 디렉토리 또는 파일)
+    # 와일드카드 문자가 포함된 경로 처리를 위해 -LiteralPath 사용
     if (-not (Test-Path -LiteralPath (Join-Path $repoRoot ".git"))) {
         return $false
     }
-    # Verify it's actually a valid git work tree
+    # 실제로 유효한 git 작업 트리인지 검증
     try {
         $null = git -C $repoRoot rev-parse --is-inside-work-tree 2>$null
         return ($LASTEXITCODE -eq 0)
@@ -127,8 +127,8 @@ function Test-HasGit {
     }
 }
 
-# Strip a single optional path segment (e.g. gitflow "feat/004-name" -> "004-name").
-# Only when the full name is exactly two slash-free segments; otherwise returns the raw name.
+# 단일 선택적 경로 세그먼트를 분리합니다 (예: gitflow "feat/004-name" -> "004-name").
+# 전체 이름이 슬래시가 없는 정확히 두 개의 세그먼트인 경우에만 해당하며, 그렇지 않으면 원본 이름을 반환합니다.
 function Get-SpecKitEffectiveBranchName {
     param([string]$Branch)
     if ($Branch -match '^([^/]+)/([^/]+)$') {
@@ -143,29 +143,29 @@ function Test-FeatureBranch {
         [bool]$HasGit = $true
     )
     
-    # For non-git repos, we can't enforce branch naming but still provide output
+    # git 저장소가 아닌 경우 브랜치 명명을 강제할 수 없지만 출력은 제공합니다.
     if (-not $HasGit) {
-        Write-Warning "[specify] Warning: Git repository not detected; skipped branch validation"
+        Write-Warning "[specify] 경고: Git 저장소가 감지되지 않았습니다. 브랜치 유효성 검사를 건너뜁니다."
         return $true
     }
 
     $raw = $Branch
     $Branch = Get-SpecKitEffectiveBranchName $raw
     
-    # Accept sequential prefix (3+ digits) but exclude malformed timestamps
-    # Malformed: 7-or-8 digit date + 6-digit time with no trailing slug (e.g. "2026031-143022" or "20260319-143022")
+    # 순차 접두사(3자리 이상)는 허용하되 잘못된 형식의 타임스탬프는 제외
+    # 잘못된 형식: 뒤에 슬러그가 없는 7~8자리 날짜 + 6자리 시간 (예: "2026031-143022" 또는 "20260319-143022")
     $hasMalformedTimestamp = ($Branch -match '^[0-9]{7}-[0-9]{6}-') -or ($Branch -match '^(?:\d{7}|\d{8})-\d{6}$')
     $isSequential = ($Branch -match '^[0-9]{3,}-') -and (-not $hasMalformedTimestamp)
     if (-not $isSequential -and $Branch -notmatch '^\d{8}-\d{6}-') {
-        [Console]::Error.WriteLine("ERROR: Not on a feature branch. Current branch: $raw")
-        [Console]::Error.WriteLine("Feature branches should be named like: 001-feature-name, 1234-feature-name, or 20260319-143022-feature-name")
+        [Console]::Error.WriteLine("오류: 피처 브랜치가 아닙니다. 현재 브랜치: $raw")
+        [Console]::Error.WriteLine("피처 브랜치 이름은 다음과 같이 지정해야 합니다: 001-feature-name, 1234-feature-name, 또는 20260319-143022-feature-name")
         return $false
     }
     return $true
 }
 
-# True when .specify/feature.json pins an existing feature directory that matches the
-# active FEATURE_DIR from Get-FeaturePathsEnv (so /speckit.plan can skip git branch pattern checks).
+# .specify/feature.json이 Get-FeaturePathsEnv로부터 가져온 활성 FEATURE_DIR과 일치하는 기존 피처 디렉토리를 고정하고 있는 경우 True를 반환합니다. 
+# (이를 통해 /speckit.plan이 git 브랜치 패턴 확인을 건너뛸 수 있음)
 function Test-FeatureJsonMatchesFeatureDir {
     param(
         [Parameter(Mandatory = $true)][string]$RepoRoot,
@@ -197,9 +197,8 @@ function Test-FeatureJsonMatchesFeatureDir {
         return $false
     }
 
-    # Resolve both paths to canonical absolute form. Prefer Resolve-Path (follows
-    # symlinks and is the canonical PS way); fall back to [Path]::GetFullPath when
-    # Resolve-Path can't produce a value. Mirrors the pattern used by Find-SpecifyRoot.
+    # 두 경로를 모두 정규 절대 경로 형식으로 분석합니다. Resolve-Path(심볼릭 링크 추적 및 canonical한 PS 권장 방식)를 우선적으로 사용하고,
+    # Resolve-Path가 값을 출력할 수 없는 경우 [Path]::GetFullPath로 포백합니다. Find-SpecifyRoot에서 사용하는 패턴을 동일하게 적용합니다.
     $resolvedJson = Resolve-Path -LiteralPath $fd -ErrorAction SilentlyContinue
     if ($resolvedJson) {
         $normJson = $resolvedJson.Path
@@ -214,9 +213,8 @@ function Test-FeatureJsonMatchesFeatureDir {
         $normActive = [System.IO.Path]::GetFullPath($ActiveFeatureDir)
     }
 
-    # Use case-insensitive compare only on Windows; POSIX filesystems are case-sensitive.
-    # PowerShell 5.1 is Windows-only and does not define $IsWindows, so treat its
-    # absence as "we're on Windows".
+    # Windows에서만 대소문자 구분 없이 비교를 수행하며, POSIX 파일 시스템은 대소문자를 구분합니다.
+    # PowerShell 5.1은 Windows 전용이고 $IsWindows를 정의하지 않으므로, 정의되지 않은 경우 "Windows 환경"으로 처리합니다.
     if ($null -ne $IsWindows) {
         $onWindows = $IsWindows
     } else {
@@ -232,7 +230,7 @@ function Test-FeatureJsonMatchesFeatureDir {
     return [string]::Equals($normJson, $normActive, $comparison)
 }
 
-# Resolve specs/<feature-dir> by numeric/timestamp prefix (mirrors scripts/bash/common.sh find_feature_dir_by_prefix).
+# 숫자/타임스탬프 접두사로 specs/<feature-dir>를 분석합니다 (scripts/bash/common.sh의 find_feature_dir_by_prefix 함수 미러링).
 function Find-FeatureDirByPrefix {
     param(
         [Parameter(Mandatory = $true)][string]$RepoRoot,
@@ -262,12 +260,12 @@ function Find-FeatureDirByPrefix {
         return $dirMatches[0].FullName
     }
     $names = ($dirMatches | ForEach-Object { $_.Name }) -join ' '
-    [Console]::Error.WriteLine("ERROR: Multiple spec directories found with prefix '$prefix': $names")
-    [Console]::Error.WriteLine('Please ensure only one spec directory exists per prefix.')
+    [Console]::Error.WriteLine("오류: 접두사 '$prefix'를 사용하는 여러 스펙 디렉토리가 발견되었습니다: $names")
+    [Console]::Error.WriteLine('접두사당 하나의 스펙 디렉토리만 존재하도록 구성하십시오.')
     return $null
 }
 
-# Branch-based prefix resolution; mirrors bash get_feature_paths failure (stderr + exit 1).
+# 브랜치 기반 접두사 분석. bash의 get_feature_paths 실패(stderr 출력 + exit 1)를 미러링.
 function Get-FeatureDirFromBranchPrefixOrExit {
     param(
         [Parameter(Mandatory = $true)][string]$RepoRoot,
@@ -275,7 +273,7 @@ function Get-FeatureDirFromBranchPrefixOrExit {
     )
     $resolved = Find-FeatureDirByPrefix -RepoRoot $RepoRoot -Branch $CurrentBranch
     if ($null -eq $resolved) {
-        [Console]::Error.WriteLine('ERROR: Failed to resolve feature directory')
+        [Console]::Error.WriteLine('오류: 피처 디렉토리 분석에 실패했습니다.')
         exit 1
     }
     return $resolved
@@ -286,14 +284,14 @@ function Get-FeaturePathsEnv {
     $currentBranch = Get-CurrentBranch
     $hasGit = Test-HasGit
 
-    # Resolve feature directory.  Priority:
-    #   1. SPECIFY_FEATURE_DIRECTORY env var (explicit override)
-    #   2. .specify/feature.json "feature_directory" key (persisted by /speckit.specify)
-    #   3. Branch-name-based prefix lookup (same as scripts/bash/common.sh)
+    # 피처 디렉토리 분석. 우선순위:
+    #   1. SPECIFY_FEATURE_DIRECTORY 환경 변수 (명시적 오버라이드)
+    #   2. .specify/feature.json의 "feature_directory" 키 (/speckit.specify에서 생성)
+    #   3. 브랜치 이름 기반의 접두사 조회 (scripts/bash/common.sh와 동일)
     $featureJson = Join-Path $repoRoot '.specify/feature.json'
     if ($env:SPECIFY_FEATURE_DIRECTORY) {
         $featureDir = $env:SPECIFY_FEATURE_DIRECTORY
-        # Normalize relative paths to absolute under repo root
+        # 저장소 루트 기준 상대 경로를 절대 경로로 정규화
         if (-not [System.IO.Path]::IsPathRooted($featureDir)) {
             $featureDir = Join-Path $repoRoot $featureDir
         }
@@ -302,12 +300,12 @@ function Get-FeaturePathsEnv {
         try {
             $featureConfig = $featureJsonRaw | ConvertFrom-Json
         } catch {
-            [Console]::Error.WriteLine("ERROR: Failed to parse .specify/feature.json: $_")
+            [Console]::Error.WriteLine("오류: .specify/feature.json 파싱에 실패했습니다: $_")
             exit 1
         }
         if ($featureConfig.feature_directory) {
             $featureDir = $featureConfig.feature_directory
-            # Normalize relative paths to absolute under repo root
+            # 저장소 루트 기준 상대 경로를 절대 경로로 정규화
             if (-not [System.IO.Path]::IsPathRooted($featureDir)) {
                 $featureDir = Join-Path $repoRoot $featureDir
             }
@@ -355,8 +353,8 @@ function Test-DirHasFiles {
     }
 }
 
-# Find a usable Python 3 executable (python3, python, or py -3).
-# Returns the command/arguments as an array, or $null if none found.
+# 사용 가능한 Python 3 실행 파일(python3, python, py -3)을 검색합니다.
+# 검색된 명령/인수를 배열 형태로 반환하며, 검색되지 않는 경우 $null을 반환합니다.
 function Get-Python3Command {
     if (Get-Command python3 -ErrorAction SilentlyContinue) { return @('python3') }
     if (Get-Command python -ErrorAction SilentlyContinue) {
@@ -370,11 +368,11 @@ function Get-Python3Command {
     return $null
 }
 
-# Resolve a template name to a file path using the priority stack:
+# 우선순위 스택을 사용하여 템플릿 이름을 파일 경로로 분석합니다:
 #   1. .specify/templates/overrides/
-#   2. .specify/presets/<preset-id>/templates/ (sorted by priority from .registry)
+#   2. .specify/presets/<preset-id>/templates/ (.registry에 정의된 우선순위 기준 정렬)
 #   3. .specify/extensions/<ext-id>/templates/
-#   4. .specify/templates/ (core)
+#   4. .specify/templates/ (코어)
 function Resolve-Template {
     param(
         [Parameter(Mandatory=$true)][string]$TemplateName,
@@ -383,11 +381,11 @@ function Resolve-Template {
 
     $base = Join-Path $RepoRoot '.specify/templates'
 
-    # Priority 1: Project overrides
+    # 우선순위 1: 프로젝트 오버라이드
     $override = Join-Path $base "overrides/$TemplateName.md"
     if (Test-Path $override) { return $override }
 
-    # Priority 2: Installed presets (sorted by priority from .registry)
+    # 우선순위 2: 설치된 프리셋 (.registry에 정의된 우선순위 기준 정렬)
     $presetsDir = Join-Path $RepoRoot '.specify/presets'
     if (Test-Path $presetsDir) {
         $registryFile = Join-Path $presetsDir '.registry'
@@ -403,7 +401,7 @@ function Resolve-Template {
                         ForEach-Object { $_.Name }
                 }
             } catch {
-                # Fallback: alphabetical directory order
+                # 포백: 디렉토리 알파벳순 정렬
                 $sortedPresets = @()
             }
         }
@@ -414,7 +412,7 @@ function Resolve-Template {
                 if (Test-Path $candidate) { return $candidate }
             }
         } else {
-            # Fallback: alphabetical directory order
+            # 포백: 디렉토리 알파벳순 정렬
             foreach ($preset in Get-ChildItem -Path $presetsDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '.*' }) {
                 $candidate = Join-Path $preset.FullName "templates/$TemplateName.md"
                 if (Test-Path $candidate) { return $candidate }
@@ -422,7 +420,7 @@ function Resolve-Template {
         }
     }
 
-    # Priority 3: Extension-provided templates
+    # 우선순위 3: 확장 도구가 제공한 템플릿
     $extDir = Join-Path $RepoRoot '.specify/extensions'
     if (Test-Path $extDir) {
         foreach ($ext in Get-ChildItem -Path $extDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '.*' } | Sort-Object Name) {
@@ -431,16 +429,15 @@ function Resolve-Template {
         }
     }
 
-    # Priority 4: Core templates
+    # 우선순위 4: 코어 템플릿
     $core = Join-Path $base "$TemplateName.md"
     if (Test-Path $core) { return $core }
 
     return $null
 }
 
-# Resolve a template name to composed content using composition strategies.
-# Reads strategy metadata from preset manifests and composes content
-# from multiple layers using prepend, append, or wrap strategies.
+# 구성 전략(prepend, append, wrap 등)을 기반으로 템플릿 명칭을 병합된 본문 내용으로 분석합니다.
+# 프리셋 매니페스트로부터 병합(composition) 전략 정보를 읽어 다중 레이어를 병합합니다.
 function Resolve-TemplateContent {
     param(
         [Parameter(Mandatory=$true)][string]$TemplateName,
@@ -449,18 +446,18 @@ function Resolve-TemplateContent {
 
     $base = Join-Path $RepoRoot '.specify/templates'
 
-    # Collect all layers (highest priority first)
+    # 모든 레이어를 수집합니다 (우선순위가 가장 높은 것부터 우선)
     $layerPaths = @()
     $layerStrategies = @()
 
-    # Priority 1: Project overrides (always "replace")
+    # 우선순위 1: 프로젝트 오버라이드 (항상 "replace" 전략)
     $override = Join-Path $base "overrides/$TemplateName.md"
     if (Test-Path $override) {
         $layerPaths += $override
         $layerStrategies += 'replace'
     }
 
-    # Priority 2: Installed presets (sorted by priority from .registry)
+    # 우선순위 2: 설치된 프리셋 (.registry에 정의된 우선순위 기준 정렬)
     $presetsDir = Join-Path $RepoRoot '.specify/presets'
     if (Test-Path $presetsDir) {
         $registryFile = Join-Path $presetsDir '.registry'
@@ -483,24 +480,24 @@ function Resolve-TemplateContent {
         if ($sortedPresets.Count -gt 0) {
             $pyCmd = Get-Python3Command
             if (-not $pyCmd) {
-                # Check if any preset has strategy fields that would be ignored
+                # 무시될 수 있는 strategy 필드를 가진 프리셋이 있는지 확인
                 foreach ($pid in $sortedPresets) {
                     $mf = Join-Path $presetsDir "$pid/preset.yml"
                     if ((Test-Path $mf) -and (Select-String -Path $mf -Pattern 'strategy:' -Quiet -ErrorAction SilentlyContinue)) {
-                        Write-Warning "No Python 3 found; preset composition strategies will be ignored"
+                        Write-Warning "Python 3를 찾을 수 없습니다. 프리셋 작성(composition) 전략이 무시됩니다."
                         break
                     }
                 }
             }
             $yamlWarned = $false
             foreach ($presetId in $sortedPresets) {
-                # Read strategy and file path from preset manifest
+                # 프리셋 매니페스트로부터 strategy 및 파일 경로 읽기
                 $strategy = 'replace'
                 $manifestFilePath = ''
                 $manifest = Join-Path $presetsDir "$presetId/preset.yml"
                 if ((Test-Path $manifest) -and $pyCmd) {
                     try {
-                        # Use Python to parse YAML manifest for strategy and file path
+                        # Python을 사용해 YAML 매니페스트에서 strategy 및 파일 경로 파싱
                         $pyArgs = if ($pyCmd.Count -gt 1) { $pyCmd[1..($pyCmd.Count-1)] } else { @() }
                         $pyStderrFile = [System.IO.Path]::GetTempFileName()
                         $stratResult = & $pyCmd[0] @pyArgs -c @"
@@ -528,7 +525,7 @@ except Exception:
                             if ($parts.Count -gt 1 -and $parts[1]) { $manifestFilePath = $parts[1] }
                         }
                         if (-not $yamlWarned -and (Test-Path $pyStderrFile) -and (Get-Content $pyStderrFile -Raw -ErrorAction SilentlyContinue) -match 'yaml_missing') {
-                            Write-Warning "PyYAML not available; composition strategies may be ignored"
+                            Write-Warning "PyYAML을 사용할 수 없습니다. 작성(composition) 전략이 무시될 수 있습니다."
                             $yamlWarned = $true
                         }
                         Remove-Item $pyStderrFile -Force -ErrorAction SilentlyContinue
@@ -537,10 +534,10 @@ except Exception:
                         if ($pyStderrFile) { Remove-Item $pyStderrFile -Force -ErrorAction SilentlyContinue }
                     }
                 }
-                # Try manifest file path first, then convention path
+                # 매니페스트 파일 경로를 먼저 시도하고, 그 후 관례적인(convention) 경로 시도
                 $candidate = $null
                 if ($manifestFilePath) {
-                    # Reject absolute paths and parent traversal
+                    # 절대 경로 및 상위 디렉토리 탐색(..) 거부
                     if ([System.IO.Path]::IsPathRooted($manifestFilePath) -or $manifestFilePath -match '\.\.[\\/]') {
                         $manifestFilePath = ''
                     }
@@ -559,7 +556,7 @@ except Exception:
                 }
             }
         } else {
-            # Fallback: alphabetical directory order (no registry or parse failure)
+            # 포백: 디렉토리 알파벳순 정렬 (레지스트리가 없거나 파싱 오류 발생 시)
             foreach ($preset in Get-ChildItem -Path $presetsDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '.*' }) {
                 $candidate = Join-Path $preset.FullName "templates/$TemplateName.md"
                 if (Test-Path $candidate) {
@@ -570,7 +567,7 @@ except Exception:
         }
     }
 
-    # Priority 3: Extension-provided templates (always "replace")
+    # 우선순위 3: 확장 기능이 제공한 템플릿 (항상 "replace" 전략)
     $extDir = Join-Path $RepoRoot '.specify/extensions'
     if (Test-Path $extDir) {
         foreach ($ext in Get-ChildItem -Path $extDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '.*' } | Sort-Object Name) {
@@ -582,7 +579,7 @@ except Exception:
         }
     }
 
-    # Priority 4: Core templates (always "replace")
+    # 우선순위 4: 코어 템플릿 (항상 "replace" 전략)
     $core = Join-Path $base "$TemplateName.md"
     if (Test-Path $core) {
         $layerPaths += $core
@@ -591,13 +588,12 @@ except Exception:
 
     if ($layerPaths.Count -eq 0) { return $null }
 
-    # If the top (highest-priority) layer is replace, it wins entirely —
-    # lower layers are irrelevant regardless of their strategies.
+    # 최상위(가장 높은 우선순위) 레이어가 replace인 경우 완벽하게 승리하며, 하위 레이어는 해당 전략에 관계없이 무시됩니다.
     if ($layerStrategies[0] -eq 'replace') {
         return (Get-Content $layerPaths[0] -Raw)
     }
 
-    # Check if any layer uses a non-replace strategy
+    # replace가 아닌 다른 전략을 사용하는 레이어가 있는지 확인
     $hasComposition = $false
     foreach ($s in $layerStrategies) {
         if ($s -ne 'replace') { $hasComposition = $true; break }
@@ -607,8 +603,7 @@ except Exception:
         return (Get-Content $layerPaths[0] -Raw)
     }
 
-    # Find the effective base: scan from highest priority (index 0) downward
-    # to find the nearest replace layer. Only compose layers above that base.
+    # 유효한 베이스 찾기: 가장 높은 우선순위(인덱스 0)부터 시작해 아래로 스캔하여 가장 가까운 replace 레이어를 찾습니다. 이 베이스 위의 레이어들만 병합합니다.
     $baseIdx = -1
     for ($i = 0; $i -lt $layerPaths.Count; $i++) {
         if ($layerStrategies[$i] -eq 'replace') {

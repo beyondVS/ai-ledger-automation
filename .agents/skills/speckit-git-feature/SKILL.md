@@ -1,72 +1,72 @@
 ---
 name: speckit-git-feature
-description: Create a feature branch with sequential or timestamp numbering
+description: 순차 번호 또는 타임스탬프가 포함된 피처(feature) 브랜치를 생성합니다.
 compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
   author: github-spec-kit
   source: git:commands/speckit.git.feature.md
 ---
 
-# Create Feature Branch
+# 피처 브랜치 생성 (Create Feature Branch)
 
-Create and switch to a new git feature branch for the given specification. This command handles **branch creation only** — the spec directory and files are created by the core `/speckit-specify` workflow.
+지정된 스펙(specification)에 맞는 새로운 git 피처 브랜치를 생성하고 해당 브랜치로 전환합니다. 이 명령어는 **브랜치 생성만** 처리하며, 스펙 디렉토리와 파일은 코어 `/speckit-specify` 워크플로우에 의해 생성됩니다.
 
-## User Input
+## 사용자 입력 (User Input)
 
 ```text
 $ARGUMENTS
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+사용자 입력이 비어 있지 않다면 진행하기 전에 **반드시** 이를 고려해야 합니다.
 
-## Environment Variable Override
+## 환경 변수 오버라이드 (Environment Variable Override)
 
-If the user explicitly provided `GIT_BRANCH_NAME` (e.g., via environment variable, argument, or in their request), pass it through to the script by setting the `GIT_BRANCH_NAME` environment variable before invoking the script. When `GIT_BRANCH_NAME` is set:
-- The script uses the exact value as the branch name, bypassing all prefix/suffix generation
-- `--short-name`, `--number`, and `--timestamp` flags are ignored
-- `FEATURE_NUM` is extracted from the name if it starts with a numeric prefix, otherwise set to the full branch name
+사용자가 명시적으로 `GIT_BRANCH_NAME`을 제공한 경우(예: 환경 변수, 인자, 또는 요청을 통해), 스크립트를 호출하기 전에 `GIT_BRANCH_NAME` 환경 변수를 설정하여 스크립트로 전달하십시오. `GIT_BRANCH_NAME`이 설정되면:
+- 스크립트는 접두사/접미사 생성 단계를 건너뛰고 해당 값을 그대로 브랜치 이름으로 사용합니다.
+- `--short-name`, `--number`, `--timestamp` 플래그는 무시됩니다.
+- 이름이 숫자 접두사로 시작하는 경우 브랜치 명에서 `FEATURE_NUM`을 추출하며, 그렇지 않으면 전체 브랜치 이름으로 설정됩니다.
 
-## Prerequisites
+## 사전 요구사항 (Prerequisites)
 
-- Verify Git is available by running `git rev-parse --is-inside-work-tree 2>/dev/null`
-- If Git is not available, warn the user and skip branch creation
+- `git rev-parse --is-inside-work-tree 2>/dev/null`을 실행하여 Git을 사용할 수 있는지 확인합니다.
+- Git을 사용할 수 없는 경우, 사용자에게 경고하고 브랜치 생성을 스킵합니다.
 
-## Branch Numbering Mode
+## 브랜치 번호 부여 모드 (Branch Numbering Mode)
 
-Determine the branch numbering strategy by checking configuration in this order:
+다음 순서대로 설정을 확인하여 브랜치 번호 부여 전략을 결정합니다:
 
-1. Check `.specify/extensions/git/git-config.yml` for `branch_numbering` value
-2. Check `.specify/init-options.json` for `branch_numbering` value (backward compatibility)
-3. Default to `sequential` if neither exists
+1. `.specify/extensions/git/git-config.yml` 파일에서 `branch_numbering` 값을 확인합니다.
+2. `.specify/init-options.json` 파일에서 `branch_numbering` 값을 확인합니다 (하위 호환성용).
+3. 두 설정 모두 존재하지 않는 경우 기본값은 `sequential`입니다.
 
-## Execution
+## 실행 (Execution)
 
-Generate a concise short name (2-4 words) for the branch:
-- Analyze the feature description and extract the most meaningful keywords
-- Use action-noun format when possible (e.g., "add-user-auth", "fix-payment-bug")
-- Preserve technical terms and acronyms (OAuth2, API, JWT, etc.)
+브랜치에 사용할 간결한 단축 이름(2~4 단어)을 생성합니다:
+- 피처 설명을 분석하여 가장 의미 있는 키워드를 추출합니다.
+- 가능하면 동사-명사 형식을 사용합니다 (예: "add-user-auth", "fix-payment-bug").
+- 기술 용어 및 약어(OAuth2, API, JWT 등)는 그대로 보존합니다.
 
-Run the appropriate script based on your platform:
+플랫폼에 맞는 적절한 스크립트를 실행합니다:
 
 - **Bash**: `.specify/extensions/git/scripts/bash/create-new-feature.sh --json --short-name "<short-name>" "<feature description>"`
-- **Bash (timestamp)**: `.specify/extensions/git/scripts/bash/create-new-feature.sh --json --timestamp --short-name "<short-name>" "<feature description>"`
+- **Bash (타임스탬프)**: `.specify/extensions/git/scripts/bash/create-new-feature.sh --json --timestamp --short-name "<short-name>" "<feature description>"`
 - **PowerShell**: `.specify/extensions/git/scripts/powershell/create-new-feature.ps1 -Json -ShortName "<short-name>" "<feature description>"`
-- **PowerShell (timestamp)**: `.specify/extensions/git/scripts/powershell/create-new-feature.ps1 -Json -Timestamp -ShortName "<short-name>" "<feature description>"`
+- **PowerShell (타임스탬프)**: `.specify/extensions/git/scripts/powershell/create-new-feature.ps1 -Json -Timestamp -ShortName "<short-name>" "<feature description>"`
 
-**IMPORTANT**:
-- Do NOT pass `--number` — the script determines the correct next number automatically
-- Always include the JSON flag (`--json` for Bash, `-Json` for PowerShell) so the output can be parsed reliably
-- You must only ever run this script once per feature
-- The JSON output will contain `BRANCH_NAME` and `FEATURE_NUM`
+**중요**:
+- `--number` 플래그는 전달하지 **마십시오**. 스크립트가 자동으로 올바른 다음 번호를 판단합니다.
+- 출력 결과를 안정적으로 파싱할 수 있도록 항상 JSON 플래그(Bash는 `--json`, PowerShell은 `-Json`)를 포함하십시오.
+- 이 스크립트는 피처당 단 한 번만 실행해야 합니다.
+- JSON 출력 결과에는 `BRANCH_NAME`과 `FEATURE_NUM`이 포함됩니다.
 
-## Graceful Degradation
+## 점진적 기능 저하 (Graceful Degradation)
 
-If Git is not installed or the current directory is not a Git repository:
-- Branch creation is skipped with a warning: `[specify] Warning: Git repository not detected; skipped branch creation`
-- The script still outputs `BRANCH_NAME` and `FEATURE_NUM` so the caller can reference them
+Git이 설치되어 있지 않거나 현재 디렉토리가 Git 저장소가 아닌 경우:
+- 브랜치 생성을 생략하고 경고를 출력합니다: `[specify] Warning: Git repository not detected; skipped branch creation`
+- 호출자가 참조할 수 있도록 스크립트는 여전히 `BRANCH_NAME` 및 `FEATURE_NUM`을 출력합니다.
 
-## Output
+## 출력 (Output)
 
-The script outputs JSON with:
-- `BRANCH_NAME`: The branch name (e.g., `003-user-auth` or `20260319-143022-user-auth`)
-- `FEATURE_NUM`: The numeric or timestamp prefix used
+스크립트는 다음과 같은 JSON을 출력합니다:
+- `BRANCH_NAME`: 브랜치 이름 (예: `003-user-auth` 또는 `20260319-143022-user-auth`)
+- `FEATURE_NUM`: 사용된 숫자 또는 타임스탬프 접두사

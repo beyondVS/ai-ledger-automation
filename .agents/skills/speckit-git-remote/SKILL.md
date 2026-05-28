@@ -1,50 +1,50 @@
 ---
 name: speckit-git-remote
-description: Detect Git remote URL for GitHub integration
+description: GitHub 연동을 위해 Git 원격(remote) URL을 감지합니다.
 compatibility: Requires spec-kit project structure with .specify/ directory
 metadata:
   author: github-spec-kit
   source: git:commands/speckit.git.remote.md
 ---
 
-# Detect Git Remote URL
+# Git 원격 URL 감지 (Detect Git Remote URL)
 
-Detect the Git remote URL for integration with GitHub services (e.g., issue creation).
+GitHub 서비스 연동(예: 이슈 생성 등)을 위해 Git 원격 저장소 URL을 감지합니다.
 
-## Prerequisites
+## 사전 요구사항 (Prerequisites)
 
-- Check if Git is available by running `git rev-parse --is-inside-work-tree 2>/dev/null`
-- If Git is not available, output a warning and return empty:
+- `git rev-parse --is-inside-work-tree 2>/dev/null`을 실행하여 Git을 사용할 수 있는지 확인합니다.
+- Git을 사용할 수 없는 경우, 경고를 출력하고 빈 값을 반환합니다:
   ```
   [specify] Warning: Git repository not detected; cannot determine remote URL
   ```
 
-## Execution
+## 실행 (Execution)
 
-Run the following command to get the remote URL:
+다음 명령어를 실행하여 원격 URL을 가져옵니다:
 
 ```bash
 git config --get remote.origin.url
 ```
 
-## Output
+## 출력 (Output)
 
-Parse the remote URL and determine:
+원격 URL을 파싱하여 다음 항목을 결정합니다:
 
-1. **Repository owner**: Extract from the URL (e.g., `github` from `https://github.com/github/spec-kit.git`)
-2. **Repository name**: Extract from the URL (e.g., `spec-kit` from `https://github.com/github/spec-kit.git`)
-3. **Is GitHub**: Whether the remote points to a GitHub repository
+1. **저장소 소유자 (Repository owner)**: URL에서 추출합니다 (예: `https://github.com/github/spec-kit.git`에서 `github` 추출)
+2. **저장소 이름 (Repository name)**: URL에서 추출합니다 (예: `https://github.com/github/spec-kit.git`에서 `spec-kit` 추출)
+3. **GitHub 여부 (Is GitHub)**: 원격지가 GitHub 저장소를 가리키는지 여부
 
-Supported URL formats:
+지원되는 URL 형식:
 - HTTPS: `https://github.com/<owner>/<repo>.git`
 - SSH: `git@github.com:<owner>/<repo>.git`
 
 > [!CAUTION]
-> ONLY report a GitHub repository if the remote URL actually points to github.com.
-> Do NOT assume the remote is GitHub if the URL format doesn't match.
+> 원격 URL이 실제로 github.com을 가리키는 경우에만 GitHub 저장소로 보고하십시오.
+> URL 형식이 일치하지 않는 경우 원격지가 GitHub라고 임의로 가정하지 마십시오.
 
-## Graceful Degradation
+## 점진적 기능 저하 (Graceful Degradation)
 
-If Git is not installed, the directory is not a Git repository, or no remote is configured:
-- Return an empty result
-- Do NOT error — other workflows should continue without Git remote information
+Git이 설치되어 있지 않거나, 현재 디렉토리가 Git 저장소가 아니거나, 원격지가 설정되지 않은 경우:
+- 빈 결과를 반환합니다.
+- 에러를 발생시키지 마십시오 — Git 원격 정보가 없어도 다른 워크플로우는 정상적으로 계속 진행되어야 합니다.

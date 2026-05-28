@@ -1,18 +1,18 @@
 #!/usr/bin/env pwsh
 
-# Consolidated prerequisite checking script (PowerShell)
+# 통합 사전 준비 사항 확인 스크립트 (PowerShell)
 #
-# This script provides unified prerequisite checking for Spec-Driven Development workflow.
-# It replaces the functionality previously spread across multiple scripts.
+# 이 스크립트는 스펙 기반 개발(Spec-Driven Development) 워크플로우를 위한 사전 준비 사항 확인 기능을 제공합니다.
+# 기존에 여러 스크립트에 분산되어 있던 기능을 하나로 통합했습니다.
 #
-# Usage: ./check-prerequisites.ps1 [OPTIONS]
+# 사용법: ./check-prerequisites.ps1 [옵션]
 #
-# OPTIONS:
-#   -Json               Output in JSON format
-#   -RequireTasks       Require tasks.md to exist (for implementation phase)
-#   -IncludeTasks       Include tasks.md in AVAILABLE_DOCS list
-#   -PathsOnly          Only output path variables (no validation)
-#   -Help, -h           Show help message
+# 옵션:
+#   -Json               JSON 형식으로 결과 출력
+#   -RequireTasks       tasks.md 파일 존재 필수 요구 (구현 단계에서 사용)
+#   -IncludeTasks       AVAILABLE_DOCS 목록에 tasks.md 파일 포함
+#   -PathsOnly          경로 변수만 출력 (사전 검증 건너뜀)
+#   -Help, -h           도움말 메시지 표시
 
 [CmdletBinding()]
 param(
@@ -25,45 +25,45 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Show help if requested
+# 도움말 요청 시 표시
 if ($Help) {
     Write-Output @"
-Usage: check-prerequisites.ps1 [OPTIONS]
+사용법: check-prerequisites.ps1 [옵션]
 
-Consolidated prerequisite checking for Spec-Driven Development workflow.
+스펙 기반 개발(Spec-Driven Development) 워크플로우를 위한 통합 사전 준비 사항 확인 스크립트입니다.
 
-OPTIONS:
-  -Json               Output in JSON format
-  -RequireTasks       Require tasks.md to exist (for implementation phase)
-  -IncludeTasks       Include tasks.md in AVAILABLE_DOCS list
-  -PathsOnly          Only output path variables (no prerequisite validation)
-  -Help, -h           Show this help message
+옵션:
+  -Json               JSON 형식으로 결과 출력
+  -RequireTasks       tasks.md 파일 존재 필수 요구 (구현 단계에서 사용)
+  -IncludeTasks       AVAILABLE_DOCS 목록에 tasks.md 파일 포함
+  -PathsOnly          경로 변수만 출력 (사전 준비 사항 검증 생략)
+  -Help, -h           이 도움말 메시지 표시
 
-EXAMPLES:
-  # Check task prerequisites (plan.md required)
+예시:
+  # 태스크 사전 준비 사항 확인 (plan.md 필요)
   .\check-prerequisites.ps1 -Json
   
-  # Check implementation prerequisites (plan.md + tasks.md required)
+  # 구현 사전 준비 사항 확인 (plan.md + tasks.md 필요)
   .\check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
   
-  # Get feature paths only (no validation)
+  # 피처 경로만 가져오기 (검증 생략)
   .\check-prerequisites.ps1 -PathsOnly
 
 "@
     exit 0
 }
 
-# Source common functions
+# 공통 함수 로드
 . "$PSScriptRoot/common.ps1"
 
-# Get feature paths and validate branch
+# 피처 경로 가져오기 및 브랜치 유효성 검사
 $paths = Get-FeaturePathsEnv
 
 if (-not (Test-FeatureBranch -Branch $paths.CURRENT_BRANCH -HasGit:$paths.HAS_GIT)) { 
     exit 1 
 }
 
-# If paths-only mode, output paths and exit (support combined -Json -PathsOnly)
+# 경로 전용 모드인 경우 경로를 출력하고 종료 (Json과 PathsOnly 결합 지원)
 if ($PathsOnly) {
     if ($Json) {
         [PSCustomObject]@{
@@ -85,58 +85,58 @@ if ($PathsOnly) {
     exit 0
 }
 
-# Validate required directories and files
+# 필수 디렉토리 및 파일 검증
 if (-not (Test-Path $paths.FEATURE_DIR -PathType Container)) {
-    Write-Output "ERROR: Feature directory not found: $($paths.FEATURE_DIR)"
-    Write-Output "Run /speckit.specify first to create the feature structure."
+    Write-Output "오류: 피처 디렉토리를 찾을 수 없습니다: $($paths.FEATURE_DIR)"
+    Write-Output "먼저 /speckit.specify 를 실행하여 피처 구조를 생성하십시오."
     exit 1
 }
 
 if (-not (Test-Path $paths.IMPL_PLAN -PathType Leaf)) {
-    Write-Output "ERROR: plan.md not found in $($paths.FEATURE_DIR)"
-    Write-Output "Run /speckit.plan first to create the implementation plan."
+    Write-Output "오류: $($paths.FEATURE_DIR) 에서 plan.md를 찾을 수 없습니다."
+    Write-Output "먼저 /speckit.plan 을 실행하여 구현 계획을 생성하십시오."
     exit 1
 }
 
-# Check for tasks.md if required
+# 필요한 경우 tasks.md 확인
 if ($RequireTasks -and -not (Test-Path $paths.TASKS -PathType Leaf)) {
-    Write-Output "ERROR: tasks.md not found in $($paths.FEATURE_DIR)"
-    Write-Output "Run /speckit.tasks first to create the task list."
+    Write-Output "오류: $($paths.FEATURE_DIR) 에서 tasks.md를 찾을 수 없습니다."
+    Write-Output "먼저 /speckit.tasks 를 실행하여 태스크 목록을 생성하십시오."
     exit 1
 }
 
-# Build list of available documents
+# 사용 가능한 문서 목록 빌드
 $docs = @()
 
-# Always check these optional docs
+# 항상 이 선택적 문서들을 확인
 if (Test-Path $paths.RESEARCH) { $docs += 'research.md' }
 if (Test-Path $paths.DATA_MODEL) { $docs += 'data-model.md' }
 
-# Check contracts directory (only if it exists and has files)
+# 컨트랙트 디렉토리 확인 (존재하고 파일이 있는 경우에만)
 if ((Test-Path $paths.CONTRACTS_DIR) -and (Get-ChildItem -Path $paths.CONTRACTS_DIR -ErrorAction SilentlyContinue | Select-Object -First 1)) { 
     $docs += 'contracts/' 
 }
 
 if (Test-Path $paths.QUICKSTART) { $docs += 'quickstart.md' }
 
-# Include tasks.md if requested and it exists
+# 요청되고 존재하는 경우 tasks.md 포함
 if ($IncludeTasks -and (Test-Path $paths.TASKS)) { 
     $docs += 'tasks.md' 
 }
 
-# Output results
+# 결과 출력
 if ($Json) {
-    # JSON output
+    # JSON 출력
     [PSCustomObject]@{ 
         FEATURE_DIR = $paths.FEATURE_DIR
         AVAILABLE_DOCS = $docs 
     } | ConvertTo-Json -Compress
 } else {
-    # Text output
+    # 텍스트 출력
     Write-Output "FEATURE_DIR:$($paths.FEATURE_DIR)"
     Write-Output "AVAILABLE_DOCS:"
     
-    # Show status of each potential document
+    # 각 잠재적 문서의 상태 표시
     Test-FileExists -Path $paths.RESEARCH -Description 'research.md' | Out-Null
     Test-FileExists -Path $paths.DATA_MODEL -Description 'data-model.md' | Out-Null
     Test-DirHasFiles -Path $paths.CONTRACTS_DIR -Description 'contracts/' | Out-Null
