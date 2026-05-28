@@ -24,7 +24,7 @@
 ### 2.1 기술 스택 및 패키지 관리
 - **Package Manager**: `pip` (Python/Django) & `npm` (Vue.js 3) / `Docker Compose` 통합 환경 제어
 - **Language / Framework**: `Python 3.11 (Django REST Framework)` & `Vue.js 3 (PWA, Tailwind CSS)`
-- **Database / ORM**: `PostgreSQL v15+ (with JSONB support) / Django ORM`
+- **Database / ORM**: `PostgreSQL v18+ (with JSONB support, Native UUIDv7 & AIO) / Django ORM`
 
 ### 2.2 하네스 명령어 (Harness Commands)
 에이전트는 코드 수정 후 아래 명령어를 터미널에서 능동적으로 실행하여 스스로 결과를 검증해야 합니다.
@@ -72,7 +72,7 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 코드베이스 검색만으로는 파악할 수 없는 아키텍처 결정의 "이유(Why)", 비직관적 도메인 로직, 해결되지 않은 기술 부채 등은 이 섹션에 명시하여 AI가 치명적인 실수를 하지 않도록 방어합니다.
 
 - **아키텍처 결정의 이유**: 
-  - 금융 가계부 데이터의 강력한 일관성을 지키며 중복 입력을 인덱스 상에서 사전에 효율적으로 방지하고 월별 지출 애그리게이션 성능을 최적화하기 위해 NoSQL 대신 **관계형 PostgreSQL**을 주 데이터베이스로 선정하고, 미정형 파서 백업을 위해 JSONB 필드 결합.
+  - 금융 가계부 데이터의 강력한 일관성을 지키며 중복 입력을 인덱스 상에서 사전에 효율적으로 방지하고 월별 지출 애그리게이션 성능을 최적화하기 위해 NoSQL 대신 **관계형 PostgreSQL(최신 v18+)**을 주 데이터베이스로 선정하고, 미정형 파서 백업을 위해 JSONB 필드 결합. (v18의 Native UUIDv7 시계열 인덱스 및 AIO 비동기 I/O 성능 혜택 적극 활용)
   - 유료 멀티모달 LLM API 연동에 수반되는 예산 비용 소비를 0원에 수렴하도록 완벽히 차단하고 정적 파싱하기 위해 가맹점 사업자등록번호 기반 레이아웃 캐시 테이블(`merchant_templates`) 및 우회 바이패스(Bypass) 파서 적용.
 - **엄격한 접근 제약**: 
   - 영수증 1장 적재 시 `ledgers` 마스터 레코드와 `ledger_items` 상세품목 데이터 생성/수정 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리되어야 하며 장애 시 전격 롤백 보장 필수.
