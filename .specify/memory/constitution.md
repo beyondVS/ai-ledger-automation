@@ -1,6 +1,6 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.0.0 -> v1.1.0
+- Version Change: v1.1.0 -> v1.2.0
 - Ratified: 2026-05-29 | Last Amended: 2026-05-29
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
@@ -8,14 +8,15 @@
   3. III. 하이브리드 비용 최적화 파이프라인 (Hybrid Bypass for Cost Control)
   4. IV. SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion)
   5. V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
-- Added/Modified: 프론트엔드 기술 스택이 기존 ReactJS에서 Vue.js 3 (Vite + Vue 3)로 전격 스택 전환됨에 따라 헌법 기술 규격 및 품질 게이트 내 관련 사양 일괄 보완.
-- Added Sections: 없음
+  6. VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
+- Added/Modified: Windows(PowerShell) 및 macOS/Linux/WSL(Bash) 양대 실행 환경의 대칭적 이중 툴링 지원과 3대 핵심 문서(README, AGENTS, Constitution) 간의 유기적 동기화 의무를 헌법 핵심 원칙으로 정식 비준(v1.2.0).
+- Added Sections: VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
 - Deleted Sections: 없음
 - Synchronized Templates:
   - plan-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\plan-template.md)
   - spec-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\spec-template.md)
   - tasks-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\tasks-template.md)
-- Pending / Deferred Items: 없음 (의도적으로 보류해 둔 자리표시자 없음)
+- Pending / Deferred Items: 없음
 -->
 
 # AI 기반 세금/영수증 PDF 분석 및 가계부 자동화 프로젝트 헌법
@@ -41,6 +42,10 @@
 ### V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
 
 모바일 플랫폼에서의 즉각적이고 안정적인 바로가기 설치(A2HS) 및 네이티브 카메라 연동 최적화 사용자 경험을 웹 표준 사양 위에서 견고하게 실현합니다. 모바일 PWA 접속 시 HTML5 Capture API와 Accept 속성을 바인딩하여 사진첩 리소스를 거칠 필요 없이 스마트폰 네이티브 카메라 셔터를 직접 연동 촬영하도록 제어합니다. 또한 네트워크 전송 대역폭 절감 및 서버의 고용량 이미지 압축 연산 경감을 위해, 업로드 직전 클라이언트 단 HTML5 Canvas API를 가동하여 이미지를 가로 최대 1000px 수준으로 1차 압축 처리하여 전송합니다. 마지막으로, 서비스 워커의 정상적 등록 및 VAPID 명세의 백그라운드 Web Push 알림 수신을 위한 브라우저 보안 규격을 달성하기 위해, 로컬 호스트 디버깅 대역을 제외한 모든 실서버 환경에서 HTTPS SSL 보안 도메인 적용을 강제합니다.
+
+### VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
+
+개발자의 로컬 환경 셋업과 데이터베이스 관리 등 개발 편의성을 좌우하는 인프라 툴링은 특정 운영체제에 종속되지 않는 크로스 플랫폼 사용성이 완벽히 보장되어야 합니다. 인프라 관리 도구를 설계할 시에는 Windows(PowerShell, `*.ps1`)와 macOS/Linux/WSL(Bash, `*.sh`) 양대 실행 대역 모두에서 동일한 가동 멱등성과 기계적 환경 검증 혜택을 받도록 대칭적인 이중 스크립트 배포 원칙을 강력하게 준수해야 합니다. 더불어, 시스템 환경 및 툴 사양이 수정되는 경우 개발자는 지시를 받기 전에 선제적이고 유기적으로 3대 코어 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`) 간의 교차 동기화 정합성을 분석하고 자동으로 업데이트함으로써, 문서 이탈 및 정보의 단절을 원천 예방하도록 규정합니다.
 
 ## 기술 스택 및 아키텍처 제약 조건 (Tech Stack & Architectural Constraints)
 
@@ -81,4 +86,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.1.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-29
+**Version**: v1.2.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-29
