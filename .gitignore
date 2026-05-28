@@ -364,4 +364,4 @@ $RECYCLE.BIN/
 
 # Extended Environment Files (Excludes secrets, but allows example templates)
 .env.*
-!.env.example
+!.env.*.example
