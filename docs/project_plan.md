@@ -83,7 +83,7 @@ flowchart TD
     E1 --> E2  
     E2 -->|Check Static Template Bypass| F2  
     E2 -->|LLM Fallback if cache missing| E3  
-    E3 <=>|Structured Outputs| G1  
+    E3 <==>|Structured Outputs| G1  
     E3 --> E4  
     E4 -->|Start DB Transaction Block / ACID Write| F1  
     E4 --> E5  
@@ -148,7 +148,7 @@ graph TD
     SharpWorker -->|5. 최적 이미지 버퍼 인계| BypassParser  
     BypassParser -->|6. 캐시 적중 시 LLM 우회 파싱| TxLoader  
     BypassParser -.->|6. 캐시 미적중 시 신규 호출| LLMClient  
-    LLMClient <=>|7. JSON 스키마 강제 BE-04| Gemini  
+    LLMClient <==>|7. JSON 스키마 강제 BE-04| Gemini  
     LLMClient -->|8. JSON 데이터 인계| TxLoader  
     TxLoader -->|9. 단일 트랜잭션 적재 & 롤백 보장 BE-05| PostgreSQL  
     TxLoader -->|10. 완료 알림 작업 생성| RedisQueue  

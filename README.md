@@ -76,12 +76,12 @@ graph TD
     SharpWorker -->|5. 최적 이미지 버퍼 인계| BypassParser
     BypassParser -->|6. 캐시 적중 시 LLM 우회 파싱| TxLoader
     BypassParser -.->|6. 캐시 미적중 시 신규 호출| LLMClient
-    LLMClient <=>|7. JSON 스키마 강제 BE-04| Gemini
+    LLMClient <==>|7. JSON 스키마 강제 BE-04| Gemini
     LLMClient -->|8. JSON 데이터 인계| TxLoader
     TxLoader -->|9. 단일 트랜잭션 적재 & 롤백 보장 BE-05| PostgreSQL
     TxLoader -->|10. 완료 알림 작업 생성| RedisQueue
     RedisQueue -->|11. 푸시 알림 발송 수행| NotificationWorker
-    NotificationWorker <=>|12. VAPID 인증서 명세 전송| PushServer
+    NotificationWorker <==>|12. VAPID 인증서 명세 전송| PushServer
     PushServer -->|13. 단말기 푸시 알림 전달| UI
       
     UI -.->|14. 대시보드 동기 조회 API BE-07| PostgreSQL
