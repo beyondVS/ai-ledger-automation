@@ -1,0 +1,20 @@
+[project]
+name = "ai-ledger-automation-monorepo"
+version = "0.1.0"
+description = "AI-powered ledger automation monorepo workspace"
+requires-python = ">=3.12"
+dependencies = [
+    "ai-ledger-backend",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-django>=4.12.0",
+]
+
+[tool.uv]
+workspace = { members = ["backend"] }
+
+[tool.uv.sources]
+ai-ledger-backend = { workspace = true }
