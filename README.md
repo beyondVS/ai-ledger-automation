@@ -156,7 +156,8 @@ graph TD
 ## 🚀 로컬 실행 방법 (Quick Start)
 
 ### 1. 환경 변수 설정
-프로젝트 루트에 `.env` 파일을 생성하고 아래 자격 증명을 올바르게 주입합니다.
+프로젝트 루트에 `.env.local` 파일을 생성하고 아래 자격 증명을 주입합니다. 
+*(통합 컨트롤러 가동 시 `.env.local`이 발견되지 않으면 `.env.local.example`에서 자동으로 복제 생성됩니다.)*
 
 ```env
 POSTGRES_DB=ledgerdb
@@ -170,8 +171,26 @@ VAPID_PUBLIC_KEY=your_vapid_public_key
 VAPID_PRIVATE_KEY=your_vapid_private_key
 ```
 
-### 2. Docker Compose 인프라 기동
-아래 명령어를 통해 메인 API 서버, Celery 비동기 워커, PostgreSQL 데이터베이스, Redis 브로커가 단일 bridge 네트워크 상에 일괄 빌드 및 기동됩니다.
+### 2. 원클릭 데이터베이스 인프라 기동 및 정합성 검증
+본 프로젝트는 로컬 DB 부팅 후 문자 인코딩(UTF-8) 및 한국 시간대(Asia/Seoul) 무결성이 100% 충족되는지 E2E 기계적 정합성 리포트를 제공하는 통합 컨트롤러를 제공합니다.
+
+**Windows (PowerShell 5.1+ 환경):**
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/manage-db.ps1
+```
+
+**macOS / Linux / WSL (Bash 환경):**
+```bash
+chmod +x scripts/manage-db.sh
+./scripts/manage-db.sh
+```
+
+**인프라 자원 안전 회수 및 볼륨 격리 소멸 (필요 시):**
+* PowerShell: `powershell -ExecutionPolicy Bypass -File scripts/manage-db.ps1 -Cleanup`
+* Bash: `./scripts/manage-db.sh --cleanup`
+
+### 3. 전체 Docker Compose 백그라운드 서비스 기동 (향후 3~4주차 범위)
+Celery 워커, Redis 브로커 등 전체 비동기 인프라 기동 시에는 아래 명령을 통해 일괄 백그라운드 구동합니다.
 
 ```bash
 docker compose up -d --build
