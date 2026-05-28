@@ -28,7 +28,9 @@
 
 ---
 
-## 3. 원클릭 인프라 기동 워크플로우
+## 3. Windows / PowerShell 원클릭 인프라 기동 워크플로우
+
+Windows 환경(PowerShell 5.1+)을 사용하는 개발자는 통합 컨트롤러 스크립트(`scripts/manage-db.ps1`)를 활용하여 인프라를 구동합니다.
 
 1. **환경 변수 파일 준비**:
    * 프로젝트 루트에 있는 `.env.local.example` 파일을 복사하여 `.env.local`을 만듭니다.
@@ -44,4 +46,27 @@
    * 로컬 개발을 완전히 중단하고 리소스를 원상 복구하려면 `-Cleanup` 옵션을 추가해 실행합니다.
    ```powershell
    powershell -ExecutionPolicy Bypass -File scripts/manage-db.ps1 -Cleanup
+   ```
+
+---
+
+## 4. macOS / Linux / WSL (Bash 쉘) 원클릭 인프라 기동 워크플로우
+
+UNIX/Linux 계열 개발환경이나 Windows 내의 WSL(Windows Subsystem for Linux) 터미널 환경을 이용하는 경우, Bash 용 관리 스크립트(`scripts/manage-db.sh`)를 사용하여 기동을 완료합니다.
+
+1. **환경 변수 파일 준비**:
+   * 프로젝트 루트에 있는 `.env.local.example` 파일을 복사하여 `.env.local`을 만듭니다.
+   ```bash
+   cp .env.local.example .env.local
+   ```
+2. **통합 기동 및 환경 검증**:
+   * 스크립트에 실행 권한을 부여한 후 구동하여 원클릭 E2E 기동을 완수합니다.
+   ```bash
+   chmod +x scripts/manage-db.sh
+   ./scripts/manage-db.sh
+   ```
+3. **인프라 자원 안전 회수 및 격리 폐기 (필요 시)**:
+   * 로컬 개발을 완전히 중단하고 볼륨까지 깔끔하게 소멸시켜 리소스를 회수하려면 `--cleanup` 옵션을 사용해 실행합니다.
+   ```bash
+   ./scripts/manage-db.sh --cleanup
    ```
