@@ -153,7 +153,7 @@ graph TD
     TxLoader -->|9. 단일 트랜잭션 적재 & 롤백 보장 BE-05| PostgreSQL  
     TxLoader -->|10. 완료 알림 작업 생성| RedisQueue  
     RedisQueue -->|11. 푸시 알림 발송 수행| NotificationWorker  
-    NotificationWorker <=>|12. VAPID 인증서 명세 전송| PushServer  
+    NotificationWorker <==>|12. VAPID 인증서 명세 전송| PushServer  
     PushServer -->|13. 단말기 푸시 알림 전달| UI  
       
     UI -.->|14. 대시보드 동기 조회 API BE-07| PostgreSQL

@@ -22,7 +22,7 @@
 에이전트가 기계적 검증(Harness)을 스스로 수행하기 위해 반드시 알아야 할 프로젝트의 기본 환경입니다. 임의로 환경을 가정하지 말고 아래 명시된 스택과 명령어를 엄수하십시오.
 
 ### 2.1 기술 스택 및 패키지 관리
-- **Package Manager**: `pip` (Python/Django) & `npm` (Vue.js 3) / `Docker Compose` 통합 환경 제어
+- **Package Manager**: `uv` (Python/Django) & `npm` (Vue.js 3) / `Docker Compose` 통합 환경 제어
 - **Language / Framework**: `Python 3.11 (Django REST Framework)` & `Vue.js 3 (PWA, Tailwind CSS)`
 - **Database / ORM**: `PostgreSQL v18+ (with JSONB support, Native UUIDv7 & AIO) / Django ORM`
 
@@ -114,5 +114,6 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+shell commands, and other important information, read the current plan:
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/001-local-env-setup/plan.md)
 <!-- SPECKIT END -->

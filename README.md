@@ -114,9 +114,9 @@ graph TD
 
 | 구분 | 기술 사양 |
 |------|-----------|
-| **Backend Core** | Python 3.11 + Django Framework & Django REST Framework (DRF) |
+| **Backend Core** | Python 3.11 + Django Framework & Django REST Framework (DRF) (패키지 관리: **uv**) |
 | **Task Queue** | Celery + Redis Broker & Celery Worker Process |
-| **Storage** | PostgreSQL v15+ (Main ACID) & JSONB (Raw LLM JSON Backup) |
+| **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) |
 | **AI Engine** | Gemini-2.5-Flash Multimodal API (JSON Structured Outputs) |
 | **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router |
 | **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS |

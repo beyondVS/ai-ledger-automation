@@ -46,9 +46,9 @@
 
 본 프로젝트의 모든 시스템 아키텍처 및 세부 컴포넌트는 다음의 정의된 엄격한 기술 프레임워크 한계선 내에서 설계 및 개발되어야 합니다.
 
-* **백엔드 코어 (Backend Core)**: Python 3.11 + Django Web Framework & Django REST Framework (DRF)
+* **백엔드 코어 (Backend Core)**: Python 3.11 + Django Web Framework & Django REST Framework (DRF) (패키지 관리: **uv**)
 * **비동기 처리 엔진 (Task Queue)**: Celery Worker + Redis Broker (JWT 세션 블랙리스트 및 캐시 통합 병용)
-* **데이터 보존 레이어 (Storage Layer)**: PostgreSQL v15+ (주요 ACID 데이터) + JSONB 지원 (비정형 원시 LLM 백업용)
+* **데이터 보존 레이어 (Storage Layer)**: PostgreSQL v18+ (주요 ACID 데이터, Native UUIDv7 & AIO) + JSONB 지원 (비정형 원시 LLM 백업용)
 * **인공지능 연동 모듈 (AI Core)**: Gemini-2.5-Flash Multimodal API (강력한 JSON Structured Outputs 규격 강제 바인딩)
 * **수집 파이프라인 (Email Ingestion)**: SendGrid / Mailgun Inbound Parser Webhook + SPF/DKIM 및 사용자 이메일 화이트리스트 이중 매핑 필터
 * **프론트엔드 플랫폼 (PWA Client)**: Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS
