@@ -1,50 +1,83 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+[Sync Impact Report]
+- Version Change: v0.0.0 -> v1.0.0
+- Ratified: 2026-05-29 | Last Amended: 2026-05-29
+- Key Principles Defined:
+  1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
+  2. II. 비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Processing & Scale Isolation)
+  3. III. 하이브리드 비용 최적화 파이프라인 (Hybrid Bypass for Cost Control)
+  4. IV. SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion)
+  5. V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
+- Added Sections: 기술 스택 및 아키텍처 제약 조건 (Tech Stack & Architectural Constraints), 개발 및 릴리즈 체크 품질 게이트 (Development Workflow & Quality Gates)
+- Deleted Sections: 기존의 어드바이저 가이드 주석 및 모든 [] 자리표시자
+- Synchronized Templates:
+  - plan-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\plan-template.md)
+  - spec-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\spec-template.md)
+  - tasks-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\tasks-template.md)
+- Pending / Deferred Items: 없음 (의도적으로 보류해 둔 자리표시자 없음)
+-->
+
+# AI 기반 세금/영수증 PDF 분석 및 가계부 자동화 프로젝트 헌법
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+가계부 데이터는 사용자의 금융 자산 정보와 직접적으로 연계되므로 강력한 트랜잭션 ACID 정합성이 완벽히 보장되어야 합니다. 영수증 1장의 분석 데이터로부터 도출된 메인 가계부 레코드(ledgers)와 상세 품목 레코드 배열(ledger_items)의 생성 및 수정 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리되어야 합니다. 네트워크 단절이나 데이터베이스 장해 등 일체의 예외 발생 시에는 전격 전역 롤백(Rollback)하여 데이터 파편화(Dirty State)를 방지해야 합니다. 또한, 중복 결제 영수증의 무차별적인 복사 적재를 방지하기 위해 `UNIQUE (user_id, vendor_registration_number, transaction_date, total_amount)` 복합 고유 제약조건을 데이터베이스 테이블 레이어에 강력히 적용함으로써 중복 입력을 원천 차단하는 것을 필수 원칙으로 선언합니다.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. 비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Processing & Scale Isolation)
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+대용량 유입 및 고연산 부하 속에서 전체 서비스의 마비 및 인프라 붕괴를 원천 방지하기 위해 API 요청 응답 흐름과 무거운 백그라운드 처리 과정을 엄격하게 물리적으로 격리합니다. 이미지 리사이징(Pillow) 및 외부 멀티모달 LLM API 호출과 같이 CPU 점유율이 높고 대기 시간이 긴 오프라인 연산은 Celery 비동기 독립 워커 프로세스 내부에서만 실행되어야 하며, API 게이트웨이 서버는 유입 즉시 Redis Broker를 거쳐 임시 대기 상태(Pending, 202) 및 작업 식별자 ID를 즉시 반환하여 프론트엔드의 응답 지연(Latency) 병목을 예방합니다. 또한, supabse 등의 무료 등급 DB 인프라 가용 한계를 고려하여 최대 허용 데이터베이스 커넥션 풀(Connection Pool) 크기를 api_server 컨테이너 5개, Celery async_worker 3개, 전체 합산 8개 이하로 엄격하게 제약하여 리소스 고갈 붕괴를 사전에 제어합니다.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. 하이브리드 비용 최적화 파이프라인 (Hybrid Bypass for Cost Control)
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+유료 멀티모달 LLM API 연동에 수반되는 예산 소비를 차단하고 운영 효율을 극대화하기 위해 지능형 레이아웃 캐싱 및 바이패스(Bypass) 파이프라인을 작동합니다. 분석 대상 텍스트에서 가맹점의 10자리 사업자등록번호가 식별되면 가맹점 레이아웃 캐시 테이블(`merchant_templates`)을 최우선 인덱스 조회합니다. 해당 가맹점의 수동 검증 승인 마크(`is_verified: true`)가 지정된 정적 정규식 규칙이 캐시 데이터로 존재할 경우, 유료 LLM API의 호출을 전면 취소하고 로컬 정규식 파서 모듈을 통해 즉각 파싱을 마쳐 호출 비용을 0원에 수렴하도록 완벽히 통제합니다. 캐시 정보가 없거나 미검증 상태(`is_verified: false`)인 경우에 한해 LLM API를 폴백(Fallback) 가동하고, 성공 파싱 데이터 기반의 정규식 규칙 후보군을 자율 학습 알고리즘으로 자동 제안하여 캐시 DB에 격리 적재하는 자율 진화 파이프라인을 의무화합니다.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion)
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+사용자 가계부에 이메일 포워딩을 통한 영수증 무단 누적 수집 시도를 완벽히 방어하기 위해 이중 전초선 필터링 방어막을 엄격하게 구축합니다. SendGrid/Mailgun 등의 인바운드 메일 웹훅 유입 시, 메일 헤더 상에 기록된 SPF 및 DKIM 전자서명 보안 인장을 대조 검증하여 위변조 메일을 1차단합니다. 또한 마스터 DB에 사용자별로 사전에 매핑되어 등록된 화이트리스트 이메일 주소(사용자당 최대 3개)와 발송인 주소가 100% 일치할 경우에만 비동기 Celery 태스크 적재를 허용하여, 외부 악성 메일 폭탄 스팸 공격과 비동기 메시징 큐의 리소스 고갈 위협을 완벽히 격리 통제합니다.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
+
+모바일 플랫폼에서의 즉각적이고 안정적인 바로가기 설치(A2HS) 및 네이티브 카메라 연동 최적화 사용자 경험을 웹 표준 사양 위에서 견고하게 실현합니다. 모바일 PWA 접속 시 HTML5 Capture API와 Accept 속성을 바인딩하여 사진첩 리소스를 거칠 필요 없이 스마트폰 네이티브 카메라 셔터를 직접 연동 촬영하도록 제어합니다. 또한 네트워크 전송 대역폭 절감 및 서버의 고용량 이미지 압축 연산 경감을 위해, 업로드 직전 클라이언트 단 HTML5 Canvas API를 가동하여 이미지를 가로 최대 1000px 수준으로 1차 압축 처리하여 전송합니다. 마지막으로, 서비스 워커의 정상적 등록 및 VAPID 명세의 백그라운드 Web Push 알림 수신을 위한 브라우저 보안 규격을 달성하기 위해, 로컬 호스트 디버깅 대역을 제외한 모든 실서버 환경에서 HTTPS SSL 보안 도메인 적용을 강제합니다.
+
+## 기술 스택 및 아키텍처 제약 조건 (Tech Stack & Architectural Constraints)
+
+본 프로젝트의 모든 시스템 아키텍처 및 세부 컴포넌트는 다음의 정의된 엄격한 기술 프레임워크 한계선 내에서 설계 및 개발되어야 합니다.
+
+* **백엔드 코어 (Backend Core)**: Python 3.11 + Django Web Framework & Django REST Framework (DRF)
+* **비동기 처리 엔진 (Task Queue)**: Celery Worker + Redis Broker (JWT 세션 블랙리스트 및 캐시 통합 병용)
+* **데이터 보존 레이어 (Storage Layer)**: PostgreSQL v15+ (주요 ACID 데이터) + JSONB 지원 (비정형 원시 LLM 백업용)
+* **인공지능 연동 모듈 (AI Core)**: Gemini-2.5-Flash Multimodal API (강력한 JSON Structured Outputs 규격 강제 바인딩)
+* **수집 파이프라인 (Email Ingestion)**: SendGrid / Mailgun Inbound Parser Webhook + SPF/DKIM 및 사용자 이메일 화이트리스트 이중 매핑 필터
+* **프론트엔드 플랫폼 (PWA Client)**: ReactJS + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS
+* **푸시 허브 (Notification)**: VAPID v2 표준 규격 Web Push API (백그라운드 디스패치를 위한 Celery 전용 Notification Queue 분리 운영)
+* **가상 인프라 배포 (Deployment)**: Docker Compose 통합 관리 (api_server, postgres_db, redis_broker, async_worker)
+
+## 개발 및 릴리즈 체크 품질 게이트 (Development Workflow & Quality Gates)
+
+기획 명세서(`spec.md`) 작성 단계부터 최종 프로덕션 빌드 배포 단계까지, 모든 개발 산출물은 아래의 품질 게이트 기준을 만족하여 입증된 경우에만 릴리즈될 수 있습니다.
+
+* **Phase 1 (동기식 MVP) 품질 게이트**:
+  - 드래그앤드롭 및 원시 PDF/이미지 단일 웹 루프 동기식 업로드 E2E 동작 무결성 달성.
+  - 메인 가계부 레코드(ledgers)와 품목 배열(ledger_items)이 Django ORM 단일 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 성공 커밋되고, 실패 시 롤백됨을 증명.
+  - Canvas 다운사이징 1차 리사이징 이미지 바이트 버퍼 유입 성공 검증.
+  - 3주차 비동기 구조 전환에 프론트엔드가 하위 호환성을 유지할 수 있도록 `status: "COMPLETED"` 및 `job_id: null` 형태의 MVP 폴링 호환용 JSONB 규격 강제 준수.
+* **Phase 2 (비동기 및 고도화) 품질 게이트**:
+  - 웹 업로드 및 메일 웹훅 유입 시 즉시 202 Accepted 및 작업 식별자 ID를 반환하며, 실제 무거운 이미지 전처리(Pillow WebP 변환) 및 AI 연산은 격리 실행되는 백그라운드 Celery Worker 내부에서만 실행됨을 E2E 검증.
+  - SPF/DKIM 정합성 검증 필터 및 발신인 이메일 화이트리스트 매핑 방어막의 스팸/공격 차단율 100% 증명.
+  - 10만 건 이상의 더미 데이터를 적재한 스트레스 테스트 환경에서 `EXPLAIN ANALYZE` 쿼리 분석기를 통한 인덱싱 튜닝 및 최적화를 달성하여, 실시간 지출 대시보드 API 쿼리 응답 시간을 상시 **100ms 이내**로 방어.
+  - PWA standalone 설치 유도 및 VAPID 암호화 키 바인딩을 적용하여 앱을 닫고 있는 오프라인 기기 상단에 Web Push 알림이 정상 도달함을 증명.
+  - 자가 제안(Auto-Generation)되는 사업자번호 기반 정규식 템플릿은 무조건 `is_verified: false`로 신규 적재되어 실제 bypass 파서에 유입되지 못하게 격리 차단하고, 오직 어드민 수동 검토 완료 후 `is_verified: true` 승인 시에만 LLM 호출 우회 바이패스에 반영되도록 신뢰 한계선 준수.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+본 프로젝트의 거버넌스는 수립된 헌법을 최상위 의사결정의 척도로 삼으며, 헌법의 개정 및 이력 관리는 다음의 규정에 의거하여 통제됩니다.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+* **헌법 개정 절차**: 프로젝트의 중대한 설계 스택 변경, 비즈니스 영속성 위배 가능성, 혹은 핵심 개발 원칙의 추가/수정은 본 문서의 수정 및 수동 정밀 영향 분석을 동반하며, 승인 즉시 시맨틱 버저닝(Semantic Versioning)에 의거해 버전을 갱신하여 문서 최하단에 기록합니다.
+* **버전 관리 규정 (Versioning Policy)**:
+  - **MAJOR (A.x.x)**: 트랜잭션 격리 규칙 변경, 주 데이터베이스 변경, 혹은 기존 하위 호환성을 완전히 붕괴시키는 데이터 정합성 파괴 원칙 변경 시 개정.
+  - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
+  - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
+
+**Version**: v1.0.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-29
