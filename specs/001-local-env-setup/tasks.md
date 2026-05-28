@@ -22,8 +22,8 @@
 
 **Purpose**: 프로젝트 초기화, 공통 자격 증명 템플릿 및 환경 설명서 구축
 
-- [ ] T001 `.env.local.example` 경로에 데이터베이스 접속용 보안 환경 변수 구조 선언 및 템플릿 생성
-- [ ] T002 [P] `docs/local-setup.md` 경로에 로컬 Docker Desktop WSL 2 통합 연동 절차 및 권한 확보 가이드 구축
+- [x] T001 `.env.local.example` 경로에 데이터베이스 접속용 보안 환경 변수 구조 선언 및 템플릿 생성
+- [x] T002 [P] `docs/local-setup.md` 경로에 로컬 Docker Desktop WSL 2 통합 연동 절차 및 권한 확보 가이드 구축
 
 ---
 
@@ -33,8 +33,8 @@
 
 **⚠️ CRITICAL**: 이 페이즈의 공통 유틸리티 구성이 완료되기 전까지는 어떠한 사용자 스토리도 실행할 수 없습니다.
 
-- [ ] T003 `scripts/load-env.ps1` 경로에 로컬 `.env.local` 파일의 환경 변수를 자동 구문 분석하여 쉘 컨텍스트에 바인딩하는 로드 스크립트 작성
-- [ ] T004 [P] `scripts/init-volumes.ps1` 경로에 호스트 PC의 Docker 연결 상태를 점검하고 네임드 볼륨 `postgres_data`를 사전 확보하는 스크립트 작성
+- [x] T003 `scripts/manage-db.ps1` 경로에 환경 변수를 파싱하고 Docker Named Volume을 사전 확보하는 통합 초기화 셋업 흐름 설계
+- [x] T004 [P] `scripts/manage-db.ps1` 내에 WSL 2 Docker 데몬 연결 헬스체크 및 Named Volume 존재 여부 자동 진단 예외 흐름 구축
 
 **Checkpoint**: 로컬 자동화 헬퍼 준비 완료 - 이제 사용자 스토리 구현으로 독립 이행 가능
 
@@ -48,8 +48,8 @@
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] `scripts/run-db.ps1` 경로에 `.env.local` 자격 증명 정보를 로드하여 `postgres:18-alpine` 경량 이미지 기반의 데이터베이스 컨테이너를 구동하는 기동 자동화 스크립트 구현
-- [ ] T006 [P] [US1] `docker-compose.db.yml` 경로에 향후 다중 컨테이너 오케스트레이션(Django, Redis 등) 확장 및 로컬 격리 개발을 위한 싱글 DB 컴포넌트 Docker Compose 설정 정의
+- [x] T005 [US1] `scripts/manage-db.ps1` 경로에 18버전 마운트 스펙(/var/lib/postgresql)에 맞추어 `postgres:18-alpine` 컨테이너를 구동하는 멱등 기동 로직 통합 설계
+- [x] T006 [P] [US1] `docker-compose.db.yml` 경로에 향후 다중 컨테이너 오케스트레이션(Django, Redis 등) 확장 및 로컬 격리 개발을 위한 싱글 DB 컴포넌트 Docker Compose 설정 정의
 
 **Checkpoint**: User Story 1 완성 - 격리된 PostgreSQL 18 인스턴스가 로컬에서 정상 기동 및 포트 리스닝 완료
 
@@ -63,7 +63,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T007 [US2] `scripts/verify-db.ps1` 경로에 컨테이너 내부 psql 인터페이스에 안전하게 세션을 연결하여 `SHOW client_encoding; SHOW timezone;` 검증 SQL을 실행하고 통과 여부를 쉘 코드 레벨에서 판단하는 검증 자동화 스크립트 구현
+- [x] T007 [US2] `scripts/manage-db.ps1` 내부에 psql 세션을 연결하여 인코딩(UTF8) 및 시간대(Asia/Seoul) 검증 쿼리를 기계적으로 판단하는 통합 정합성 검증 엔진 결합
 
 **Checkpoint**: User Story 2 완성 - 인코딩 및 시간대 설정이 정상 주입되어 한글 및 결제 시간대 무결성 확인 완료
 
@@ -73,8 +73,8 @@
 
 **Purpose**: 1일차 통합 환경 연동 상태 점검, 자원 정리 및 최종 릴리즈 게이트 수행
 
-- [ ] T008 `quickstart.md`에 명시된 원클릭 기동 및 자동 검증 프로토콜을 수행하여 E2E 동작 무결성 최종 검사
-- [ ] T009 [P] `scripts/cleanup-db.ps1` 경로에 개발 목적 변경 시 기존 생성된 ai-ledger-db 컨테이너와 Named Volume을 안전하게 격리 폐기하는 자원 정리 헬퍼 스크립트 구현
+- [x] T008 `quickstart.md`에 명시된 통합 관리 스크립트(`manage-db.ps1`) 구동 프로토콜을 최종 수행하여 E2E 동작 무결성 및 인코딩 통과 최종 증명
+- [x] T009 [P] `scripts/manage-db.ps1` 경로에 `-Cleanup` 스위치 유입 시 기존 생성된 컨테이너와 Named Volume을 격리 영구 삭제하는 원복 회수 로직 결합
 
 ---
 

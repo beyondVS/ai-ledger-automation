@@ -1,0 +1,30 @@
+version: '3.8'
+
+# =========================================================================
+# ai-ledger-automation RDBMS 단일 인프라 명세서 (docker-compose.db.yml)
+# =========================================================================
+# 이 명세서는 1일차 셋업에 따라 독립 가동되며, 향후 전체 스택 컴포즈 연동을 유연히 받쳐줍니다.
+# 실행 방법: docker compose -f docker-compose.db.yml --env-file .env.local up -d
+# =========================================================================
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: ai-ledger-db
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-ai_ledger}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Secured_Password18!}
+      - TZ=Asia/Seoul
+    restart: unless-stopped
+    command: >
+      -c client_encoding=UTF8
+      -c timezone=Asia/Seoul
+
+volumes:
+  postgres_data:
+    driver: local

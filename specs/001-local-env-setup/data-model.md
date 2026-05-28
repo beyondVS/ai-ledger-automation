@@ -14,7 +14,7 @@
 
 ### [Entity 2] `postgres_data` (Docker Named Volume)
 * **설명**: 컨테이너 폐기 및 재부팅 시에도 로컬 개발 데이터 유실을 100% 방지하기 위해 도커 엔진이 격리 관리하는 영속적 볼륨입니다.
-* **컨테이너 내부 바인딩 마운트 경로**: `/var/lib/postgresql/data`
+* **컨테이너 내부 바인딩 마운트 경로**: `/var/lib/postgresql`
 * **드라이버**: `local` (Docker Default local driver)
 
 ### [Entity 3] `.env.local` (보안 환경 변수 세트)

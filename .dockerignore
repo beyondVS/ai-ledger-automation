@@ -1,0 +1,25 @@
+# Docker Ignore files - ai-ledger-automation
+.git/
+.gitignore
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+
+# Credentials and Local Configurations
+.env*
+.env.local
+.env.local.example
+
+# IDEs & OS files
+.idea/
+.vscode/
+.history/
+.DS_Store
+Thumbs.db
+
+# Dependencies & Local DB storage
+node_modules/
+pgdata/
+postgres_data/
+*.log*
+coverage/
