@@ -1,6 +1,6 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.1.0 -> v1.2.0
+- Version Change: v1.2.0 -> v1.3.0
 - Ratified: 2026-05-29 | Last Amended: 2026-05-29
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
@@ -9,8 +9,9 @@
   4. IV. SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion)
   5. V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
   6. VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
-- Added/Modified: Windows(PowerShell) 및 macOS/Linux/WSL(Bash) 양대 실행 환경의 대칭적 이중 툴링 지원과 3대 핵심 문서(README, AGENTS, Constitution) 간의 유기적 동기화 의무를 헌법 핵심 원칙으로 정식 비준(v1.2.0).
-- Added Sections: VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
+  7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
+- Added/Modified: 백엔드 의존성 관리를 위해 pyproject.toml 및 uv.lock을 활용한 선언적 uv 패키지 관리 체계를 헌법 핵심 원칙으로 정식 비준(v1.3.0).
+- Added Sections: VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
 - Deleted Sections: 없음
 - Synchronized Templates:
   - plan-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\plan-template.md)
@@ -46,6 +47,10 @@
 ### VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
 
 개발자의 로컬 환경 셋업과 데이터베이스 관리 등 개발 편의성을 좌우하는 인프라 툴링은 특정 운영체제에 종속되지 않는 크로스 플랫폼 사용성이 완벽히 보장되어야 합니다. 인프라 관리 도구를 설계할 시에는 Windows(PowerShell, `*.ps1`)와 macOS/Linux/WSL(Bash, `*.sh`) 양대 실행 대역 모두에서 동일한 가동 멱등성과 기계적 환경 검증 혜택을 받도록 대칭적인 이중 스크립트 배포 원칙을 강력하게 준수해야 합니다. 더불어, 시스템 환경 및 툴 사양이 수정되는 경우 개발자는 지시를 받기 전에 선제적이고 유기적으로 3대 코어 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`) 간의 교차 동기화 정합성을 분석하고 자동으로 업데이트함으로써, 문서 이탈 및 정보의 단절을 원천 예방하도록 규정합니다.
+
+### VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
+
+모든 애플리케이션의 패키지 의존성은 ad-hoc 방식의 임의 `pip install` 또는 시스템 전역 패키지 오염을 원천 차단하기 위해, 반드시 `pyproject.toml`과 `uv.lock`을 통한 선언적 명세 하에 엄격하게 통제되어야 합니다. 로컬 개발, 테스트 실행, 가상 환경 구축 시에는 오직 `uv` 도구를 사용하여 프로젝트 수준의 격리된 가상 환경(`.venv`) 내에서 의존성 동기화(`uv sync`) 및 잠금(`uv lock`) 처리를 완료해야 합니다. 임의의 패키지 무단 설치를 금지하며, 이를 위반하여 선언적 락 파일의 무결성을 깨뜨리는 행위는 헌법에 위배되는 중대 과실로 간주합니다.
 
 ## 기술 스택 및 아키텍처 제약 조건 (Tech Stack & Architectural Constraints)
 
@@ -86,4 +91,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.2.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-29
+**Version**: v1.3.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-29

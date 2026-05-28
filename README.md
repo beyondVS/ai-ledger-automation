@@ -89,7 +89,7 @@ graph TD
 
 ---
 
-## 🏛️ 프로젝트 헌법 5대 핵심 원칙 (Core Principles)
+## 🏛️ 프로젝트 헌법 7대 핵심 원칙 (Core Principles)
 
 본 프로젝트는 수립된 프로젝트 헌법(`.specify/memory/constitution.md`) 규격에 따라 철저하게 통제 및 개발됩니다.
 
@@ -107,6 +107,11 @@ graph TD
 5. **Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)**
    - PWA 접속 시 HTML5 Capture API와 Accept 속성을 바인딩해 카메라 촬영 즉시 Canvas API를 활용해 가로 최대 1000px 수준으로 1차 압축 전송합니다.
    - 서비스 워커 등록 및 VAPID 명세의 백그라운드 Web Push 알림 수신을 만족하기 위해 HTTPS SSL 적용을 의무화합니다.
+6. **크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)**
+   - Windows(PowerShell, `*.ps1`)와 macOS/Linux/WSL(Bash, `*.sh`) 양대 실행 대역 모두에서 동일한 가동 멱등성 혜택을 받도록 대칭적인 이중 스크립트 배포 원칙을 수호합니다.
+   - 시스템 사양 변동 시 3대 코어 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`) 간의 교차 동기화를 선제적이고 자동적으로 완수합니다.
+7. **선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)**
+   - ad-hoc 방식의 임의 패키지 수동 설치를 전면 금지하며, `pyproject.toml`과 `uv.lock`을 통해 백엔드의 파이썬 의존성을 프로젝트 수준으로 격리하고 선언적으로 철저히 명세 제어합니다.
 
 ---
 
@@ -116,7 +121,7 @@ graph TD
 |------|-----------|
 | **Backend Core** | Python 3.11 + Django Framework & Django REST Framework (DRF) (패키지 관리: **uv**) |
 | **Task Queue** | Celery + Redis Broker & Celery Worker Process |
-| **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) |
+| **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) + **psycopg3** (psycopg[binary] C 가속 적용) |
 | **AI Engine** | Gemini-2.5-Flash Multimodal API (JSON Structured Outputs) |
 | **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router |
 | **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS |
@@ -176,18 +181,18 @@ VAPID_PRIVATE_KEY=your_vapid_private_key
 
 **Windows (PowerShell 5.1+ 환경):**
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/manage-db.ps1
+powershell -ExecutionPolicy Bypass -File .specify/scripts/powershell/manage-db.ps1 -Action Migration
 ```
 
 **macOS / Linux / WSL (Bash 환경):**
 ```bash
-chmod +x scripts/manage-db.sh
-./scripts/manage-db.sh
+chmod +x .specify/scripts/bash/manage-db.sh
+./.specify/scripts/bash/manage-db.sh --action migration
 ```
 
-**인프라 자원 안전 회수 및 볼륨 격리 소멸 (필요 시):**
-* PowerShell: `powershell -ExecutionPolicy Bypass -File scripts/manage-db.ps1 -Cleanup`
-* Bash: `./scripts/manage-db.sh --cleanup`
+**인프라 자원 안전 회수 및 볼륨 격리 소멸 (필요 시 - Reset 가동):**
+* PowerShell: `powershell -ExecutionPolicy Bypass -File .specify/scripts/powershell/manage-db.ps1 -Action Reset`
+* Bash: `./.specify/scripts/bash/manage-db.sh --action reset`
 
 ### 3. 전체 Docker Compose 백그라운드 서비스 기동 (향후 3~4주차 범위)
 Celery 워커, Redis 브로커 등 전체 비동기 인프라 기동 시에는 아래 명령을 통해 일괄 백그라운드 구동합니다.

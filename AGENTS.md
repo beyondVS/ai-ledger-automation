@@ -24,8 +24,9 @@
 
 ### 2.1 기술 스택 및 패키지 관리
 - **Package Manager**: `uv` (Python/Django) & `npm` (Vue.js 3) / `Docker Compose` 통합 환경 제어
+  - **백엔드 선언적 의존성 통제**: 백엔드의 모든 파이썬 의존성은 반드시 `backend/pyproject.toml` 및 `backend/uv.lock`에 선언적으로 완전 명세 및 잠금 관리되어야 하며, 격리된 가상 환경을 우회하는 ad-hoc `pip install` 혹은 `uv pip install` 방식의 임의 설치는 엄격히 금지됩니다. 환경 동기화 시에는 오직 `uv sync` 또는 `uv run`을 사용하십시오.
 - **Language / Framework**: `Python 3.11 (Django REST Framework)` & `Vue.js 3 (PWA, Tailwind CSS)`
-- **Database / ORM**: `PostgreSQL v18+ (with JSONB support, Native UUIDv7 & AIO) / Django ORM`
+- **Database / ORM**: `PostgreSQL v18+ (with JSONB support, Native UUIDv7 & AIO) / Django ORM (with psycopg3 [psycopg[binary] C 가속])`
 
 ### 2.2 하네스 명령어 (Harness Commands)
 에이전트는 코드 수정 후 아래 명령어를 터미널에서 능동적으로 실행하여 스스로 결과를 검증해야 합니다.
@@ -112,6 +113,7 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 - **Why 중심 주석**: 주석은 코드가 '무엇(What)'을 하는지 번역하지 않습니다. '왜(Why)' 비직관적인 로직을 선택했는지, 어떤 예외를 방어하는지만 설명하십시오.
 - **양대 쉘(PowerShell & Bash) 대칭적 동등 지원**: [**최상위 프로젝트 헌법 제VI조**](file:///.specify/memory/constitution.md)에 수립된 크로스 플랫폼 대칭 툴링 원칙을 영구 수호하기 위해, 에이전트는 로컬 기동 및 인프라 관리 도구 수정 시 Windows(PowerShell, `*.ps1`)와 macOS/Linux/WSL(Bash, `*.sh`) 환경 모두에 호환되는 대칭형 스크립트를 동등하게 제공해야 합니다.
 - **3대 코어 문서 자율 교차 동기화**: [**최상위 프로젝트 헌법 제VI조**](file:///.specify/memory/constitution.md)에 명문화된 동기화 규정에 따라, 에이전트는 기술 스택, 셋업, 아키텍처적 사양 변경 발생 시 사용자의 명시적 지시가 없더라도 주도적으로 `README.md`, `AGENTS.md`, `.specify/memory/constitution.md` 3대 핵심 문서 간의 정합성을 유기적으로 교차 검증하고 자동 동기화 업데이트를 완수해야 합니다.
+- **선언적 의존성 통제 표준 (Package Dependency Control)**: 파이썬 의존성 패키지를 추가하거나 버전을 변경할 때, 결코 런타임 가상 환경에 직접 수동 설치하지 않고 반드시 `pyproject.toml`을 편집한 후 `uv lock` 및 `uv sync`를 통해 락 파일을 갱신하고 가상 환경의 일치(100% parity)를 달성해야 합니다.
 - **커밋 메시지 규약 (Commit Conventions)**: 커밋 메시지는 Conventional Commits 규약(`feat:`, `fix:`, `docs:`, `refactor:` 등)을 준수하여 작성하십시오. 프로젝트 내 특정 언어 규칙(예: 한글 작성 등)이 있다면 이를 최우선으로 따르십시오.
 
 <!-- SPECKIT START -->

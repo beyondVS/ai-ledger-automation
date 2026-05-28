@@ -26,9 +26,9 @@
 
 **Purpose**: 프로젝트 초기화 및 가계부용 신규 장고 앱 구조 구성
 
-- [ ] T001 `backend/src/apps/` 디렉토리 하위에 가계부 및 사용자 기능 처리를 위한 Django 앱 구조(`accounts`, `ledgers`, `tasks`) 폴더 생성
-- [ ] T002 `backend/src/config/settings.py` 경로의 `INSTALLED_APPS` 설정에 신규로 추가된 3대 비즈니스 앱들(`apps.accounts`, `apps.ledgers`, `apps.tasks`) 등록
-- [ ] T003 [P] `backend/src/config/settings.py` 경로에 Supabase Free Tier 가용한계 자원 보존을 위해 최대 데이터베이스 커넥션 풀 크기 제약(api_server 5개, async_worker 3개, 전체 합산 8개 이하)을 강제하는 DB Connection 튜닝 세팅 반영
+- [x] T001 `backend/src/apps/` 디렉토리 하위에 가계부 및 사용자 기능 처리를 위한 Django 앱 구조(`accounts`, `ledgers`, `tasks`) 폴더 생성
+- [x] T002 `backend/src/config/settings.py` 경로의 `INSTALLED_APPS` 설정에 신규로 추가된 3대 비즈니스 앱들(`apps.accounts`, `apps.ledgers`, `apps.tasks`) 등록
+- [x] T003 [P] `backend/src/config/settings.py` 경로에 Supabase Free Tier 가용한계 자원 보존을 위해 최대 데이터베이스 커넥션 풀 크기 제약(api_server 5개, async_worker 3개, 전체 합산 8개 이하)을 강제하는 DB Connection 튜닝 세팅 반영
 
 ---
 
@@ -38,10 +38,10 @@
 
 **⚠️ CRITICAL**: 본 기반 마련 페이즈의 모든 공통 모델링 작업이 완결 및 마이그레이션 준비가 완료되기 전까지 개별 사용자 스토리 구현은 절대 착수할 수 없습니다.
 
-- [ ] T004 `backend/src/apps/accounts/models.py` 경로에 1차 스팸 방어용 이메일 화이트리스트 주소 3개 매핑 필드(`registered_forward_email_1`, `registered_forward_email_2`, `registered_forward_email_3`)를 장착한 `User` 모델 구현
-- [ ] T005 [P] `backend/src/apps/accounts/models.py` 경로에 PWA 알림을 위한 VAPID v2 표준 웹 푸시 수신 명세를 관리하는 `UserPushSubscription` 모델 구현
-- [ ] T006 `backend/src/apps/accounts/` 하위에 초기 스키마 상태를 기록하는 Django 마이그레이션 생성 스크립트 실행 및 `backend/src/apps/accounts/migrations/0001_initial.py` 생성
-- [ ] T007 [P] `backend/tests/unit/models/test_user.py` 경로에 `User` 및 `UserPushSubscription` 스키마 제약조건과 VAPID 정보 보존 여부를 증명하는 유닛 테스트 코드 구현
+- [x] T004 `backend/src/apps/accounts/models.py` 경로에 1차 스팸 방어용 이메일 화이트리스트 주소 3개 매핑 필드(`registered_forward_email_1`, `registered_forward_email_2`, `registered_forward_email_3`)를 장착한 `User` 모델 구현
+- [x] T005 [P] `backend/src/apps/accounts/models.py` 경로에 PWA 알림을 위한 VAPID v2 표준 웹 푸시 수신 명세를 관리하는 `UserPushSubscription` 모델 구현
+- [x] T006 `backend/src/apps/accounts/` 하위에 초기 스키마 상태를 기록하는 Django 마이그레이션 생성 스크립트 실행 및 `backend/src/apps/accounts/migrations/0001_initial.py` 생성
+- [x] T007 [P] `backend/tests/unit/models/test_user.py` 경로에 `User` 및 `UserPushSubscription` 스키마 제약조건과 VAPID 정보 보존 여부를 증명하는 유닛 테스트 코드 구현
 
 **Checkpoint**: Foundation ready - 이제 사용자 스토리 개발 페이즈에 안전하게 진입하여 병렬로 작업을 가동할 수 있습니다.
 
@@ -56,14 +56,14 @@
 ### Tests for User Story 1
 > **NOTE: 구현 작업 착수 전에 계약 테스트를 선제적으로 설계하고, 구현 전 기계적으로 실패(FAIL)함을 우선 확인하십시오.**
 
-- [ ] T008 [P] [US1] `backend/tests/unit/models/test_ledger_atomic.py` 경로에 품목 상세 인서트 연산 중 오류 발생 시, 이미 생성되었던 `Ledger` 마스터 레코드까지 안전하고 무결하게 전격 롤백(Rollback)되어 데이터 파편화가 일어나지 않음을 검증하는 독립 원자성 계약 테스트 작성
+- [x] T008 [P] [US1] `backend/tests/unit/models/test_ledger_atomic.py` 경로에 품목 상세 인서트 연산 중 오류 발생 시, 이미 생성되었던 `Ledger` 마스터 레코드까지 안전하고 무결하게 전격 롤백(Rollback)되어 데이터 파편화가 일어나지 않음을 검증하는 독립 원자성 계약 테스트 작성
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] `backend/src/apps/ledgers/models.py` 경로에 UUIDv7 PK 및 `UNIQUE (user, vendor_registration_number, transaction_date, total_amount)` 복합 고유 키를 정의한 `Ledger` 모델 구현
-- [ ] T010 [P] [US1] `backend/src/apps/ledgers/models.py` 경로에 부모 `Ledger` 연쇄 소멸 정합성을 지키기 위해 외래 키 옵션 `ON DELETE CASCADE`를 구성하고 단가, 수량, 합산 가격을 보존하는 `LedgerItem` 모델 구현
-- [ ] T011 [US1] `backend/src/apps/ledgers/services.py` 경로에 `transaction.atomic()` 세션 블록을 장착하여 마스터 가계부와 자식 품목 배열을 단일 원자적 트랜잭션 수명 내에서 일괄 삽입 처리하는 `create_ledger_transactional` 비즈니스 서비스 구현
-- [ ] T012 [US1] `backend/src/apps/ledgers/models.py` 경로의 `Ledger` 세부 필드 유효성 검사 규칙 적용 및 10자리 사업자등록번호 부재(간이 영수증 등) 시 null 충돌 방지를 위해 `'0000000000'` 기본값으로 변환 적재하는 예외 안전 처리 필터 탑재
+- [x] T009 [P] [US1] `backend/src/apps/ledgers/models.py` 경로에 UUIDv7 PK 및 `UNIQUE (user, vendor_registration_number, transaction_date, total_amount)` 복합 고유 키를 정의한 `Ledger` 모델 구현
+- [x] T010 [P] [US1] `backend/src/apps/ledgers/models.py` 경로에 부모 `Ledger` 연쇄 소멸 정합성을 지키기 위해 외래 키 옵션 `ON DELETE CASCADE`를 구성하고 단가, 수량, 합산 가격을 보존하는 `LedgerItem` 모델 구현
+- [x] T011 [US1] `backend/src/apps/ledgers/services.py` 경로에 `transaction.atomic()` 세션 블록을 장착하여 마스터 가계부와 자식 품목 배열을 단일 원자적 트랜잭션 수명 내에서 일괄 삽입 처리하는 `create_ledger_transactional` 비즈니스 서비스 구현
+- [x] T012 [US1] `backend/src/apps/ledgers/models.py` 경로의 `Ledger` 세부 필드 유효성 검사 규칙 적용 및 10자리 사업자등록번호 부재(간이 영수증 등) 시 null 충돌 방지를 위해 `'0000000000'` 기본값으로 변환 적재하는 예외 안전 처리 필터 탑재
 
 **Checkpoint**: 본 페이즈 완료 시, User Story 1은 단독으로 완벽하게 컴파일 및 구동되며 독립 원자성 트랜잭션 롤백 정합성이 테스트를 통해 완벽히 기계적으로 증명됩니다.
 
@@ -77,13 +77,13 @@
 
 ### Tests for User Story 2
 
-- [ ] T013 [P] [US2] `backend/tests/unit/models/test_ledger_duplicate.py` 경로에 동일 정보로 2회 연속 가계부 삽입 실행 시 데이터베이스 단의 복합 UNIQUE 제약에 의해 2번째 내역이 차단되고 실패 사유가 `FailedTask`에 성공 격리 수집되는지 검증하는 독립 중복 차단 테스트 작성
+- [x] T013 [P] [US2] `backend/tests/unit/models/test_ledger_duplicate.py` 경로에 동일 정보로 2회 연속 가계부 삽입 실행 시 데이터베이스 단의 복합 UNIQUE 제약에 의해 2번째 내역이 차단되고 실패 사유가 `FailedTask`에 성공 격리 수집되는지 검증하는 독립 중복 차단 테스트 작성
 
 ### Implementation for User Story 2
 
-- [ ] T014 [P] [US2] `backend/src/apps/tasks/models.py` 경로에 비동기 파싱 예외 및 중복 적재 오류 발생 시 원시 데이터 페이로드 및 오류 콜스택 스택 trace를 격리하여 디버깅 로그를 무손실 보존하는 Dead Letter Queue 패턴의 `FailedTask` 모델 구현
-- [ ] T015 [US2] `backend/src/apps/ledgers/services.py` 경로의 `create_ledger_transactional` 서비스에 데이터베이스 복합 고유 키 위배 예외(`IntegrityError`) 포착 시 작업을 Celery 큐 리소스 낭비 없이 강제 중단하고 `FailedTask` 모델에 페이로드를 격리 적재하는 핸들러 코드 통합
-- [ ] T016 `backend/src/apps/tasks/` 및 `backend/src/apps/ledgers/` 하위에 신규 모델들을 반영하고 데이터베이스 물리 제약사항을 적용하기 위한 Django 마이그레이션 생성 스크립트 실행 및 파일 구성 완수
+- [x] T014 [P] [US2] `backend/src/apps/tasks/models.py` 경로에 비동기 파싱 예외 및 중복 적재 오류 발생 시 원시 데이터 페이로드 및 오류 콜스택 스택 trace를 격리하여 디버깅 로그를 무손실 보존하는 Dead Letter Queue 패턴의 `FailedTask` 모델 구현
+- [x] T015 [US2] `backend/src/apps/ledgers/services.py` 경로의 `create_ledger_transactional` 서비스에 데이터베이스 복합 고유 키 위배 예외(`IntegrityError`) 포착 시 작업을 Celery 큐 리소스 낭비 없이 강제 중단하고 `FailedTask` 모델에 페이로드를 격리 적재하는 핸들러 코드 통합
+- [x] T016 `backend/src/apps/tasks/` 및 `backend/src/apps/ledgers/` 하위에 신규 모델들을 반영하고 데이터베이스 물리 제약사항을 적용하기 위한 Django 마이그레이션 생성 스크립트 실행 및 파일 구성 완수
 
 **Checkpoint**: 본 페이즈 완료 시, User Stories 1 및 2가 동시에 긴밀하게 협력 가동되며, 중복 거래 내역 유입 시 DB 복합 유니크 제약 차단 및 비동기 예외 DLQ 격리 로깅 무결성이 기계적으로 완벽히 입증됩니다.
 
@@ -97,13 +97,13 @@
 
 ### Tests for User Story 3
 
-- [ ] T017 [P] [US3] `backend/tests/unit/models/test_merchant_template.py` 경로에 `is_verified: false` 상태인 템플릿 조회 시 필터에 차단되어 결과가 반환되지 않고, 오직 `is_verified: true`인 승인 완료 규칙만 반환됨을 검증하는 우회 바이패스 격리 검증 테스트 작성
+- [x] T017 [P] [US3] `backend/tests/unit/models/test_merchant_template.py` 경로에 `is_verified: false` 상태인 템플릿 조회 시 필터에 차단되어 결과가 반환되지 않고, 오직 `is_verified: true`인 승인 완료 규칙만 반환됨을 검증하는 우회 바이패스 격리 검증 테스트 작성
 
 ### Implementation for User Story 3
 
-- [ ] T018 [P] [US3] `backend/src/apps/ledgers/models.py` 경로에 10자리 사업자등록번호, 정규식 레이아웃 JSONB, 그리고 `is_verified` 불리언 필드(기본값 `False` 필히 지정)를 갖춘 `MerchantTemplate` 모델 구현
-- [ ] T019 [US3] `backend/src/apps/ledgers/models.py` 경로에 `is_verified=True` 조건만을 데이터베이스에서 즉시 추출하도록 규정하는 전용 Custom Manager `VerifiedTemplateManager` 구현 및 모델 바인딩
-- [ ] T020 `backend/src/apps/ledgers/` 하위 앱의 정규식 캐시 템플릿 마이그레이션을 데이터베이스에 완벽하게 빌드 및 적용
+- [x] T018 [P] [US3] `backend/src/apps/ledgers/models.py` 경로에 10자리 사업자등록번호, 정규식 레이아웃 JSONB, 그리고 `is_verified` 불리언 필드(기본값 `False` 필히 지정)를 갖춘 `MerchantTemplate` 모델 구현
+- [x] T019 [US3] `backend/src/apps/ledgers/models.py` 경로에 `is_verified=True` 조건만을 데이터베이스에서 즉시 추출하도록 규정하는 전용 Custom Manager `VerifiedTemplateManager` 구현 및 모델 바인딩
+- [x] T020 `backend/src/apps/ledgers/` 하위 앱의 정규식 캐시 템플릿 마이그레이션을 데이터베이스에 완벽하게 빌드 및 적용
 
 **Checkpoint**: 모든 3대 사용자 스토리가 독립적으로 완벽히 구동 가능하며, 미검증 캐시 템플릿의 bypass 진입율 0% 격리 통제 규칙이 완벽하게 공인 검증 완료됩니다.
 
@@ -113,9 +113,10 @@
 
 **Purpose**: 횡단 관심사 보완 및 양대 실행 환경의 대칭적 이중 툴링 스크립트 완성
 
-- [ ] T021 [P] `.specify/scripts/powershell/manage-db.ps1` 및 `.specify/scripts/bash/manage-db.sh` 경로에 신규 6대 데이터 모델 마이그레이션 일괄 빌드 및 로컬 테스트 스위트 구동, 더미 데이터 초기화를 유기적으로 수행하기 위한 Windows/Linux 대칭형 DB 관리용 스크립트 구현 수립
-- [ ] T022 [P] `docs/project_plan.md` 및 `README.md` 등 프로젝트 마스터 문서들에 금번 수립된 6대 핵심 데이터 모델 사양 및 마이그레이션 툴 가동 방법 설명서 교차 동기화 업데이트 완수
-- [ ] T023 `specs/002-django-model-design/quickstart.md` 가이드에 수립된 모든 로컬 pytest 명령어 및 데이터베이스 정합성 유효 검증을 기계적으로 실시간 완수하여 최종 릴리즈 품질 게이트 통과 완료
+- [x] T021 [P] `.specify/scripts/powershell/manage-db.ps1` 및 `.specify/scripts/bash/manage-db.sh` 경로에 신규 6대 데이터 모델 마이그레이션 일괄 빌드 및 로컬 테스트 스위트 구동, 더미 데이터 초기화를 유기적으로 수행하기 위한 Windows/Linux 대칭형 DB 관리용 스크립트 구현 수립
+- [x] T022 [P] `docs/project_plan.md` 및 `README.md` 등 프로젝트 마스터 문서들에 금번 수립된 6대 핵심 데이터 모델 사양 및 마이그레이션 툴 가동 방법 설명서 교차 동기화 업데이트 완수
+- [x] T023 `specs/002-django-model-design/quickstart.md` 가이드에 수립된 모든 로컬 pytest 명령어 및 데이터베이스 정합성 유효 검증을 기계적으로 실시간 완수하여 최종 릴리즈 품질 게이트 통과 완료
+- [x] T024 [P] 백엔드의 패키지 관리를 위해 `pyproject.toml` 및 `uv.lock`을 선언적으로 구축하고, `django-environ` 기반 `.env.local` 자동 파싱 체계를 장착하여 ad-hoc 의존성 오염 문제를 원천 방지 및 테스트 멱등성 보장
 
 ---
 
