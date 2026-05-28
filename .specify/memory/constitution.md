@@ -1,6 +1,6 @@
 <!--
 [Sync Impact Report]
-- Version Change: v0.0.0 -> v1.0.0
+- Version Change: v1.0.0 -> v1.1.0
 - Ratified: 2026-05-29 | Last Amended: 2026-05-29
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
@@ -8,8 +8,9 @@
   3. III. 하이브리드 비용 최적화 파이프라인 (Hybrid Bypass for Cost Control)
   4. IV. SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion)
   5. V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
-- Added Sections: 기술 스택 및 아키텍처 제약 조건 (Tech Stack & Architectural Constraints), 개발 및 릴리즈 체크 품질 게이트 (Development Workflow & Quality Gates)
-- Deleted Sections: 기존의 어드바이저 가이드 주석 및 모든 [] 자리표시자
+- Added/Modified: 프론트엔드 기술 스택이 기존 ReactJS에서 Vue.js 3 (Vite + Vue 3)로 전격 스택 전환됨에 따라 헌법 기술 규격 및 품질 게이트 내 관련 사양 일괄 보완.
+- Added Sections: 없음
+- Deleted Sections: 없음
 - Synchronized Templates:
   - plan-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\plan-template.md)
   - spec-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\spec-template.md)
@@ -27,7 +28,7 @@
 
 ### II. 비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Processing & Scale Isolation)
 
-대용량 유입 및 고연산 부하 속에서 전체 서비스의 마비 및 인프라 붕괴를 원천 방지하기 위해 API 요청 응답 흐름과 무거운 백그라운드 처리 과정을 엄격하게 물리적으로 격리합니다. 이미지 리사이징(Pillow) 및 외부 멀티모달 LLM API 호출과 같이 CPU 점유율이 높고 대기 시간이 긴 오프라인 연산은 Celery 비동기 독립 워커 프로세스 내부에서만 실행되어야 하며, API 게이트웨이 서버는 유입 즉시 Redis Broker를 거쳐 임시 대기 상태(Pending, 202) 및 작업 식별자 ID를 즉시 반환하여 프론트엔드의 응답 지연(Latency) 병목을 예방합니다. 또한, supabse 등의 무료 등급 DB 인프라 가용 한계를 고려하여 최대 허용 데이터베이스 커넥션 풀(Connection Pool) 크기를 api_server 컨테이너 5개, Celery async_worker 3개, 전체 합산 8개 이하로 엄격하게 제약하여 리소스 고갈 붕괴를 사전에 제어합니다.
+대용량 유입 및 고연산 부하 속에서 전체 서비스의 마비 및 인프라 붕괴를 원천 방지하기 위해 API 요청 응답 흐름과 무거운 백그라운드 처리 과정을 엄격하게 물리적으로 격리합니다. 이미지 리사이징(Pillow) 및 외부 멀티모달 LLM API 호출과 같이 CPU 점유율이 높고 대기 시간이 긴 오프라인 연산은 Celery 비동기 독립 워커 프로세스 내부에서만 실행되어야 하며, API 게이트웨이 서버는 유입 즉시 Redis Broker를 거쳐 임시 대기 상태(Pending, 202) 및 작업 식별자 ID를 즉시 반환하여 프론트엔드의 응답 지연(Latency) 병목을 예방합니다. 또한, supabase 등의 무료 등급 DB 인프라 가용 한계를 고려하여 최대 허용 데이터베이스 커넥션 풀(Connection Pool) 크기를 api_server 컨테이너 5개, Celery async_worker 3개, 전체 합산 8개 이하로 엄격하게 제약하여 리소스 고갈 붕괴를 사전에 제어합니다.
 
 ### III. 하이브리드 비용 최적화 파이프라인 (Hybrid Bypass for Cost Control)
 
@@ -50,7 +51,7 @@
 * **데이터 보존 레이어 (Storage Layer)**: PostgreSQL v15+ (주요 ACID 데이터) + JSONB 지원 (비정형 원시 LLM 백업용)
 * **인공지능 연동 모듈 (AI Core)**: Gemini-2.5-Flash Multimodal API (강력한 JSON Structured Outputs 규격 강제 바인딩)
 * **수집 파이프라인 (Email Ingestion)**: SendGrid / Mailgun Inbound Parser Webhook + SPF/DKIM 및 사용자 이메일 화이트리스트 이중 매핑 필터
-* **프론트엔드 플랫폼 (PWA Client)**: ReactJS + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS
+* **프론트엔드 플랫폼 (PWA Client)**: Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS
 * **푸시 허브 (Notification)**: VAPID v2 표준 규격 Web Push API (백그라운드 디스패치를 위한 Celery 전용 Notification Queue 분리 운영)
 * **가상 인프라 배포 (Deployment)**: Docker Compose 통합 관리 (api_server, postgres_db, redis_broker, async_worker)
 
@@ -80,4 +81,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.0.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-29
+**Version**: v1.1.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-29

@@ -25,7 +25,7 @@
 graph TD
     %% 클라이언트 및 외부 유입 영역
     subgraph External [PWA 하이브리드 클라이언트]
-        UI[PWA React App: Manifest/SW 탑재]
+        UI[PWA Vue App: Manifest/SW 탑재]
         Camera[Mobile Native Camera: 촬영 가공]
         Email[이메일 서버 SendGrid/Mailgun]
     end
@@ -119,7 +119,7 @@ graph TD
 | **Storage** | PostgreSQL v15+ (Main ACID) & JSONB (Raw LLM JSON Backup) |
 | **AI Engine** | Gemini-2.5-Flash Multimodal API (JSON Structured Outputs) |
 | **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router |
-| **Frontend** | ReactJS + PWA Manifest & Service Worker Cache + Tailwind CSS |
+| **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS |
 | **Web Push** | VAPID v2 Web Push API (FCM / APNs 연동 백그라운드 알림) |
 | **Infrastructure** | Docker Compose 로컬 통합 인프라 및 HTTPS SSL 배포 규격 |
 
@@ -134,7 +134,7 @@ graph TD
 - 6~7일차: PyMuPDF 기반 PDF 텍스트 무손실 추출 유틸리티 클래스 구현 및 1주차 E2E 동기식 단위 통합 테스트 완료.
 
 ### 2주차: MVP 프론트엔드 연동 및 동기식 E2E 릴리즈 (8일차 ~ 14일차)
-- 8~9일차: React React 드롭존(Dropzone) 레이아웃 퍼블리싱 및 status/job_id 동기 API 연동.
+- 8~9일차: Vue 드롭존(Dropzone) 레이아웃 퍼블리싱 및 status/job_id 동기 API 연동.
 - 10~11일차: 반응형 그리드 대시보드 리스트 및 클라이언트 Canvas API 1차 압축 리사이징 모듈 내장.
 - 12~13일차: JWT 토큰 세션 발급 체계 적용 및 대시보드 내 소비 지출 내역 수동 CRUD 모달 기능 구현.
 - 14일차: E2E 동기식 MVP 완전체 통합 테스트 및 2주차 안정화 배포.
@@ -183,7 +183,7 @@ docker compose up -d --build
 
 모바일 단말기(iOS, Android Safari/Chrome)를 사용하여 로컬 가동 개발 대역에 접속해 PWA의 A2HS 및 서비스 워커, 백그라운드 Web Push 알림을 완벽하게 디버깅하기 위해서는 HTTPS 보안 통신 터널이 의무적으로 요구됩니다.
 
-1. 로컬 React 및 Django API 서버를 가동합니다.
+1. 로컬 Vue 및 Django API 서버를 가동합니다.
 2. 터미널에서 `ngrok` 또는 `localtunnel`을 실행하여 포트를 퍼블릭 HTTPS SSL 가교로 통과시킵니다.
    ```bash
    ngrok http 8080

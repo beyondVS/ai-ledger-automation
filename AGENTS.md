@@ -22,8 +22,8 @@
 에이전트가 기계적 검증(Harness)을 스스로 수행하기 위해 반드시 알아야 할 프로젝트의 기본 환경입니다. 임의로 환경을 가정하지 말고 아래 명시된 스택과 명령어를 엄수하십시오.
 
 ### 2.1 기술 스택 및 패키지 관리
-- **Package Manager**: `pip` (Python/Django) & `npm` (ReactJS) / `Docker Compose` 통합 환경 제어
-- **Language / Framework**: `Python 3.11 (Django REST Framework)` & `ReactJS (PWA, Tailwind CSS)`
+- **Package Manager**: `pip` (Python/Django) & `npm` (Vue.js 3) / `Docker Compose` 통합 환경 제어
+- **Language / Framework**: `Python 3.11 (Django REST Framework)` & `Vue.js 3 (PWA, Tailwind CSS)`
 - **Database / ORM**: `PostgreSQL v15+ (with JSONB support) / Django ORM`
 
 ### 2.2 하네스 명령어 (Harness Commands)
