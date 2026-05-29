@@ -177,22 +177,27 @@ VAPID_PRIVATE_KEY=your_vapid_private_key
 ```
 
 ### 2. 원클릭 데이터베이스 인프라 기동 및 정합성 검증
-본 프로젝트는 로컬 DB 부팅 후 문자 인코딩(UTF-8) 및 한국 시간대(Asia/Seoul) 무결성이 100% 충족되는지 E2E 기계적 정합성 리포트를 제공하는 통합 컨트롤러를 제공합니다.
+본 프로젝트는 로컬 개발의 안정성과 멱등성을 위해 RDBMS 물리 엔진을 직접 기동하는 **인프라 도구**와 백엔드 마이그레이션/테스트를 수행하는 **애플리케이션 도구**를 명확히 분리하여 이중 대칭형으로 제공합니다.
+
+| 도구 스크립트 | 실행 대역 | 주요 역할 및 제공 기능 |
+| :--- | :--- | :--- |
+| **`scripts/manage-db.ps1`**<br>**`scripts/manage-db.sh`** | **물리 인프라 전용**<br>(Docker 및 psql 쿼리) | • `.env.local` 환경 변수 파싱 및 프로세스 세션 자동 로드<br>• Docker PostgreSQL 18-alpine 컨테이너 기동 및 데이터 볼륨 영속 마운트<br>• psql 쿼리를 활용한 문자셋(`UTF8`) 및 엔진 시간대(`Asia/Seoul`) 물리 정합성 실시간 검증<br>• `-Cleanup` 스위치 구동 시 실행 중인 DB 컨테이너 중지 및 네임드 볼륨 영구 격리 삭제 |
+| **`scripts/local-db-controller.ps1`**<br>**`scripts/local-db-controller.sh`** | **백엔드 애플리케이션 전용**<br>(Django 및 pytest) | • **`Migration`**: Django ORM 마이그레이션을 일제 기동하여 최신 물리 스키마 테이블 동기화<br>• **`Test`**: pytest 러너를 연동해 복합 UNIQUE 제약조건 위배 차단 등 8종 단위/통합 테스트 E2E 무결성 검증<br>• **`Reset`**: 컨테이너의 소멸 없이 Django DB 테이블 데이터만 멱등적으로 플러시 초기화 |
 
 **Windows (PowerShell 5.1+ 환경):**
 ```powershell
-powershell -ExecutionPolicy Bypass -File .specify/scripts/powershell/manage-db.ps1 -Action Migration
+powershell -ExecutionPolicy Bypass -File scripts/local-db-controller.ps1 -Action Migration
 ```
 
 **macOS / Linux / WSL (Bash 환경):**
 ```bash
-chmod +x .specify/scripts/bash/manage-db.sh
-./.specify/scripts/bash/manage-db.sh --action migration
+chmod +x scripts/local-db-controller.sh
+./scripts/local-db-controller.sh --action migration
 ```
 
 **인프라 자원 안전 회수 및 볼륨 격리 소멸 (필요 시 - Reset 가동):**
-* PowerShell: `powershell -ExecutionPolicy Bypass -File .specify/scripts/powershell/manage-db.ps1 -Action Reset`
-* Bash: `./.specify/scripts/bash/manage-db.sh --action reset`
+* PowerShell: `powershell -ExecutionPolicy Bypass -File scripts/local-db-controller.ps1 -Action Reset`
+* Bash: `./scripts/local-db-controller.sh --action reset`
 
 ### 3. 전체 Docker Compose 백그라운드 서비스 기동 (향후 3~4주차 범위)
 Celery 워커, Redis 브로커 등 전체 비동기 인프라 기동 시에는 아래 명령을 통해 일괄 백그라운드 구동합니다.

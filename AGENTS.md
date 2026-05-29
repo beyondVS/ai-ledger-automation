@@ -36,7 +36,8 @@
 - **Build**: `docker compose up -d`
 
 ### 2.3 디렉토리 지도 (Directory Map)
-- `.specify/`: Spec-Kit 설정, 템플릿 및 프로젝트 헌법 메모리
+- `.specify/`: Spec-Kit 프레임워크 설정, 템플릿 및 프로젝트 헌법 메모리 (순수 Spec-Kit 코어 도구 및 자산만 정결하게 보존)
+- `scripts/`: 프로젝트 로컬 제어, RDBMS 기동, 백엔드 테스트/마이그레이션 등 프로젝트 관리에 요구되는 모든 자동화 스크립트 자산 폴더
 - `docs/`: 프로젝트 설계 계획서 및 참고 문서 (핵심 참고서: [project_plan.md](file:///D:/Projects/Private/ai-ledger-automation/docs/project_plan.md))
 - `[프로젝트 루트]`: 차주 개발 시 backend/, frontend/ 또는 단일 컨테이너 디렉토리 구축 예정
 
@@ -112,12 +113,13 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 - **최소 변경 원칙 (No Vanity Edits)**: 요청받은 작업과 직접적인 관련이 없는 주변 코드(동작에 영향을 주지 않는 스타일 수정 등)는 절대 임의로 수정하지 마십시오.
 - **Why 중심 주석**: 주석은 코드가 '무엇(What)'을 하는지 번역하지 않습니다. '왜(Why)' 비직관적인 로직을 선택했는지, 어떤 예외를 방어하는지만 설명하십시오.
 - **양대 쉘(PowerShell & Bash) 대칭적 동등 지원**: [**최상위 프로젝트 헌법 제VI조**](file:///.specify/memory/constitution.md)에 수립된 크로스 플랫폼 대칭 툴링 원칙을 영구 수호하기 위해, 에이전트는 로컬 기동 및 인프라 관리 도구 수정 시 Windows(PowerShell, `*.ps1`)와 macOS/Linux/WSL(Bash, `*.sh`) 환경 모두에 호환되는 대칭형 스크립트를 동등하게 제공해야 합니다.
-- **3대 코어 문서 자율 교차 동기화**: [**최상위 프로젝트 헌법 제VI조**](file:///.specify/memory/constitution.md)에 명문화된 동기화 규정에 따라, 에이전트는 기술 스택, 셋업, 아키텍처적 사양 변경 발생 시 사용자의 명시적 지시가 없더라도 주도적으로 `README.md`, `AGENTS.md`, `.specify/memory/constitution.md` 3대 핵심 문서 간의 정합성을 유기적으로 교차 검증하고 자동 동기화 업데이트를 완수해야 합니다.
+- **프로젝트 관리용 스크립트 격리 배치**: 프로젝트의 로컬 제어, 빌드, RDBMS 환경 기동, 마이그레이션, 테스트 등 프로젝트 개발 관리에 요구되는 모든 커스텀 자동화 스크립트/도구 파일들은 반드시 프로젝트 루트의 `scripts/` 디렉토리 하위에 직접 생성 및 배치해야 합니다. `.specify/` 디렉토리는 오직 Spec-Kit 프레임워크 고유 자산 및 빌트인 템플릿으로만 정결하게 유지되어야 하며, 임의의 커스텀 관리 도구가 혼입되는 것을 엄격히 금지합니다.
+- **3대 코어 문서 및 설정 자율 교차 동기화**: [**최상위 프로젝트 헌법 제VI조**](file:///.specify/memory/constitution.md)에 명문화된 동기화 규정에 따라, 에이전트는 기술 스택, 셋업, 아키텍처적 사양 변경 발생 시 사용자의 명시적 지시가 없더라도 주도적으로 3대 핵심 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`)와 모노레포 설정 파일(`pyproject.toml`, `backend/pyproject.toml`) 간의 정합성을 유기적으로 교차 검증하고 자동 동기화 및 프로젝트 버전 일치 업데이트를 완수해야 합니다.
 - **선언적 의존성 통제 표준 (Package Dependency Control)**: 파이썬 의존성 패키지를 추가하거나 버전을 변경할 때, 결코 런타임 가상 환경에 직접 수동 설치하지 않고 반드시 `pyproject.toml`을 편집한 후 `uv lock` 및 `uv sync`를 통해 락 파일을 갱신하고 가상 환경의 일치(100% parity)를 달성해야 합니다.
 - **커밋 메시지 규약 (Commit Conventions)**: 커밋 메시지는 Conventional Commits 규약(`feat:`, `fix:`, `docs:`, `refactor:` 등)을 준수하여 작성하십시오. 프로젝트 내 특정 언어 규칙(예: 한글 작성 등)이 있다면 이를 최우선으로 따르십시오.
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/002-django-model-design/plan.md)
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/003-apply-db-unique-constraints/plan.md)
 <!-- SPECKIT END -->
