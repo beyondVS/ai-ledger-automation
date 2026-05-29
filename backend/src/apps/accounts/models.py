@@ -64,7 +64,8 @@ class UserPushSubscription(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='push_subscriptions')
     
     # 푸시 게이트웨이 엔드포인트 URL은 매우 길어질 수 있으므로 max_length=2000 이상 보장
-    endpoint = models.URLField(unique=True, max_length=2000)
+    # (동일 사용자의 중복 구독 방지를 위해 단일 unique=True를 해제하고 복합 고유 제약조건을 장착합니다)
+    endpoint = models.URLField(max_length=2000)
     p256dh = models.CharField(max_length=255)
     auth = models.CharField(max_length=255)
     
@@ -74,6 +75,14 @@ class UserPushSubscription(models.Model):
         db_table = 'user_push_subscriptions'
         verbose_name = 'user_push_subscription'
         verbose_name_plural = 'user_push_subscriptions'
+        
+        # 헌법 I조 수호: 동일 사용자가 특정 알림 단말을 중복 등록하는 오동작 방지를 위한 복합 고유 제약조건 장착
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'endpoint'],
+                name='unique_user_push_subscription'
+            )
+        ]
 
     def __str__(self):
         return f"PushSubscription for {self.user.email} ({self.id})"

@@ -26,8 +26,8 @@
 
 **Purpose**: 프로젝트 워크스페이스 통합 설정 및 기초 환경 확인
 
-- [ ] T001 프로젝트 루트 `pyproject.toml`에 백엔드 의존성 가교 연결 정합성 확인
-- [ ] T002 [P] `.env.local` 파일에서 DB 패스워드와 포트 관련 환경 변수 설정 최종 검증
+- [X] T001 프로젝트 루트 `pyproject.toml`에 백엔드 의존성 가교 연결 정합성 확인
+- [X] T002 [P] `.env.local` 파일에서 DB 패스워드와 포트 관련 환경 변수 설정 최종 검증
 
 ---
 
@@ -37,8 +37,8 @@
 
 **⚠️ CRITICAL**: 이 페이즈의 모든 공통 뼈대가 구축되기 전에는 사용자 스토리 구현에 진입할 수 없습니다.
 
-- [ ] T003 `backend/src/config/settings.py` 내의 `django-environ` 기동 상태 및 `POSTGRES_*` 계열의 매핑 주입 무결성 검사
-- [ ] T004 [P] Docker PostgreSQL 18 인프라 상태를 리셋 후 재부팅하여 로컬 RDBMS 연결 채널 완전 확보
+- [X] T003 `backend/src/config/settings.py` 내의 `django-environ` 기동 상태 및 `POSTGRES_*` 계열의 매핑 주입 무결성 검사
+- [X] T004 [P] Docker PostgreSQL 18 인프라 상태를 리셋 후 재부팅하여 로컬 RDBMS 연결 채널 완전 확보
 
 **Checkpoint**: Foundation ready - 이제 사용자 스토리 개발 페이즈에 안전하게 진입하여 병렬로 작업을 가동할 수 있습니다.
 
@@ -52,10 +52,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] `backend/src/apps/accounts/models.py` 내 `User` 및 `UserPushSubscription` 모델 상태를 확인하고, `makemigrations accounts` 실행으로 초기 마이그레이션 스크립트 작성
-- [ ] T006 [P] [US1] `backend/src/apps/ledgers/models.py` 내 `Ledger`, `LedgerItem`, `MerchantTemplate` 모델 상태를 확인하고, `makemigrations ledgers` 실행으로 초기 마이그레이션 스크립트 작성
-- [ ] T007 [P] [US1] `backend/src/apps/tasks/models.py` 내 `FailedTask` 모델 상태를 확인하고, `makemigrations tasks` 실행으로 초기 마이그레이션 스크립트 작성
-- [ ] T008 [US1] `python manage.py migrate` 명령을 일제 기동하여 로컬 PostgreSQL 상에 3대 비즈니스 앱의 모든 테이블을 에러 없이 성공 적재
+- [X] T005 [US1] `backend/src/apps/accounts/models.py` 내 `User` 및 `UserPushSubscription` 모델 상태를 확인하고, `makemigrations accounts` 실행으로 초기 마이그레이션 스크립트 작성
+- [X] T006 [P] [US1] `backend/src/apps/ledgers/models.py` 내 `Ledger`, `LedgerItem`, `MerchantTemplate` 모델 상태를 확인하고, `makemigrations ledgers` 실행으로 초기 마이그레이션 스크립트 작성
+- [X] T007 [P] [US1] `backend/src/apps/tasks/models.py` 내 `FailedTask` 모델 상태를 확인하고, `makemigrations tasks` 실행으로 초기 마이그레이션 스크립트 작성
+- [X] T008 [US1] `python manage.py migrate` 명령을 일제 기동하여 로컬 PostgreSQL 상에 3대 비즈니스 앱의 모든 테이블을 에러 없이 성공 적재
 
 **Checkpoint**: 본 페이즈 완료 시, User Story 1은 단독으로 완벽하게 컴파일 및 구동되며 마이그레이션 시스템이 정상 정렬됩니다.
 
@@ -71,13 +71,13 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T009 [P] [US2] `backend/tests/unit/models/test_ledger_duplicate.py` 경로에 동일 정보로 2회 연속 거래 삽입 시 UNIQUE 제약 위배 차단 및 실패 사유 FailedTask 수집 계약 테스트 구현
+- [X] T009 [P] [US2] `backend/tests/unit/models/test_ledger_duplicate.py` 경로에 동일 정보로 2회 연속 거래 삽입 시 UNIQUE 제약 위배 차단 및 실패 사유 FailedTask 수집 계약 테스트 구현
 
 ### Implementation for User Story 2
 
-- [ ] T010 [P] [US2] `backend/src/apps/accounts/models.py` 내 `UserPushSubscription` 정의에 `UniqueConstraint(fields=['user', 'endpoint'], name='unique_user_push_subscription')` 복합 제약조건 장착
-- [ ] T011 [P] [US2] `backend/src/apps/ledgers/models.py` 내 `Ledger` 정의에 `UniqueConstraint(fields=['user', 'vendor_registration_number', 'transaction_date', 'total_amount'], name='unique_ledger_transaction')` 복합 제약조건 장착 및 `vendor_registration_number` 필드의 `default='0000000000'` 폴백 기본값 적용
-- [ ] T012 [US2] `python manage.py makemigrations` 및 `python manage.py migrate`를 전격 가동하여 복합 제약조건을 데이터베이스 레이아웃에 하드 인덱싱으로 최종 배포 반영
+- [X] T010 [P] [US2] `backend/src/apps/accounts/models.py` 내 `UserPushSubscription` 정의에 `UniqueConstraint(fields=['user', 'endpoint'], name='unique_user_push_subscription')` 복합 제약조건 장착
+- [X] T011 [P] [US2] `backend/src/apps/ledgers/models.py` 내 `Ledger` 정의에 `UniqueConstraint(fields=['user', 'vendor_registration_number', 'transaction_date', 'total_amount'], name='unique_ledger_transaction')` 복합 제약조건 장착 및 `vendor_registration_number` 필드의 `default='0000000000'` 폴백 기본값 적용
+- [X] T012 [US2] `python manage.py makemigrations` 및 `python manage.py migrate`를 전격 가동하여 복합 제약조건을 데이터베이스 레이아웃에 하드 인덱싱으로 최종 배포 반영
 
 **Checkpoint**: 본 페이즈 완료 시, User Stories 1 및 2가 동시에 긴밀하게 협력 가동되며, 중복 거래 내역 유입 시 DB 복합 유니크 제약 차단 및 비동기 예외 DLQ 격리 로깅 무결성이 기계적으로 완벽히 입증됩니다.
 
@@ -91,9 +91,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T013 [P] [US3] `.specify/scripts/powershell/manage-db.ps1` 툴링 스크립트에 신규 마이그레이션 멱등 빌드 및 초기화 롤백 제어 액션 로직 보강 연동
-- [ ] T014 [P] [US3] `.specify/scripts/bash/manage-db.sh` 툴링 스크립트에 동일한 마이그레이션 일제 기동 및 리셋 롤백 멱등 제어 로직 대칭 보강
-- [ ] T015 [US3] 인프라 볼륨을 완전히 리셋한 뒤 원클릭 관리 도구를 통해 DB 재생성과 마이그레이션 빌드, 그리고 단위 테스트 8종이 에러 없이 무결하게 성공 구동되는지 E2E 최종 입증
+- [X] T013 [P] [US3] `scripts/local-db-controller.ps1` 툴링 스크립트에 신규 마이그레이션 멱등 빌드 및 초기화 롤백 제어 액션 로직 보강 연동
+- [X] T014 [P] [US3] `scripts/local-db-controller.sh` 툴링 스크립트에 동일한 마이그레이션 일제 기동 및 리셋 롤백 멱등 제어 로직 대칭 보강
+- [X] T015 [US3] 인프라 볼륨을 완전히 리셋한 뒤 원클릭 관리 도구를 통해 DB 재생성과 마이그레이션 빌드, 그리고 단위 테스트 8종이 에러 없이 무결하게 성공 구동되는지 E2E 최종 입증
 
 **Checkpoint**: 모든 3대 사용자 스토리가 독립적으로 완벽히 구동 가능하며, 미검증 캐시 템플릿의 bypass 진입율 0% 격리 통제 규칙이 완벽하게 공인 검증 완료됩니다.
 
@@ -103,7 +103,7 @@
 
 **Purpose**: 시스템 전반의 횡단 관심사 보충 및 코어 문서 자율 정합성 완료
 
-- [ ] T016 [P] `README.md` 및 `AGENTS.md` 파일에 복합 고유 제약조건 물리 뼈대 스키마 설계 및 스크립트 멱등 실행 안내서 최종 동기화 패치
+- [X] T016 [P] `README.md` 및 `AGENTS.md` 파일에 복합 고유 제약조건 물리 뼈대 스키마 설계 및 스크립트 멱등 실행 안내서 최종 동기화 패치
 
 ---
 

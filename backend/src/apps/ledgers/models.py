@@ -34,7 +34,7 @@ class Ledger(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'vendor_registration_number', 'transaction_date', 'total_amount'],
-                name='unique_user_vendor_date_amount'
+                name='unique_ledger_transaction'
             )
         ]
 

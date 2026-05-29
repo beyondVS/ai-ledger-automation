@@ -1,6 +1,6 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.2.0 -> v1.3.0
+- Version Change: v1.3.0 -> v1.4.0
 - Ratified: 2026-05-29 | Last Amended: 2026-05-29
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
@@ -10,8 +10,8 @@
   5. V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
   6. VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
   7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
-- Added/Modified: 백엔드 의존성 관리를 위해 pyproject.toml 및 uv.lock을 활용한 선언적 uv 패키지 관리 체계를 헌법 핵심 원칙으로 정식 비준(v1.3.0).
-- Added Sections: VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
+- Added/Modified: 개발 및 프로젝트 관리 자동화 스크립트 파일을 scripts/ 폴더 하위에 격리하여 생성하도록 지침을 신설하고, .specify/ 폴더는 순수 Spec-Kit 코어 자산으로 청결화하는 원칙을 헌법 제VI조에 정식 비준 및 추가. 또한 프로젝트 버전 상승 시 모노레포 설정 파일(pyproject.toml, backend/pyproject.toml)의 버전을 100% 동형 일치 갱신하도록 의무화(v1.4.0).
+- Added Sections: 없음 (기존 제VI조 조항 강화 보완)
 - Deleted Sections: 없음
 - Synchronized Templates:
   - plan-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\plan-template.md)
@@ -46,7 +46,7 @@
 
 ### VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
 
-개발자의 로컬 환경 셋업과 데이터베이스 관리 등 개발 편의성을 좌우하는 인프라 툴링은 특정 운영체제에 종속되지 않는 크로스 플랫폼 사용성이 완벽히 보장되어야 합니다. 인프라 관리 도구를 설계할 시에는 Windows(PowerShell, `*.ps1`)와 macOS/Linux/WSL(Bash, `*.sh`) 양대 실행 대역 모두에서 동일한 가동 멱등성과 기계적 환경 검증 혜택을 받도록 대칭적인 이중 스크립트 배포 원칙을 강력하게 준수해야 합니다. 더불어, 시스템 환경 및 툴 사양이 수정되는 경우 개발자는 지시를 받기 전에 선제적이고 유기적으로 3대 코어 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`) 간의 교차 동기화 정합성을 분석하고 자동으로 업데이트함으로써, 문서 이탈 및 정보의 단절을 원천 예방하도록 규정합니다.
+개발자의 로컬 환경 셋업과 데이터베이스 관리 등 개발 편의성을 좌우하는 인프라 툴링은 특정 운영체제에 종속되지 않는 크로스 플랫폼 사용성이 완벽히 보장되어야 합니다. 인프라 관리 도구를 설계할 시에는 Windows(PowerShell, `*.ps1`)와 macOS/Linux/WSL(Bash, `*.sh`) 양대 실행 대역 모두에서 동일한 가동 멱등성과 기계적 환경 검증 혜택을 받도록 대칭적인 이중 스크립트 배포 원칙을 강력하게 준수해야 합니다. 더불어, 프로젝트의 로컬 제어, 빌드, RDBMS 환경 기동, 마이그레이션, 테스트 등 프로젝트 개발 관리에 요구되는 모든 커스텀 자동화 스크립트/도구 파일들은 반드시 프로젝트 루트의 `scripts/` 디렉토리 하위에 직접 생성 및 배치해야 합니다. `.specify/` 디렉토리는 오직 Spec-Kit 프레임워크 고유 자산 및 빌트인 템플릿으로만 정결하게 유지되어야 하며, 임의의 커스텀 관리 도구가 혼입되는 것을 엄격히 금지합니다. 끝으로, 시스템 환경 및 툴 사양이 수정되거나 프로젝트 버전이 업그레이드되는 경우 개발자는 지시를 받기 전에 선제적이고 유기적으로 3대 코어 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`)와 모노레포 설정 파일(`pyproject.toml`, `backend/pyproject.toml`) 간의 교차 동기화 정합성을 분석하고 자동으로 버전을 정합 동기화하여 프로젝트 버전의 완전한 일치 상태를 수호하도록 규정합니다.
 
 ### VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
 
@@ -91,4 +91,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.3.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-29
+**Version**: v1.4.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-29

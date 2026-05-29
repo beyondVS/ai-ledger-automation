@@ -1,6 +1,12 @@
 # =========================================================================
 # PostgreSQL v18+ 인프라 통합 컨트롤러 스크립트 (scripts/manage-db.ps1)
 # =========================================================================
+# [역할 분담 및 차이점]
+# 1. scripts/manage-db.ps1 (본 스크립트): RDBMS 물리 엔진(PostgreSQL 18 컨테이너) 자체의 기동, 
+#    psql 쿼리 환경 검증(SHOW client_encoding;), 볼륨 영구 파괴(Cleanup) 등 인프라 전용.
+# 2. scripts/local-db-controller.ps1: 기동된 DB 상에서 Django 앱 마이그레이션(Migration), 
+#    pytest 8종 단위/통합 테스트 기동(Test), 데이터 테이블 플러시 롤백(Reset) 등 백엔드 앱 및 비즈니스 검증 전용.
+# =========================================================================
 # [사용법]
 # 1. 인프라 기동 & 환경 변수 로드 & Named Volume & 정합성 검증까지 원스톱 실행:
 #    powershell -ExecutionPolicy Bypass -File scripts/manage-db.ps1
