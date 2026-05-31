@@ -28,9 +28,9 @@
 
 **Purpose**: 프로젝트 패키지 락킹 및 초기 디렉토리/의존성 환경 구축
 
-- [ ] T001 `backend/pyproject.toml` 파일에 `pymupdf` 및 `pdfplumber` 라이브러리 의존성 선언 추가
-- [ ] T002 `D:\Projects\Private\ai-ledger-automation` 루트에서 `uv lock` 및 `uv sync`를 실행하여 가상환경 `.venv` 내에 패키지 격리 및 패키지 락 정합성 일치화 수행
-- [ ] T003 `backend/src/utils/pdf_extractor.py` 및 `backend/tests/unit/test_pdf_extractor.py` 작성을 위한 기본 모듈 패키징 초기 셋업
+- [X] T001 `backend/pyproject.toml` 파일에 `pymupdf` 및 `pdfplumber` 라이브러리 의존성 선언 추가
+- [X] T002 `D:\Projects\Private\ai-ledger-automation` 루트에서 `uv lock` 및 `uv sync`를 실행하여 가상환경 `.venv` 내에 패키지 격리 및 패키지 락 정합성 일치화 수행
+- [X] T003 `backend/src/utils/pdf_extractor.py` 및 `backend/tests/unit/test_pdf_extractor.py` 작성을 위한 기본 모듈 패키징 초기 셋업
 
 ---
 
@@ -40,9 +40,9 @@
 
 **⚠️ CRITICAL**: 이 페이즈의 뼈대 구조가 완벽하게 다듬어지기 전까지는 개별 유저 스토리 구현에 착수할 수 없습니다.
 
-- [ ] T004 `backend/src/utils/pdf_extractor.py` 파일 내부에 `ExtractionResult` DTO 클래스 데이터 규격 속성 및 타입 설계 및 구현
-- [ ] T005 `backend/src/utils/pdf_extractor.py` 파일 내부에 `PDFTextExtractor` 메인 클래스 뼈대 선언 및 한글 NFC 정규화 유틸리티 함수 구현
-- [ ] T006 `scripts/run-pdf-tests.ps1` 및 `scripts/run-pdf-tests.sh` 경로에 백엔드 PDF 파싱 유틸리티 단위 테스트를 기계적으로 실행 및 자동화할 수 있는 양대 크로스 플랫폼 대칭형 검증 스크립트 작성 (헌법 제VI조 대칭 스크립트 격리 원칙 수호)
+- [X] T004 `backend/src/utils/pdf_extractor.py` 파일 내부에 `ExtractionResult` DTO 클래스 데이터 규격 속성 및 타입 설계 및 구현
+- [X] T005 `backend/src/utils/pdf_extractor.py` 파일 내부에 `PDFTextExtractor` 메인 클래스 뼈대 선언 및 한글 NFC 정규화 유틸리티 함수 구현
+- [X] T006 `scripts/run-pdf-tests.ps1` 및 `scripts/run-pdf-tests.sh` 경로에 백엔드 PDF 파싱 유틸리티 단위 테스트를 기계적으로 실행 및 자동화할 수 있는 양대 크로스 플랫폼 대칭형 검증 스크립트 작성 (헌법 제VI조 대칭 스크립트 격리 원칙 수호)
 
 **Checkpoint**: 기반 인프라 기동 준비 완료 - 유저 스토리 병렬 구현 및 TDD 테스트 검증 개시 가능
 
@@ -55,11 +55,11 @@
 **Independent Test**: `backend/tests/unit/test_pdf_extractor.py` 단독 기동을 통해 한글 자모 깨짐 복원 무결성 증명
 
 ### Tests for User Story 1 (TDD)
-- [ ] T007 [P] [US1] `backend/tests/unit/test_pdf_extractor.py` 경로에 PyMuPDF 단독 정상 추출 성공 및 한글 NFC 유니코드 조합 정합성 검증을 수행하는 단위 테스트 케이스 우선 작성 (TDD 지향)
+- [X] T007 [P] [US1] `backend/tests/unit/test_pdf_extractor.py` 경로에 PyMuPDF 단독 정상 추출 성공 및 한글 NFC 유니코드 조합 정합성 검증을 수행하는 단위 테스트 케이스 우선 작성 (TDD 지향)
 
 ### Implementation for User Story 1
-- [ ] T008 [US1] `backend/src/utils/pdf_extractor.py` 파일에 PyMuPDF를 이용한 텍스트 추출(`layout: bool` 매개변수 연동 및 `layout=True` 시 `blocks` 탭/공백 정렬 보존 기능) 구현
-- [ ] T009 [US1] `backend/src/utils/pdf_extractor.py` 파일에 텍스트 추출 직후 완성형 한글 NFC 표준 정규화 필터 적용 구현
+- [X] T008 [US1] `backend/src/utils/pdf_extractor.py` 파일에 PyMuPDF를 이용한 텍스트 추출(`layout: bool` 매개변수 연동 및 `layout=True` 시 `blocks` 탭/공백 정렬 보존 기능) 구현
+- [X] T009 [US1] `backend/src/utils/pdf_extractor.py` 파일에 텍스트 추출 직후 완성형 한글 NFC 표준 정규화 필터 적용 구현
 
 **Checkpoint**: PyMuPDF 기반의 완성형 한글 텍스트 무손실 추출 기능 완전 작동 및 독립 검증 통과
 
@@ -72,11 +72,11 @@
 **Independent Test**: `backend/tests/unit/test_pdf_extractor.py`에 PyMuPDF 실패 상황을 모킹하여 pdfplumber 자동 복구 검증
 
 ### Tests for User Story 2
-- [ ] T010 [P] [US2] `backend/tests/unit/test_pdf_extractor.py` 경로에 PyMuPDF 파싱 오류(C-Level/인코딩 깨짐) 발생 시 pdfplumber 엔진으로 Fallback하여 복구 성공하는지 검증하는 단위 테스트 케이스 우선 작성
+- [X] T010 [P] [US2] `backend/tests/unit/test_pdf_extractor.py` 경로에 PyMuPDF 파싱 오류(C-Level/인코딩 깨짐) 발생 시 pdfplumber 엔진으로 Fallback하여 복구 성공하는지 검증하는 단위 테스트 케이스 우선 작성
 
 ### Implementation for User Story 2
-- [ ] T011 [US2] `backend/src/utils/pdf_extractor.py` 파일에 pdfplumber 추출 엔진 (`layout: bool` 매개변수 연동 및 `layout=True` 시 `extract_text(layout=True)` 공백 보존 기능) 연동 구현
-- [ ] T012 [US2] `backend/src/utils/pdf_extractor.py` 파일에 PyMuPDF 작동 중 예외 발생 시 `pdfplumber`로 투명하게 전환하는 **자동 Fallback 메커니즘**의 예외 포착 로직 구현
+- [X] T011 [US2] `backend/src/utils/pdf_extractor.py` 파일에 pdfplumber 추출 엔진 (`layout: bool` 매개변수 연동 및 `layout=True` 시 `extract_text(layout=True)` 공백 보존 기능) 연동 구현
+- [X] T012 [US2] `backend/src/utils/pdf_extractor.py` 파일에 PyMuPDF 작동 중 예외 발생 시 `pdfplumber`로 투명하게 전환하는 **자동 Fallback 메커니즘**의 예외 포착 로직 구현
 
 **Checkpoint**: 하이브리드 상호 보완 자동 Fallback 프로토콜 E2E 성공 및 독립 단위 검증 통과
 
@@ -89,11 +89,11 @@
 **Independent Test**: 비정상 PDF 파일을 로드했을 때 크래시 없이 `success=False` DTO 및 안전한 에러 메시지가 획득됨을 테스트로 증명
 
 ### Tests for User Story 3
-- [ ] T013 [P] [US3] `backend/tests/unit/test_pdf_extractor.py` 경로에 암호화 PDF(Password Incorrect) 및 텍스트 레이어가 전무한 스캔 PDF 유입 시 `success: False` DTO 반환을 검증하는 예외 처리 단위 테스트 케이스 우선 작성
+- [X] T013 [P] [US3] `backend/tests/unit/test_pdf_extractor.py` 경로에 암호화 PDF(Password Incorrect) 및 텍스트 레이어가 전무한 스캔 PDF 유입 시 `success: False` DTO 반환을 검증하는 예외 처리 단위 테스트 케이스 우선 작성
 
 ### Implementation for User Story 3
-- [ ] T014 [US3] `backend/src/utils/pdf_extractor.py` 파일에 PDF 로딩 시 `doc.is_encrypted` 속성을 감지하여 `is_encrypted: True`로 래핑 반환하는 검증 필터 구현
-- [ ] T015 [US3] `backend/src/utils/pdf_extractor.py` 파일에 추출된 전체 문자가 0개인 경우 `has_text_layer: False` 및 OCR 파이프라인 우회 사유 에러 메시지(`No physical text layer detected`)를 포장해 반환하는 텍스트 레이어 검증 필터 구현
+- [X] T014 [US3] `backend/src/utils/pdf_extractor.py` 파일에 PDF 로딩 시 `doc.is_encrypted` 속성을 감지하여 `is_encrypted: True`로 래핑 반환하는 검증 필터 구현
+- [X] T015 [US3] `backend/src/utils/pdf_extractor.py` 파일에 추출된 전체 문자가 0개인 경우 `has_text_layer: False` 및 OCR 파이프라인 우회 사유 에러 메시지(`No physical text layer detected`)를 포장해 반환하는 텍스트 레이어 검증 필터 구현
 
 **Checkpoint**: 모든 비정상 악성 PDF 유입에 대해 프로세스 중단 없는 견고한 철벽 에러 복원력 확보 완료
 
@@ -103,9 +103,9 @@
 
 **Purpose**: 초대형 문서 성능 최적화, 3대 코어 문서 버전 교차 동기화 및 린터 검증 기계적 완료
 
-- [ ] T016 `backend/src/utils/pdf_extractor.py` 파일에 50페이지 이상 초대형 PDF 로드 시 메모리 보호를 위한 페이지 단위 부분 추출(`start_page`, `end_page`) 및 제네레이터(Generator) 스트리밍 최적화 로직 구현
-- [ ] T017 `D:\Projects\Private\ai-ledger-automation`에서 헌법 제VI조(자율 교차 동기화)에 준해 3대 코어 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`)와 모노레포 설정 파일의 정합성 유기적 교차 동기화 자율 점검 실행
-- [ ] T018 `scripts/run-pdf-tests.ps1` 및 `scripts/run-pdf-tests.sh` 양대 스크립트를 실제 로컬에서 실행하여 단위 테스트 커버리지 100% 만족 여부 및 linter(black/ruff 등) 포맷 무결성 기계적 검증 수행
+- [X] T016 `backend/src/utils/pdf_extractor.py` 파일에 50페이지 이상 초대형 PDF 로드 시 메모리 보호를 위한 페이지 단위 부분 추출(`start_page`, `end_page`) 및 제네레이터(Generator) 스트리밍 최적화 로직 구현
+- [X] T017 `D:\Projects\Private\ai-ledger-automation`에서 헌법 제VI조(자율 교차 동기화)에 준해 3대 코어 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`)와 모노레포 설정 파일의 정합성 유기적 교차 동기화 자율 점검 실행
+- [X] T018 `scripts/run-pdf-tests.ps1` 및 `scripts/run-pdf-tests.sh` 양대 스크립트를 실제 로컬에서 실행하여 단위 테스트 커버리지 100% 만족 여부 및 linter(black/ruff 등) 포맷 무결성 기계적 검증 수행
 
 ---
 
@@ -159,14 +159,14 @@ Task: "T009 [US1] backend/src/utils/pdf_extractor.py 파일에 텍스트 추출 
 - **Step 1**: Setup + Foundational 완수 -> 프로젝트 뼈대 가동 가능.
 - **Step 2**: US1 (MVP) 추가 및 단위 검증 마감 -> 실제 내장 텍스트 PDF 무손실 추출 서비스 가동.
 - **Step 3**: US2 Fallback 추가 및 단위 검증 마감 -> 예외 PDF 한글 자모 깨짐 시의 하이브리드 고신뢰 복원 지원.
-- **Step 4**: US3 Error handling 추가 및 단위 검증 마감 -> 보안 암호화 PDF 및 스캔 이미지 유입 시 비동기 큐 마비 없는 크래시-프리 복원력 달성.
+- **Step 4**: US3 Error handling 추가 및 단위 검증 마감 -> 암호화 PDF 및 스캔 이미지 유입 시 비동기 큐 마비 없는 크래시-프리 복원력 달성.
 - **Step 5**: Polish 완수 -> 대용량 부분 추출 generator 및 버전 교차 동기화 완결.
 
 ---
 
 ## Notes
 
-- 모든 태스크는 체크박스 `- [ ]`로 정교하게 시작됩니다.
+- 모든 태스크는 체크박스 `- [X]`로 정교하게 완료 표시되어 있습니다.
 - 각 ID는 `T001`부터 `T018`까지 고유하고 엄격하게 순차 정렬되어 있습니다.
 - 모든 태스크 설명에 작업 대상 소스 파일 및 검증 도구의 **명확한 리터럴 물리 경로**를 누락 없이 100% 명시했습니다.
 - 테스트 코딩은 필수이며, 각 스토리 페이즈 최상단에 배치하여 TDD 흐름을 유도했습니다.
