@@ -20,9 +20,9 @@
 
 **Purpose**: 프로젝트 가상 환경 및 크로스 플랫폼 대칭 자동화 인프라 셋업
 
-- [ ] T001 `backend/pyproject.toml` 및 `backend/uv.lock` 파일에 필수 라이브러리(`django-environ`, `djangorestframework`, `django-cors-headers`, `psycopg[binary]`)를 선언적으로 추가하고 `uv sync`를 실행해 격리된 가상환경(`.venv`) 패키지 동기화 완수
-- [ ] T002 `scripts/setup_boilerplate.ps1` 경로에 헌법 제VI조에 의거하여 Windows 환경에서 가상 환경 구축, `.env` 캐시 유효성 검증을 일괄 처리하는 대칭형 자동화 셋업 스크립트 작성
-- [ ] T003 [P] `scripts/setup_boilerplate.sh` 경로에 헌법 제VI조에 의거하여 macOS/Linux/WSL 환경에서 작동하는 대칭형 셋업 자동화 쉘 스크립트 작성
+- [X] T001 `backend/pyproject.toml` 및 `backend/uv.lock` 파일에 필수 라이브러리(`django-environ`, `djangorestframework`, `django-cors-headers`, `psycopg[binary]`)를 선언적으로 추가하고 `uv sync`를 실행해 격리된 가상환경(`.venv`) 패키지 동기화 완수
+- [X] T002 `scripts/setup_boilerplate.ps1` 경로에 헌법 제VI조에 의거하여 Windows 환경에서 가상 환경 구축, `.env` 캐시 유효성 검증을 일괄 처리하는 대칭형 자동화 셋업 스크립트 작성
+- [X] T003 [P] `scripts/setup_boilerplate.sh` 경로에 헌법 제VI조에 의거하여 macOS/Linux/WSL 환경에서 작동하는 대칭형 셋업 자동화 쉘 스크립트 작성
 
 ---
 
@@ -32,9 +32,9 @@
 
 **⚠️ CRITICAL**: 이 페이즈의 전역 설정 및 뼈대 코드 구축이 끝나기 전까지는 하위의 어떠한 사용자 스토리 기능 구현도 시작할 수 없습니다.
 
-- [ ] T004 `backend/src/config/settings.py` 파일 내에 `django-environ` 패키지를 바인딩하여 `.env` 로딩 엔진을 수립하고, `SECRET_KEY` 및 `DATABASE_URL`에 대한 하드코딩 폴백 기본값 완전 제거 및 누락 시 `ImproperlyConfigured` 즉시 Crash 예외 차단 로직 구현
-- [ ] T005 [P] `backend/src/config/settings.py` 파일 내에 PostgreSQL v18+ 연동을 위한 psycopg3(`django.db.backends.postgresql`) 커넥션 셋업을 완료하고, Supabase 리소스 병목 방지를 위해 기본 연결 유지 시간 `CONN_MAX_AGE: 60` 설정 주입 (환경변수 동적 변경 연동)
-- [ ] T006 [P] `backend/src/config/settings.py` 파일 내에 글로벌 API 보안 기본 권한 정책을 `IsAuthenticated`로 강력하게 잠금 셋업하고, CORS 허용 설정을 주입
+- [X] T004 `backend/src/config/settings.py` 파일 내에 `django-environ` 패키지를 바인딩하여 `.env` 로딩 엔진을 수립하고, `SECRET_KEY` 및 `DATABASE_URL`에 대한 하드코딩 폴백 기본값 완전 제거 및 누락 시 `ImproperlyConfigured` 즉시 Crash 예외 차단 로직 구현
+- [X] T005 [P] `backend/src/config/settings.py` 파일 내에 PostgreSQL v18+ 연동을 위한 psycopg3(`django.db.backends.postgresql`) 커넥션 셋업을 완료하고, Supabase 리소스 병목 방지를 위해 기본 연결 유지 시간 `CONN_MAX_AGE: 60` 설정 주입 (환경변수 동적 변경 연동)
+- [X] T006 [P] `backend/src/config/settings.py` 파일 내에 글로벌 API 보안 기본 권한 정책을 `IsAuthenticated`로 강력하게 잠금 셋업하고, CORS 허용 설정을 주입
 
 **Checkpoint**: Foundation ready - 이제 개별 사용자 스토리 구현을 독립적으로 진행할 수 있습니다.
 
@@ -48,9 +48,9 @@
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] `backend/src/config/urls.py` 경로의 최상위 라우터 설정에 CORS 미들웨어 매핑 및 뼈대 프로젝트 단일 진입점 바인딩 완수
-- [ ] T008 [US1] `backend/src/config/settings.py` 파일 내에 로컬 디버그용 호스트 대역 `ALLOWED_HOSTS = ['localhost', '127.0.0.1']` 및 CORS 허용 프론트엔드 호스트 명세 동적 주입 완수
-- [ ] T009 [US1] `backend/src/manage.py runserver` 명령을 내려 로컬 개발용 웹 서버를 기동하고, 브라우저 접속을 통해 3초 이내에 Django 기본 환영 페이지가 로딩되는지 E2E 독립 기계적 검증 완료
+- [X] T007 [P] [US1] `backend/src/config/urls.py` 경로의 최상위 라우터 설정에 CORS 미들웨어 매핑 및 뼈대 프로젝트 단일 진입점 바인딩 완수
+- [X] T008 [US1] `backend/src/config/settings.py` 파일 내에 로컬 디버그용 호스트 대역 `ALLOWED_HOSTS = ['localhost', '127.0.0.1']` 및 CORS 허용 프론트엔드 호스트 명세 동적 주입 완수
+- [X] T009 [US1] `backend/src/manage.py runserver` 명령을 내려 로컬 개발용 웹 서버를 기동하고, 브라우저 접속을 통해 3초 이내에 Django 기본 환영 페이지가 로딩되는지 E2E 독립 기계적 검증 완료
 
 **Checkpoint**: User Story 1 완료 - 독립 구동이 완벽히 입증된 백엔드 코어 MVP 달성
 
@@ -64,13 +64,13 @@
 
 ### Tests for User Story 2
 
-- [ ] T010 [P] [US2] `backend/tests/test_health_check.py` 경로에 익명 헬스체크 API 호출 시 `AllowAny` 우회 지정이 잘 작동하는지 진단하는 계약 검증 테스트 코딩 수행
+- [X] T010 [P] [US2] `backend/tests/test_health_check.py` 경로에 익명 헬스체크 API 호출 시 `AllowAny` 우회 지정이 잘 작동하는지 진단하는 계약 검증 테스트 코딩 수행
 
 ### Implementation for User Story 2
 
-- [ ] T011 [P] [US2] `backend/src/apps/health/views.py` 경로에 `AllowAny` 화이트리스트 접근 제어 권한을 명시적으로 매핑하고, 데이터베이스 커넥션 헬스(Liveness `SELECT 1`)를 검사하여 `contracts/health_check_contract.md` 규격에 맞는 JSON을 반환하는 HealthCheck API 뷰 구현
-- [ ] T012 [US2] `backend/src/config/urls.py` 파일 내 최상위 라우터에 `/api/health/` GET 헬스 체크 API 엔드포인트 다이렉트 바인딩 완료
-- [ ] T013 [US2] `backend/src/manage.py migrate` 명령을 수행하여 PostgreSQL v18 데이터베이스로 Django 초기 앱용 스키마 마이그레이션이 100% 에러 없이 성공 전송되는지 검증 완료
+- [X] T011 [P] [US2] `backend/src/apps/health/views.py` 경로에 `AllowAny` 화이트리스트 접근 제어 권한을 명시적으로 매핑하고, 데이터베이스 커넥션 헬스(Liveness `SELECT 1`)를 검사하여 `contracts/health_check_contract.md` 규격에 맞는 JSON을 반환하는 HealthCheck API 뷰 구현
+- [X] T012 [US2] `backend/src/config/urls.py` 파일 내 최상위 라우터에 `/api/health/` GET 헬스 체크 API 엔드포인트 다이렉트 바인딩 완료
+- [X] T013 [US2] `backend/src/manage.py migrate` 명령을 수행하여 PostgreSQL v18 데이터베이스로 Django 초기 앱용 스키마 마이그레이션이 100% 에러 없이 성공 전송되는지 검증 완료
 
 **Checkpoint**: User Story 2 완료 - RDBMS 마이그레이션 및 헬스 체크 진단 E2E 정합성 수립 완료
 
@@ -84,8 +84,8 @@
 
 ### Implementation for User Story 3
 
-- [ ] T014 [P] [US3] `backend/.env` 파일에서 `DATABASE_URL`을 잘못된 로그인 주소로 임의 조작한 뒤 `uv run src/manage.py runserver` 구동 시, 하드코딩 폴백 부재로 인해 `OperationalError` 예외가 정상 콘솔 출력되며 즉각 구동이 정지되는지 검증 완료
-- [ ] T015 [US3] `backend/.env` 파일의 자격 증명을 올바른 정보로 원상 복구한 후 웹 서버를 가동하고, `curl -X GET http://localhost:8000/api/health/` 호출 시 `"database": "up"` 상태 코드가 원활히 회신되는지 최종 런타임 검증 완료
+- [X] T014 [P] [US3] `backend/.env` 파일에서 `DATABASE_URL`을 잘못된 로그인 주소로 임의 조작한 뒤 `uv run src/manage.py runserver` 구동 시, 하드코딩 폴백 부재로 인해 `OperationalError` 예외가 정상 콘솔 출력되며 즉각 구동이 정지되는지 검증 완료
+- [X] T015 [US3] `backend/.env` 파일의 자격 증명을 올바른 정보로 원상 복구한 후 웹 서버를 가동하고, `curl -X GET http://localhost:8000/api/health/` 호출 시 `"database": "up"` 상태 코드가 원활히 회신되는지 최종 런타임 검증 완료
 
 **Checkpoint**: User Story 3 완료 - 보안 격리 및 환경 변수 연동 멱등성 검증 완료
 
@@ -95,8 +95,8 @@
 
 **Purpose**: 프로젝트 거버넌스 문서 정합성 동기화 및 횡단 관심사 보완
 
-- [ ] T016 [P] `README.md` 문서에 백엔드 구동용 핵심 명령 및 `scripts/` 내 셋업 스크립트 실행 가이드를 헌법 제VI조 규정에 맞춰 전면 수정 및 최신화
-- [ ] T017 `backend/pyproject.toml`에 명시된 버전 정보가 최상위 헌법 버전 정책(v1.4.0)에 위배되지 않고 100% 동형 일치 갱신(Parity)되었는지 최종 정밀 검증 완수
+- [X] T016 [P] `README.md` 문서에 백엔드 구동용 핵심 명령 및 `scripts/` 내 셋업 스크립트 실행 가이드를 헌법 제VI조 규정에 맞춰 전면 수정 및 최신화
+- [X] T017 `backend/pyproject.toml`에 명시된 버전 정보가 최상위 헌법 버전 정책(v1.4.0)에 위배되지 않고 100% 동형 일치 갱신(Parity)되었는지 최종 정밀 검증 완수
 
 ---
 

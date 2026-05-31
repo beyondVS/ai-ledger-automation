@@ -3,21 +3,27 @@ import environ
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# settings.py의 위치(backend/src/config/settings.py)에 의거한 정확한 디렉토리 명세
+BASE_DIR = Path(__file__).resolve().parent.parent  # backend/src
+BACKEND_DIR = BASE_DIR.parent  # backend
 
 # Initialize django-environ and load local environment file
 env = environ.Env()
-env_file = BASE_DIR.parent.parent / '.env.local'
+# backend/.env 또는 프로젝트 루트의 .env.local 로딩 우선순위 지원 (T004)
+env_file = BACKEND_DIR / '.env'
+if not env_file.exists():
+    env_file = BACKEND_DIR.parent / '.env.local'
 if env_file.exists():
     environ.Env.read_env(str(env_file))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-fallback-secret-key-for-local-development')
+# 절대 보안 수호: 하드코딩 폴백 배제 및 환경 변수 강제 로딩 (T004)
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
+DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 # Application definition
 INSTALLED_APPS = [
@@ -28,7 +34,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # [T002] 3대 신규 비즈니스 도메인 앱 완벽 등록
+    # Third-party Apps (T006)
+    'rest_framework',
+    'corsheaders',
+    
+    # 3대 신규 비즈니스 도메인 앱 완벽 등록
     'apps.accounts',
     'apps.ledgers',
     'apps.tasks',
@@ -37,6 +47,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS 미들웨어 탑재 (T006)
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -65,33 +76,19 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# [T003] DB Connection Pooling Constraints & Supabase Free Plan Optimization
+# [T005] DB Connection Pooling Constraints & Supabase Free Plan Optimization
 # 헌법 II조 및 plan.md 제약 사항 수호:
-# Supabase 가용 커넥션 풀 고갈 붕괴를 영구 차단하기 위해, api_server 최대 5개, async_worker 최대 3개, 
-# 전체 합산 8개 이하 유지 제약을 충족하기 위한 DB 설정을 수립합니다.
-# CONN_MAX_AGE를 활성화하여 빈번한 커넥션 재설정 비용을 제거합니다.
-
-DB_HOST = env.str('DB_HOST', default=env.str('POSTGRES_HOST', default='127.0.0.1'))
-DB_PORT = env.str('DB_PORT', default=env.str('POSTGRES_PORT', default='5432'))
-DB_NAME = env.str('DB_NAME', default=env.str('POSTGRES_DB', default='postgres'))
-DB_USER = env.str('DB_USER', default=env.str('POSTGRES_USER', default='postgres'))
-DB_PASSWORD = env.str('DB_PASSWORD', default=env.str('POSTGRES_PASSWORD', default='postgres'))
-
+# DATABASE_URL은 필수 정보이며 하드코딩 폴백 자격 증명을 전면 배제합니다.
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': DB_NAME,
-        'USER': DB_USER,
-        'PASSWORD': DB_PASSWORD,
-        'HOST': DB_HOST,
-        'PORT': DB_PORT,
-        'CONN_MAX_AGE': 600,  # 10분간 커넥션 유지로 맺고 끊는 부하 최소화
-        'OPTIONS': {
-            # PostgreSQL 연결 시 강제 스위치 튜닝을 통해
-            # 동시 연결 세션이 과대 팽창하여 DB가 Crash되는 사태를 물리 예방합니다.
-            'connect_timeout': 5,
-        }
-    }
+    'default': env.db('DATABASE_URL')
+}
+# psycopg3 연동 엔진 설정
+DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql'
+# Supabase 자원 병목 방지를 위한 CONN_MAX_AGE 동적 오버라이드 지원 (기본 60초)
+DATABASES['default']['CONN_MAX_AGE'] = env.int('DATABASE_CONN_MAX_AGE', default=60)
+DATABASES['default']['OPTIONS'] = {
+    # 연결 타임아웃 세션 물리 제한
+    'connect_timeout': 5,
 }
 
 # Password validation
@@ -121,3 +118,17 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# [T006] CORS Allowed Origins 명세
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+
+# [T006] 글로벌 REST API 보안 및 권한 정책 락 (Secure by Default)
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+}
