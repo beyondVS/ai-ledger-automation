@@ -89,7 +89,7 @@ graph TD
 
 ---
 
-## 🏛️ 프로젝트 헌법 7대 핵심 원칙 (Core Principles)
+## 🏛️ 프로젝트 헌법 8대 핵심 원칙 (Core Principles)
 
 본 프로젝트는 수립된 프로젝트 헌법(`.specify/memory/constitution.md`) 규격에 따라 철저하게 통제 및 개발됩니다.
 
@@ -112,6 +112,8 @@ graph TD
    - 시스템 사양 변동 시 3대 코어 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`) 간의 교차 동기화를 선제적이고 자동적으로 완수합니다.
 7. **선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)**
    - ad-hoc 방식의 임의 패키지 수동 설치를 전면 금지하며, `pyproject.toml`과 `uv.lock`을 통해 백엔드의 파이썬 의존성을 프로젝트 수준으로 격리하고 선언적으로 철저히 명세 제어합니다.
+8. **pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)**
+   - 백엔드 테스트 인프라는 고속 CLI 생산성을 지닌 `pytest` 러너를 활용하고, 데이터베이스 트랜잭션 원자성을 보장하는 Django `TestCase` 및 순수 유틸리티 검증용 `unittest.TestCase`를 도메인 성격에 따라 유기적으로 결합하여 초고속 실행 속도와 일관성을 영구 수호합니다.
 
 ---
 

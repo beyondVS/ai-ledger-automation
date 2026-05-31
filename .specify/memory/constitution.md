@@ -1,7 +1,7 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.3.0 -> v1.4.0
-- Ratified: 2026-05-29 | Last Amended: 2026-05-29
+- Version Change: v1.4.0 -> v1.5.0
+- Ratified: 2026-05-29 | Last Amended: 2026-05-31
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
   2. II. 비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Processing & Scale Isolation)
@@ -10,8 +10,9 @@
   5. V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
   6. VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
   7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
-- Added/Modified: 개발 및 프로젝트 관리 자동화 스크립트 파일을 scripts/ 폴더 하위에 격리하여 생성하도록 지침을 신설하고, .specify/ 폴더는 순수 Spec-Kit 코어 자산으로 청결화하는 원칙을 헌법 제VI조에 정식 비준 및 추가. 또한 프로젝트 버전 상승 시 모노레포 설정 파일(pyproject.toml, backend/pyproject.toml)의 버전을 100% 동형 일치 갱신하도록 의무화(v1.4.0).
-- Added Sections: 없음 (기존 제VI조 조항 강화 보완)
+  8. VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
+- Added/Modified: 백엔드 테스트 아키텍처에 pytest 러너 및 Django/unittest TestCase 하이브리드 통합 구조(Option A)를 제VIII조로 영구 비준하고, DB 연합 테스트와 순수 로직 테스트의 격리 및 최적화 규칙을 수립하여 테스트 스위트의 초고속 실행 속도를 영구 수호(v1.5.0).
+- Added Sections: VIII. pytest 및 Django TestCase 하이브리드 테스트 수호
 - Deleted Sections: 없음
 - Synchronized Templates:
   - plan-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\plan-template.md)
@@ -52,6 +53,12 @@
 
 모든 애플리케이션의 패키지 의존성은 ad-hoc 방식의 임의 `pip install` 또는 시스템 전역 패키지 오염을 원천 차단하기 위해, 반드시 `pyproject.toml`과 `uv.lock`을 통한 선언적 명세 하에 엄격하게 통제되어야 합니다. 로컬 개발, 테스트 실행, 가상 환경 구축 시에는 오직 `uv` 도구를 사용하여 프로젝트 수준의 격리된 가상 환경(`.venv`) 내에서 의존성 동기화(`uv sync`) 및 잠금(`uv lock`) 처리를 완료해야 합니다. 임의의 패키지 무단 설치를 금지하며, 이를 위반하여 선언적 락 파일의 무결성을 깨뜨리는 행위는 헌법에 위배되는 중대 과실로 간주합니다.
 
+### VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
+
+백엔드 테스트 인프라는 고속 테스트 실행 및 CLI 생산성을 좌우하는 **pytest 실행기(Runner)**와 데이터베이스 트랜잭션 원자성을 수호하는 **Django TestCase**의 가치를 유기적으로 융합한 하이브리드 구조를 확고하게 수호합니다. 
+
+데이터베이스 연산이 수반되거나 Django 핵심 컨텍스트(ORM, 모델 고유 키 제약, DRF View 및 Serializer)를 교차 검증해야 하는 모든 비즈니스 로직 테스트는 반드시 `django.test.TestCase` 클래스를 상속받는 명시적 클래스 스타일로 작성해야 합니다. 또한 공통 테스트 데이터를 구성할 때는 매 테스트 메서드마다 DB 인서트가 반복되는 것을 방지하기 위해 반드시 `setUpTestData(cls)` 클래스 메서드를 활용하여 데이터베이스 가동 오버헤드를 극소화하여야 합니다. 반면, 데이터베이스 접근이 완전히 부재하고 순수한 파일 I/O, 메모리 연산 및 데이터 파싱만을 검증하는 독립 유틸리티성 테스트는 표준 라이브러리의 `unittest.TestCase`를 상속받도록 격리 설계함으로써 불필요한 가상 DB 기동 및 장고 설정 오버헤드를 원천적으로 회피하여 초고속 개발자 피드백 루프를 수호하도록 규정합니다.
+
 ## 기술 스택 및 아키텍처 제약 조건 (Tech Stack & Architectural Constraints)
 
 본 프로젝트의 모든 시스템 아키텍처 및 세부 컴포넌트는 다음의 정의된 엄격한 기술 프레임워크 한계선 내에서 설계 및 개발되어야 합니다.
@@ -91,4 +98,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.4.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-29
+**Version**: v1.5.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-31
