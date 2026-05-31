@@ -160,7 +160,24 @@ graph TD
 
 ## 🚀 로컬 실행 방법 (Quick Start)
 
-### 1. 환경 변수 설정
+### 1. 백엔드 보일러플레이트 자동화 셋업 (setup_boilerplate)
+
+헌법 제VI조(크로스 플랫폼 대칭 툴링)에 의거하여, 복잡한 개발 가상환경 셋업 및 패키지 동기화를 한 번에 해결하는 이중 대칭형 자동화 스크립트가 `scripts/` 디렉토리 하위에 준비되어 있습니다.
+
+* **Windows (PowerShell 5.1+):**
+  ```powershell
+  Set-ExecutionPolicy Bypass -Scope Process -Force
+  .\scripts\setup_boilerplate.ps1
+  ```
+* **macOS / Linux / WSL (Bash):**
+  ```bash
+  chmod +x ./scripts/setup_boilerplate.sh
+  ./scripts/setup_boilerplate.sh
+  ```
+
+이 자동화 도구는 `.venv` 가상환경 자동 구축, `uv sync` 의존성 패키지 동기화, `backend/.env` 환경설정 파일 복사 및 자격증명 폴백 부재(No Fallback) 유효성 검사를 원스톱으로 처리합니다.
+
+### 2. 환경 변수 설정
 프로젝트 루트에 `.env.local` 파일을 생성하고 아래 자격 증명을 주입합니다. 
 *(통합 컨트롤러 가동 시 `.env.local`이 발견되지 않으면 `.env.local.example`에서 자동으로 복제 생성됩니다.)*
 
