@@ -20,8 +20,8 @@
 
 **Purpose**: 프로젝트 기본 구조 초기화 및 테스트 전용 공통 리소스 디렉토리 격리 확보
 
-- [ ] T001 `backend/tests/resources/` 디렉토리를 생성하고, 통합 테스트용 표준 한글 영수증 PDF 파일(`receipt_sample.pdf`)을 해당 폴더 하위에 격리 배치
-- [ ] T002 `backend/tests/integration/` 디렉토리를 구축하여 신규 인프라 통합 검증용 소스 파일이 격리 적재될 폴더 구조를 마련
+- [X] T001 `backend/tests/resources/` 디렉토리를 생성하고, 통합 테스트용 표준 한글 영수증 PDF 파일(`receipt_sample.pdf`)을 해당 폴더 하위에 격리 배치
+- [X] T002 `backend/tests/integration/` 디렉토리를 구축하여 신규 인프라 통합 검증용 소스 파일이 격리 적재될 폴더 구조를 마련
 
 ---
 
@@ -31,8 +31,8 @@
 
 **⚠️ CRITICAL**: 이 페이즈가 100% 완료되기 전에는 어떠한 사용자 스토리 코드 작업도 개시할 수 없습니다.
 
-- [ ] T003 `backend/config/settings.py` 경로 내에서 테스트 기동 시 전용 테스트 데이터베이스 포트(`54321`) 및 환경 연결 매핑이 안정적으로 바인딩되는지 검토 및 설정 검증
-- [ ] T004 `backend/pyproject.toml`에 명세된 `pytest-django` 플러그인 의존성을 기반으로, 로컬 격리 테스트 DB가 올라왔을 때 Django 부트스트랩 컨텍스트가 멱등하게 셋업되는지 사전 연결 검증
+- [X] T003 `backend/config/settings.py` 경로 내에서 테스트 기동 시 전용 테스트 데이터베이스 포트(`54321`) 및 환경 연결 매핑이 안정적으로 바인딩되는지 검토 및 설정 검증
+- [X] T004 `backend/pyproject.toml`에 명세된 `pytest-django` 플러그인 의존성을 기반으로, 로컬 격리 테스트 DB가 올라왔을 때 Django 부트스트랩 컨텍스트가 멱등하게 셋업되는지 사전 연결 검증
 
 **Checkpoint**: Foundational Phase 완료 - 이제 각 사용자 스토리의 정밀 구현 및 테스트 가동을 병렬 또는 순차적으로 개시할 수 있습니다.
 
@@ -46,10 +46,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T005 [P] [US1] `backend/tests/integration/test_pdf_integration.py` 경로에 Django `TestCase`를 상속받는 통합 테스트 슈트 클래스 `TestPDFIntegrationSuite` 기본 구조를 코딩
-- [ ] T006 [US1] `backend/tests/integration/test_pdf_integration.py`에 `setUpTestData(cls)` 클래스 메서드를 가동하여 공통 테스트용 사용자 마스터 레코드(`User`)를 DB에 단 1회 생성하도록 코딩
-- [ ] T007 [US1] `backend/tests/integration/test_pdf_integration.py`에 `test_normal_pdf_ingestion` 테스트 메서드를 신설하고, 실제 `receipt_sample.pdf` 파일을 바이트로 로드해 `PDFTextExtractor`를 기동하여 무손실 NFC 한글 복원 정규화 파싱을 완수하도록 코딩
-- [ ] T008 [US1] `backend/tests/integration/test_pdf_integration.py` 내 `test_normal_pdf_ingestion` 서비스 구동부에서 `create_ledger_transactional` API를 호출하고, `Ledger` 1개 레코드와 `LedgerItem` 2개 레코드가 단일 트랜잭션(`transaction.atomic()`)으로 성공 커밋되어 DB에 영속화됨을 단언문(Assert)으로 증명하도록 코딩
+- [X] T005 [P] [US1] `backend/tests/integration/test_pdf_integration.py` 경로에 Django `TestCase`를 상속받는 통합 테스트 슈트 클래스 `TestPDFIntegrationSuite` 기본 구조를 코딩
+- [X] T006 [US1] `backend/tests/integration/test_pdf_integration.py`에 `setUpTestData(cls)` 클래스 메서드를 가동하여 공통 테스트용 사용자 마스터 레코드(`User`)를 DB에 단 1회 생성하도록 코딩
+- [X] T007 [US1] `backend/tests/integration/test_pdf_integration.py`에 `test_normal_pdf_ingestion` 테스트 메서드를 신설하고, 실제 `receipt_sample.pdf` 파일을 바이트로 로드해 `PDFTextExtractor`를 기동하여 무손실 NFC 한글 복원 정규화 파싱을 완수하도록 코딩
+- [X] T008 [US1] `backend/tests/integration/test_pdf_integration.py` 내 `test_normal_pdf_ingestion` 서비스 구동부에서 `create_ledger_transactional` API를 호출하고, `Ledger` 1개 레코드와 `LedgerItem` 2개 레코드가 단일 트랜잭션(`transaction.atomic()`)으로 성공 커밋되어 DB에 영속화됨을 단언문(Assert)으로 증명하도록 코딩
 
 **Checkpoint**: 이 시점에서 User Story 1의 정상적인 PDF 파싱 및 ORM 영속 커밋 E2E 동기화 파이프라인이 완벽히 기동하며 독립 테스트를 100% 통과해야 합니다.
 
@@ -63,9 +63,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T009 [US2] `backend/tests/integration/test_pdf_integration.py`에 `test_duplicate_pdf_isolation` 테스트 메서드를 신설하고, 동일 유저 및 페이로드 정보로 1차 적재를 성공시킨 후 연속하여 2차 중복 인서트 적재를 동기식으로 시도하는 테스트 시나리오를 코딩
-- [ ] T010 [US2] `backend/tests/integration/test_pdf_integration.py` 내 2차 적재 연산 시 DB 복합 고유 제약조건 위배에 따른 `IntegrityError` 예외가 정확하게 발생함을 단언문으로 포착하고, 2차 영수증 삽입이 차단되어 `Ledger` 개수가 여전히 1개로 완전 롤백됨을 보장하도록 코딩
-- [ ] T011 [US2] `backend/tests/integration/test_pdf_integration.py` 내에서 `FailedTask` 격리 수집 테이블을 쿼리하여 `API_LEDGER_INGEST_DUPLICATE` 타입의 실패 로그 레코드가 성공적으로 생성되었는지 단언하고, `raw_payload` JSONB 데이터 내에 원시 영수증 페이로드가 무손실로 안전하게 보존되어 복원 가능한지 최종 입증하도록 코딩
+- [X] T009 [US2] `backend/tests/integration/test_pdf_integration.py`에 `test_duplicate_pdf_isolation` 테스트 메서드를 신설하고, 동일 유저 및 페이로드 정보로 1차 적재를 성공시킨 후 연속하여 2차 중복 인서트 적재를 동기식으로 시도하는 테스트 시나리오를 코딩
+- [X] T010 [US2] `backend/tests/integration/test_pdf_integration.py` 내 2차 적재 연산 시 DB 복합 고유 제약조건 위배에 따른 `IntegrityError` 예외가 정확하게 발생함을 단언문으로 포착하고, 2차 영수증 삽입이 차단되어 `Ledger` 개수가 여전히 1개로 완전 롤백됨을 보장하도록 코딩
+- [X] T011 [US2] `backend/tests/integration/test_pdf_integration.py` 내에서 `FailedTask` 격리 수집 테이블을 쿼리하여 `API_LEDGER_INGEST_DUPLICATE` 타입의 실패 로그 레코드가 성공적으로 생성되었는지 단언하고, `raw_payload` JSONB 데이터 내에 원시 영수증 페이로드가 무손실로 안전하게 보존되어 복원 가능한지 최종 입증하도록 코딩
 
 **Checkpoint**: 이 시점에서 중복 영수증 유입에 따른 헌법적 트랜잭션 원자성 롤백과 DLQ 비상 금고 격리 적재의 무결성이 독립적으로 완벽하게 검증되어야 합니다.
 
@@ -79,8 +79,8 @@
 
 ### Implementation for User Story 3
 
-- [ ] T012 [P] [US3] `scripts/run-pdf-tests.ps1` 경로에 Windows PowerShell용 원클릭 E2E 자동화 도구를 코딩하여 [격리된 PostgreSQL 18-alpine 컨테이너 기동 -> 54321 포트 바인딩 대기 -> uv run Django 마이그레이션 기동 -> pytest 통합 스위트 가동 -> 에러 가로채기(Catch) 및 docker compose down -v 격리 청소] 자동화 흐름을 구축
-- [ ] T013 [P] [US3] `scripts/run-pdf-tests.sh` 경로에 UNIX/macOS/Linux Bash용 대칭형 원클릭 E2E 자동화 도구를 동일 동형하게 코딩하여 헌법 제VI조(양대 쉘 대칭적 동등 지원)의 툴링 멱등성과 격리 회수를 완벽히 수호
+- [X] T012 [P] [US3] `scripts/run-pdf-tests.ps1` 경로에 Windows PowerShell용 원클릭 E2E 자동화 도구를 코딩하여 [격리된 PostgreSQL 18-alpine 컨테이너 기동 -> 54321 포트 바인딩 대기 -> uv run Django 마이그레이션 기동 -> pytest 통합 스위트 가동 -> 에러 가로채기(Catch) 및 docker compose down -v 격리 청소] 자동화 흐름을 구축
+- [X] T013 [P] [US3] `scripts/run-pdf-tests.sh` 경로에 UNIX/macOS/Linux Bash용 대칭형 원클릭 E2E 자동화 도구를 동일 동형하게 코딩하여 헌법 제VI조(양대 쉘 대칭적 동등 지원)의 툴링 멱등성과 격리 회수를 완벽히 수호
 
 **Checkpoint**: 이 시점에서 개발자는 어느 운영체제 환경에서든 단 한 줄의 명령어만으로 로컬 인프라 세팅부터 테스트 완료 및 격리 청소까지 15초 내에 원클릭으로 가동할 수 있어야 합니다.
 
@@ -90,8 +90,8 @@
 
 **Purpose**: 사용자 환경 회복성 마감 및 횡단 관심사 보완
 
-- [ ] T014 `scripts/` 하위 스크립트 실행 시 로컬 도커 데몬(Docker Desktop)이 꺼져있을 경우 사용자에게 명확하고 친절한 예외 복구 지침 메시지를 출력하도록 오류 안내문 다듬기
-- [ ] T015 [P] 1주차 퀵스타트 가이드 [quickstart.md](file:///D:/Projects/Private/ai-ledger-automation/specs/006-infra-integration-test/quickstart.md)의 기동 스펙에 따라 윈도우 및 UNIX 쉘에서 각각 단독 기동을 최종 확인하고 exit code `0` 멱등 반환을 수동 검증 완결
+- [X] T014 `scripts/` 하위 스크립트 실행 시 로컬 도커 데몬(Docker Desktop)이 꺼져있을 경우 사용자에게 명확하고 친절한 예외 복구 지침 메시지를 출력하도록 오류 안내문 다듬기
+- [X] T015 [P] 1주차 퀵스타트 가이드 [quickstart.md](file:///D:/Projects/Private/ai-ledger-automation/specs/006-infra-integration-test/quickstart.md)의 기동 스펙에 따라 윈도우 및 UNIX 쉘에서 각각 단독 기동을 최종 확인하고 exit code `0` 멱등 반환을 수동 검증 완결
 
 ---
 
