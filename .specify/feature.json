@@ -1,3 +1,4 @@
 {
-  "feature_directory": "specs/003-apply-db-unique-constraints"
+  "feature_directory": "specs/004-django-initial-setup"
 }
+
