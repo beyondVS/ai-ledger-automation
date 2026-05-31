@@ -116,6 +116,7 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 - **프로젝트 관리용 스크립트 격리 배치**: 프로젝트의 로컬 제어, 빌드, RDBMS 환경 기동, 마이그레이션, 테스트 등 프로젝트 개발 관리에 요구되는 모든 커스텀 자동화 스크립트/도구 파일들은 반드시 프로젝트 루트의 `scripts/` 디렉토리 하위에 직접 생성 및 배치해야 합니다. `.specify/` 디렉토리는 오직 Spec-Kit 프레임워크 고유 자산 및 빌트인 템플릿으로만 정결하게 유지되어야 하며, 임의의 커스텀 관리 도구가 혼입되는 것을 엄격히 금지합니다.
 - **3대 코어 문서 및 설정 자율 교차 동기화**: [**최상위 프로젝트 헌법 제VI조**](file:///.specify/memory/constitution.md)에 명문화된 동기화 규정에 따라, 에이전트는 기술 스택, 셋업, 아키텍처적 사양 변경 발생 시 사용자의 명시적 지시가 없더라도 주도적으로 3대 핵심 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`)와 모노레포 설정 파일(`pyproject.toml`, `backend/pyproject.toml`) 간의 정합성을 유기적으로 교차 검증하고 자동 동기화 및 프로젝트 버전 일치 업데이트를 완수해야 합니다.
 - **선언적 의존성 통제 표준 (Package Dependency Control)**: 파이썬 의존성 패키지를 추가하거나 버전을 변경할 때, 결코 런타임 가상 환경에 직접 수동 설치하지 않고 반드시 `pyproject.toml`을 편집한 후 `uv lock` 및 `uv sync`를 통해 락 파일을 갱신하고 가상 환경의 일치(100% parity)를 달성해야 합니다.
+- **하이브리드 테스트 작성 규약 (Hybrid Test Strategy)**: [**최상위 프로젝트 헌법 제VIII조**](file:///.specify/memory/constitution.md)에 의거하여, DB 결합 백엔드 테스트(ORM, API 뷰 등)는 반드시 `django.test.TestCase`를 상속받고 `setUpTestData(cls)`를 사용하여 초기 DB 오버헤드를 극소화하여야 합니다. 반면, DB 조회가 없는 순수 유틸리티 테스트는 `unittest.TestCase`를 상속받아 장고 부트스트랩을 우회하고 속도를 극대화해야 합니다. 전체 테스트 실행은 강력하고 지능적인 `pytest` 러너를 활용해 초고속 피드백 루프를 수호합니다.
 - **커밋 메시지 규약 (Commit Conventions)**: 커밋 메시지는 Conventional Commits 규약(`feat:`, `fix:`, `docs:`, `refactor:` 등)을 준수하여 작성하십시오. 프로젝트 내 특정 언어 규칙(예: 한글 작성 등)이 있다면 이를 최우선으로 따르십시오.
 
 <!-- SPECKIT START -->
