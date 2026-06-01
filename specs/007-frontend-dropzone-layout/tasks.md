@@ -122,7 +122,7 @@
 **Purpose**: 마이크로 애니메이션 최적화, 불필요한 빌드 플레이스홀더 청소 및 퀵스타트 정상 작동 검증
 
 - [ ] T022 [P] `frontend/src/App.vue` 및 `frontend/src/components/Dropzone.vue` 등 소스코드 상의 미사용 보일러플레이트 자산(기본 Vite 로고 및 헬로월드)을 전수 정리하고 테일윈드 중첩 스타일 간결화
-- [ ] T023 `frontend/src/index.css` 파일 내에 마우스 호버 및 드래그 오버 시 은은한 Glow 아웃라인 효과와 액티브 트랜지션 애니메이션을 삽입하여 사용자 인터랙션 극대화 (Aesthetics WOW 구현)
+- [ ] T023 `frontend/src/index.css` 파일 내에 마우스 호버 및 드래그 오버 시 은은한 GPU 가속(`will-change: transform`) Glow 효과와 액티브 트랜지션 애니메이션을 삽입하고, 모바일 친화적인 정적 폴백 구조를 구현하여 사용자 인터랙션 극대화 (Aesthetics WOW 구현)
 - [ ] T024 `frontend/README.md` 문서를 작성하고 저장소 루트의 `quickstart.md` 지침에 따라 로컬 `npm run dev` 구동을 통한 최종 E2E 퍼블리싱 빌드 기계식 검증 완수
 
 ---
