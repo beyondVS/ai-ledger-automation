@@ -180,8 +180,8 @@ graph TD
 이 자동화 도구는 `.venv` 가상환경 자동 구축, `uv sync` 의존성 패키지 동기화, `backend/.env` 환경설정 파일 복사 및 자격증명 폴백 부재(No Fallback) 유효성 검사를 원스톱으로 처리합니다.
 
 ### 2. 환경 변수 설정
-프로젝트 루트에 `.env.local` 파일을 생성하고 아래 자격 증명을 주입합니다. 
-*(통합 컨트롤러 가동 시 `.env.local`이 발견되지 않으면 `.env.local.example`에서 자동으로 복제 생성됩니다.)*
+`backend/.env` 파일을 편집하고 아래 자격 증명을 주입합니다. 
+*(통합 컨트롤러 가동 시 `backend/.env`가 발견되지 않으면 `backend/.env.example`에서 자동으로 복제 생성됩니다.)*
 
 ```env
 POSTGRES_DB=ledgerdb
@@ -200,7 +200,7 @@ VAPID_PRIVATE_KEY=your_vapid_private_key
 
 | 도구 스크립트 | 실행 대역 | 주요 역할 및 제공 기능 |
 | :--- | :--- | :--- |
-| **`scripts/manage-db.ps1`**<br>**`scripts/manage-db.sh`** | **물리 인프라 전용**<br>(Docker 및 psql 쿼리) | • `.env.local` 환경 변수 파싱 및 프로세스 세션 자동 로드<br>• Docker PostgreSQL 18-alpine 컨테이너 기동 및 데이터 볼륨 영속 마운트<br>• psql 쿼리를 활용한 문자셋(`UTF8`) 및 엔진 시간대(`Asia/Seoul`) 물리 정합성 실시간 검증<br>• `-Cleanup` 스위치 구동 시 실행 중인 DB 컨테이너 중지 및 네임드 볼륨 영구 격리 삭제 |
+| **`scripts/manage-db.ps1`**<br>**`scripts/manage-db.sh`** | **물리 인프라 전용**<br>(Docker 및 psql 쿼리) | • `backend/.env` 환경 변수 파싱 및 프로세스 세션 자동 로드<br>• Docker PostgreSQL 18-alpine 컨테이너 기동 및 데이터 볼륨 영속 마운트<br>• psql 쿼리를 활용한 문자셋(`UTF8`) 및 엔진 시간대(`Asia/Seoul`) 물리 정합성 실시간 검증<br>• `-Cleanup` 스위치 구동 시 실행 중인 DB 컨테이너 중지 및 네임드 볼륨 영구 격리 삭제 |
 | **`scripts/local-db-controller.ps1`**<br>**`scripts/local-db-controller.sh`** | **백엔드 애플리케이션 전용**<br>(Django 및 pytest) | • **`Migration`**: Django ORM 마이그레이션을 일제 기동하여 최신 물리 스키마 테이블 동기화<br>• **`Test`**: pytest 러너를 연동해 복합 UNIQUE 제약조건 위배 차단 등 8종 단위/통합 테스트 E2E 무결성 검증<br>• **`Reset`**: 컨테이너의 소멸 없이 Django DB 테이블 데이터만 멱등적으로 플러시 초기화 |
 
 **Windows (PowerShell 5.1+ 환경):**
