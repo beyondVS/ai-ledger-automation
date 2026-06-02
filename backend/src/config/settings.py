@@ -79,6 +79,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # [T005] DB Connection Pooling Constraints & Supabase Free Plan Optimization
 # 헌법 II조 및 plan.md 제약 사항 수호:
 # DATABASE_URL은 필수 정보이며 하드코딩 폴백 자격 증명을 전면 배제합니다.
+# api_server 컨테이너 최대 5개 커넥션 한도를 넘지 않도록 WAS 멀티프로세스 제한(Gunicorn worker=2, thread=2 등)과 연동 통제합니다.
 DATABASES = {
     'default': env.db('DATABASE_URL')
 }
