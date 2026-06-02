@@ -116,3 +116,26 @@ class MerchantTemplate(models.Model):
 
     def __str__(self):
         return f"Template for {self.vendor_name} ({self.vendor_registration_number})"
+
+
+class ReceiptUploadJob(models.Model):
+    """
+    [T004, T011] ReceiptUploadJob 데이터 모델
+    - 영수증 분석 요청을 추적하기 위한 비동기 작업 정보 테이블입니다.
+    """
+    id = models.UUIDField(primary_key=True, default=generate_uuidv7, editable=False, db_index=True)
+    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='receipt_jobs', null=True, blank=True)
+    status = models.CharField(max_length=20, default='PENDING') # PENDING, PROCESSING, COMPLETED, FAILED
+    raw_file_name = models.CharField(max_length=255, null=True, blank=True)
+    ledger = models.OneToOneField(Ledger, on_delete=models.SET_NULL, null=True, blank=True, related_name='upload_job')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'receipt_upload_jobs'
+        verbose_name = 'receipt_upload_job'
+        verbose_name_plural = 'receipt_upload_jobs'
+
+    def __str__(self):
+        return f"Job {self.id} - {self.status}"
+

@@ -7,8 +7,7 @@ docker-compose*.yml
 
 # Credentials and Local Configurations
 .env*
-.env.local
-.env.local.example
+backend/.env*
 
 # IDEs & OS files
 .idea/

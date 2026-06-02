@@ -3,27 +3,19 @@ import environ
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-# settings.py의 위치(backend/src/config/settings.py)에 의거한 정확한 디렉토리 명세
-BASE_DIR = Path(__file__).resolve().parent.parent  # backend/src
+# settings/base.py의 위치에 의거한 정확한 디렉토리 명세 보정
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # backend/src
 BACKEND_DIR = BASE_DIR.parent  # backend
 
 # Initialize django-environ and load local environment file
 env = environ.Env()
-# backend/.env 또는 프로젝트 루트의 .env.local 로딩 우선순위 지원 (T004)
+# backend/.env 로딩 지원
 env_file = BACKEND_DIR / '.env'
-if not env_file.exists():
-    env_file = BACKEND_DIR.parent / '.env.local'
 if env_file.exists():
     environ.Env.read_env(str(env_file))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# 절대 보안 수호: 하드코딩 폴백 배제 및 환경 변수 강제 로딩 (T004)
 SECRET_KEY = env('SECRET_KEY')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool('DEBUG', default=False)
-
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 # Application definition
 INSTALLED_APPS = [
@@ -34,11 +26,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Third-party Apps (T006)
+    # Third-party Apps
     'rest_framework',
     'corsheaders',
     
-    # 3대 신규 비즈니스 도메인 앱 완벽 등록
+    # 신규 비즈니스 도메인 앱
     'apps.accounts',
     'apps.ledgers',
     'apps.tasks',
@@ -47,7 +39,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # CORS 미들웨어 탑재 (T006)
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -75,19 +67,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
-# [T005] DB Connection Pooling Constraints & Supabase Free Plan Optimization
-# 헌법 II조 및 plan.md 제약 사항 수호:
-# DATABASE_URL은 필수 정보이며 하드코딩 폴백 자격 증명을 전면 배제합니다.
+# DB Connection Pooling Constraints & Supabase Free Plan Optimization
 DATABASES = {
     'default': env.db('DATABASE_URL')
 }
-# psycopg3 연동 엔진 설정
 DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql'
-# Supabase 자원 병목 방지를 위한 CONN_MAX_AGE 동적 오버라이드 지원 (기본 60초)
 DATABASES['default']['CONN_MAX_AGE'] = env.int('DATABASE_CONN_MAX_AGE', default=60)
 DATABASES['default']['OPTIONS'] = {
-    # 연결 타임아웃 세션 물리 제한
     'connect_timeout': 5,
 }
 
@@ -107,9 +93,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-LANGUAGE_CODE = 'ko-kr'  # 한국어 우선 원칙 준수
+LANGUAGE_CODE = 'ko-kr'
 TIME_ZONE = 'Asia/Seoul'
 USE_I18N = True
 USE_TZ = True
@@ -119,10 +104,11 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# [T006] CORS Allowed Origins 명세
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+# CORS & CSRF 신뢰 오리진 기본 공통 설정
+CORS_ALLOWED_ORIGINS = []
+CSRF_TRUSTED_ORIGINS = []
 
-# [T006] 글로벌 REST API 보안 및 권한 정책 락 (Secure by Default)
+# 글로벌 REST API 보안 및 권한 정책
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',

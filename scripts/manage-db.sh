@@ -79,24 +79,24 @@ fi
 # 기본 기동 흐름
 echo "선행 환경 초기화 및 인프라 진단을 시작합니다..."
 
-ENV_FILE="$REPO_ROOT/.env.local"
-EXAMPLE_FILE="$REPO_ROOT/.env.local.example"
+ENV_FILE="$REPO_ROOT/backend/.env"
+EXAMPLE_FILE="$REPO_ROOT/backend/.env.example"
 
-# 1. .env.local 환경 변수 존재 체크 및 복사
+# 1. backend/.env 환경 변수 존재 체크 및 복사
 if [ ! -f "$ENV_FILE" ]; then
-    echo "경고: '.env.local' 파일이 존재하지 않습니다."
-    echo "개발자 템플릿 '.env.local.example'을 복사하여 '.env.local'을 새로 생성합니다..."
+    echo "경고: 'backend/.env' 파일이 존재하지 않습니다."
+    echo "개발자 템플릿 'backend/.env.example'을 복사하여 'backend/.env'를 새로 생성합니다..."
     if [ -f "$EXAMPLE_FILE" ]; then
         cp "$EXAMPLE_FILE" "$ENV_FILE"
-        echo "'.env.local' 템플릿 복사 성공!"
+        echo "'backend/.env' 템플릿 복사 성공!"
     else
-        echo "오류: 템플릿 파일 '.env.local.example'도 누락되었습니다. 1일차 셋업 요구사항을 확인하십시오." >&2
+        echo "오류: 템플릿 파일 'backend/.env.example'도 누락되었습니다. 1일차 셋업 요구사항을 확인하십시오." >&2
         exit 1
     fi
 fi
 
-# 2. .env.local 환경 변수 파싱 및 프로세스 세션 로딩
-echo "'.env.local' 환경 변수 파싱 및 로드 중..."
+# 2. backend/.env 환경 변수 파싱 및 프로세스 세션 로딩
+echo "'backend/.env' 환경 변수 파싱 및 로드 중..."
 while IFS= read -r line || [ -n "$line" ]; do
     line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g')
     if [[ "$line" =~ ^# ]] || [ -z "$line" ]; then

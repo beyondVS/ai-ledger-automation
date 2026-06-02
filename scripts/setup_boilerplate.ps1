@@ -12,7 +12,7 @@ $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptRoot
 $BackendDir = Join-Path $RepoRoot "backend"
 $EnvFile = Join-Path $BackendDir ".env"
-$EnvExample = Join-Path $RepoRoot ".env.local.example"
+$EnvExample = Join-Path $BackendDir ".env.example"
 
 # 1. uv 설치 확인
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
@@ -32,12 +32,12 @@ try {
 # 3. .env 파일 검증 및 복사
 Write-Host "[2/4] 환경 변수(.env) 설정 확인 중..." -ForegroundColor Yellow
 if (-not (Test-Path $EnvFile)) {
-    Write-Host ".env 파일이 존재하지 않습니다. .env.local.example을 기반으로 생성합니다." -ForegroundColor Gray
+    Write-Host ".env 파일이 존재하지 않습니다. backend/.env.example을 기반으로 생성합니다." -ForegroundColor Gray
     if (Test-Path $EnvExample) {
         Copy-Item -Path $EnvExample -Destination $EnvFile -Force
         Write-Host "✓ backend/.env 파일이 생성되었습니다. 자격 증명을 알맞게 설정해 주십시오." -ForegroundColor Green
     } else {
-        Write-Warning "경고: .env.local.example을 찾을 수 없습니다. 빈 .env 파일을 생성합니다."
+        Write-Warning "경고: backend/.env.example을 찾을 수 없습니다. 빈 .env 파일을 생성합니다."
         New-Item -Path $EnvFile -ItemType File -Force | Out-Null
     }
 } else {
@@ -67,7 +67,7 @@ Write-Host "[3/4] 로컬 RDBMS 도커 컨테이너 검증..." -ForegroundColor Y
 $dockerStatus = docker ps --filter "name=ai-ledger-db" --format "{{.Status}}" 2>$null
 if ([string]::IsNullOrEmpty($dockerStatus)) {
     Write-Host "💡 팁: RDBMS 컨테이너가 구동되고 있지 않은 것 같습니다." -ForegroundColor Magenta
-    Write-Host "구동 방법: docker compose -f docker-compose.db.yml --env-file .env.local up -d" -ForegroundColor Magenta
+    Write-Host "구동 방법: docker compose -f docker-compose.db.yml --env-file backend/.env up -d" -ForegroundColor Magenta
 } else {
     Write-Host "✓ 데이터베이스 컨테이너가 동작 중입니다 ($dockerStatus)." -ForegroundColor Green
 }

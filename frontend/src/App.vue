@@ -14,7 +14,7 @@
         </p>
       </header>
 
-      <!-- 에러 피드백 알럿 영역 (Phase 5 겸용) -->
+      <!-- 에러 피드백 알럿 영역 -->
       <div 
         v-if="errorMessage"
         class="w-full max-w-md mx-auto mb-5 p-4 rounded-xl bg-rose-950/30 border border-rose-900/40 text-rose-200 text-sm flex items-start space-x-3 transition-all duration-300 shadow-md animate-fade-in"
@@ -27,17 +27,30 @@
 
       <!-- 메인 인터랙티브 작업 공간 -->
       <div class="relative w-full max-w-md mx-auto">
-        <!-- 드롭존 (수량 제약 및 1차 검사 바이패스) -->
+        <!-- 업로드 진행 중 로딩 인디케이터 오버레이 -->
+        <div 
+          v-if="isUploading"
+          class="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-center p-8 border border-slate-800 shadow-2xl animate-fade-in"
+        >
+          <!-- 핀테크 감성 그라데이션 회전 링 -->
+          <div class="w-14 h-14 rounded-full border-4 border-slate-800 border-t-indigo-500 animate-spin mb-4"></div>
+          <h3 class="font-outfit text-slate-100 font-semibold text-lg mb-1">영수증 분석 중...</h3>
+          <p class="text-slate-400 text-xs tracking-wide">HTML5 Canvas 압축 및 AI OCR 파이프라인 가동 중</p>
+        </div>
+
+        <!-- 드롭존 -->
         <Dropzone 
           v-if="!currentFile"
           @file-detected="onFileDetected"
           @validation-error="onValidationError"
         />
 
-        <!-- 영수증 결과물 목록 피드백 (US2) -->
+        <!-- 영수증 결과물 목록 및 분석된 가계부 명세 피드백 -->
         <ReceiptList 
           v-else
           :file="currentFile"
+          :parsed-data="parsedData"
+          :polling-status="pollingStatus"
           @file-removed="onFileRemoved"
         />
       </div>
@@ -54,29 +67,81 @@
 import { ref } from 'vue'
 import Dropzone from './components/Dropzone.vue'
 import ReceiptList from './components/ReceiptList.vue'
+import { compressImage, uploadReceiptApi } from './services/uploadService'
+import { VirtualPollingManager } from './services/pollingService'
 
 const currentFile = ref(null)
+const parsedData = ref(null)
+const isUploading = ref(false)
 const errorMessage = ref(null)
+const pollingStatus = ref(null)
 let errorTimeout = null
 
-// 영수증 파일 감지 성공 시 호출 (reactive 모델 매핑)
-const onFileDetected = (file) => {
-  // 에러 상태 초기화
+// 영수증 파일 감지 성공 시 호출 (비동기 업로드 E2E 구동)
+const onFileDetected = async (file) => {
   clearError()
+  isUploading.value = true
+  pollingStatus.value = null
 
-  // 브라우저 썸네일 미리보기를 위해 blob Object URL 생성 및 할당
-  const previewUrl = URL.createObjectURL(file)
+  try {
+    // 1. 헌법 V조 수호: 가로 최대 1000px 이미지 1차 압축 처리
+    const compressed = await compressImage(file)
+    
+    // 2. 동기식 Django API 업로드 연동
+    const response = await uploadReceiptApi(compressed, file.name)
+    
+    // 3. UUIDv7 식별자 및 status 하위 호환성 확인
+    const jobId = response.job_id
+    const status = response.status
 
-  // currentFile 상태 구조 매핑 (data-model 규격 강력 준수)
-  currentFile.value = {
-    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '018fe670-8b1d-7a6c-94eb-f072bbab4567',
-    name: file.name,
-    size: file.size,
-    type: file.type,
-    previewUrl: previewUrl,
-    rawFile: file,
-    createdAt: new Date().toISOString()
+    // 미리보기 URL 생성
+    const previewUrl = URL.createObjectURL(compressed)
+    
+    currentFile.value = {
+      id: jobId,
+      name: file.name,
+      size: compressed.size,
+      type: file.type,
+      previewUrl: previewUrl,
+      rawFile: file,
+      createdAt: new Date().toISOString()
+    }
+
+    if (status === 'COMPLETED') {
+      // 동기 파싱 성공 즉시 렌더링 바인딩
+      parsedData.value = response.data
+      pollingStatus.value = 'COMPLETED'
+    } else {
+      // 3주차 비동기 호환을 위한 가상 폴링 대기 루프 개시 (US2)
+      pollingStatus.value = status
+      startVirtualPolling(jobId, status)
+    }
+
+  } catch (err) {
+    onValidationError(err.message)
+    currentFile.value = null
+    parsedData.value = null
+  } finally {
+    isUploading.value = false
   }
+}
+
+// 가상 폴링 모듈 구동 함수 (US2)
+const startVirtualPolling = (jobId, initialStatus) => {
+  VirtualPollingManager.startPolling(
+    jobId,
+    initialStatus,
+    (completedData) => {
+      // 폴링 완료 시 콜백
+      parsedData.value = completedData
+      pollingStatus.value = 'COMPLETED'
+    },
+    (error) => {
+      // 폴링 에러 시 콜백
+      onValidationError(error.message || '비동기 폴링 상태 조회에 실패했습니다.')
+      pollingStatus.value = 'FAILED'
+    }
+  )
 }
 
 // 영수증 파일 제거 시 (메모리 안전 해제)
@@ -86,10 +151,12 @@ const onFileRemoved = () => {
     URL.revokeObjectURL(currentFile.value.previewUrl)
   }
   currentFile.value = null
+  parsedData.value = null
+  pollingStatus.value = null
   clearError()
 }
 
-// 1차 유효성 검사 실패 수신 시 (Phase 5)
+// 1차 유효성 검사 실패 수신 시
 const onValidationError = (error) => {
   errorMessage.value = error
   
@@ -97,7 +164,7 @@ const onValidationError = (error) => {
   if (errorTimeout) clearTimeout(errorTimeout)
   errorTimeout = setTimeout(() => {
     errorMessage.value = null
-  }, 3000)
+  }, 4000)
 }
 
 const clearError = () => {
