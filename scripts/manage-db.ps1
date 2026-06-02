@@ -63,23 +63,23 @@ if ($Cleanup) {
 # =========================================================================
 Write-Host "선행 환경 초기화 및 인프라 진단을 시작합니다..." -ForegroundColor Cyan
 
-# 1. .env.local 환경 변수 파싱 및 프로세스 세션 로딩
-$EnvFile = Join-Path $PSScriptRoot "..\.env.local"
-$ExampleFile = Join-Path $PSScriptRoot "..\.env.local.example"
+# 1. backend/.env 환경 변수 파싱 및 프로세스 세션 로딩
+$EnvFile = Join-Path $PSScriptRoot "..\backend\.env"
+$ExampleFile = Join-Path $PSScriptRoot "..\backend\.env.example"
 
 if (-not (Test-Path $EnvFile)) {
-    Write-Warning "'.env.local' 파일이 존재하지 않습니다."
-    Write-Host "개발자 템플릿 '.env.local.example'을 복사하여 '.env.local'을 새로 생성합니다..." -ForegroundColor Cyan
+    Write-Warning "'backend/.env' 파일이 존재하지 않습니다."
+    Write-Host "개발자 템플릿 'backend/.env.example'을 복사하여 'backend/.env'를 새로 생성합니다..." -ForegroundColor Cyan
     if (Test-Path $ExampleFile) {
         Copy-Item $ExampleFile $EnvFile
-        Write-Host "'.env.local' 템플릿 복사 성공!" -ForegroundColor Green
+        Write-Host "'backend/.env' 템플릿 복사 성공!" -ForegroundColor Green
     } else {
-        Write-Error "템플릿 파일 '.env.local.example'도 누락되었습니다. 1일차 셋업 요구사항을 확인하십시오."
+        Write-Error "템플릿 파일 'backend/.env.example'도 누락되었습니다. 1일차 셋업 요구사항을 확인하십시오."
         exit 1
     }
 }
 
-Write-Host "'.env.local' 환경 변수 파싱 및 로드 중..." -ForegroundColor Cyan
+Write-Host "'backend/.env' 환경 변수 파싱 및 로드 중..." -ForegroundColor Cyan
 Get-Content $EnvFile | ForEach-Object {
     $Line = $_.Trim()
     if ($Line -match "^#" -or [string]::IsNullOrWhiteSpace($Line)) { return }

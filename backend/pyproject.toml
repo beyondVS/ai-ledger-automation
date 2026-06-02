@@ -15,6 +15,6 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings"
+DJANGO_SETTINGS_MODULE = "config.settings.local"
 pythonpath = "src"
 python_files = ["tests/unit/**/*.py", "tests/integration/**/*.py", "test_*.py"]

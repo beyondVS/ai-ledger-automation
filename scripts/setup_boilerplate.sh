@@ -20,7 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 BACKEND_DIR="$REPO_ROOT/backend"
 ENV_FILE="$BACKEND_DIR/.env"
-ENV_EXAMPLE="$REPO_ROOT/.env.local.example"
+ENV_EXAMPLE="$BACKEND_DIR/.env.example"
 
 # 1. uv 설치 확인
 if ! command -v uv &> /dev/null; then
@@ -37,12 +37,12 @@ echo -e "${GREEN}✓ 의존성 동기화 완료!${NC}"
 # 3. .env 파일 검증 및 복사
 echo -e "${YELLOW}[2/4] 환경 변수(.env) 설정 확인 중...${NC}"
 if [ ! -f "$ENV_FILE" ]; then
-    echo -e "  .env 파일이 존재하지 않습니다. .env.local.example을 기반으로 생성합니다."
+    echo -e "  .env 파일이 존재하지 않습니다. backend/.env.example을 기반으로 생성합니다."
     if [ -f "$ENV_EXAMPLE" ]; then
         cp "$ENV_EXAMPLE" "$ENV_FILE"
         echo -e "${GREEN}✓ backend/.env 파일이 생성되었습니다. 자격 증명을 알맞게 설정해 주십시오.${NC}"
     else
-        echo -e "${YELLOW}경고: .env.local.example을 찾을 수 없습니다. 빈 .env 파일을 생성합니다.${NC}"
+        echo -e "${YELLOW}경고: backend/.env.example을 찾을 수 없습니다. 빈 .env 파일을 생성합니다.${NC}"
         touch "$ENV_FILE"
     fi
 else
@@ -71,7 +71,7 @@ if command -v docker &> /dev/null; then
     DOCKER_STATUS=$(docker ps --filter "name=ai-ledger-db" --format "{{.Status}}" 2>/dev/null || true)
     if [ -z "$DOCKER_STATUS" ]; then
         echo -e "${YELLOW}💡 팁: RDBMS 컨테이너가 구동되고 있지 않은 것 같습니다.${NC}"
-        echo -e "구동 방법: docker compose -f docker-compose.db.yml --env-file .env.local up -d"
+        echo -e "구동 방법: docker compose -f docker-compose.db.yml --env-file backend/.env up -d"
     else
         echo -e "${GREEN}✓ 데이터베이스 컨테이너가 동작 중입니다 ($DOCKER_STATUS).${NC}"
     fi
