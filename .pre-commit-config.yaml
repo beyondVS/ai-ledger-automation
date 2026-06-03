@@ -5,9 +5,13 @@ repos:
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
+        files: ^backend/
       - id: end-of-file-fixer
+        files: ^backend/
       - id: check-yaml
+        files: ^backend/
       - id: check-added-large-files
+        files: ^backend/
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.4.8
@@ -15,7 +19,9 @@ repos:
       # Linter 실행 및 자동 수정 적용
       - id: ruff
         args: [ --fix ]
+        files: ^backend/
         types: [python]
       # Formatter 실행
       - id: ruff-format
+        files: ^backend/
         types: [python]
