@@ -1,7 +1,7 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.4.0 -> v1.5.0
-- Ratified: 2026-05-29 | Last Amended: 2026-05-31
+- Version Change: v1.5.0 -> v1.6.0
+- Ratified: 2026-05-29 | Last Amended: 2026-06-03
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
   2. II. 비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Processing & Scale Isolation)
@@ -11,8 +11,9 @@
   6. VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
   7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
   8. VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
-- Added/Modified: 백엔드 테스트 아키텍처에 pytest 러너 및 Django/unittest TestCase 하이브리드 통합 구조(Option A)를 제VIII조로 영구 비준하고, DB 연합 테스트와 순수 로직 테스트의 격리 및 최적화 규칙을 수립하여 테스트 스위트의 초고속 실행 속도를 영구 수호(v1.5.0).
-- Added Sections: VIII. pytest 및 Django TestCase 하이브리드 테스트 수호
+  9. IX. ruff 및 pre-commit 자동화 품질 가드 수호 (Ruff Linter & pre-commit Quality Guard)
+- Added/Modified: 백엔드 개발 시 파이썬 코드 스타일 정합성 유지 및 사전 린트 검증 자동화를 위해 ruff와 pre-commit 훅을 제IX조로 영구 비준하고, 커밋 전 자동 린트/포매팅 정합성 보장 의무를 수립(v1.6.0).
+- Added Sections: IX. ruff 및 pre-commit 자동화 품질 가드 수호
 - Deleted Sections: 없음
 - Synchronized Templates:
   - plan-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\plan-template.md)
@@ -55,9 +56,13 @@
 
 ### VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
 
-백엔드 테스트 인프라는 고속 테스트 실행 및 CLI 생산성을 좌우하는 **pytest 실행기(Runner)**와 데이터베이스 트랜잭션 원자성을 수호하는 **Django TestCase**의 가치를 유기적으로 융합한 하이브리드 구조를 확고하게 수호합니다. 
+백엔드 테스트 인프라는 고속 테스트 실행 및 CLI 생산성을 좌우하는 **pytest 실행기(Runner)**와 데이터베이스 트랜잭션 원자성을 수호하는 **Django TestCase**의 가치를 유기적으로 융합한 하이브리드 구조를 확고하게 수호합니다.
 
 데이터베이스 연산이 수반되거나 Django 핵심 컨텍스트(ORM, 모델 고유 키 제약, DRF View 및 Serializer)를 교차 검증해야 하는 모든 비즈니스 로직 테스트는 반드시 `django.test.TestCase` 클래스를 상속받는 명시적 클래스 스타일로 작성해야 합니다. 또한 공통 테스트 데이터를 구성할 때는 매 테스트 메서드마다 DB 인서트가 반복되는 것을 방지하기 위해 반드시 `setUpTestData(cls)` 클래스 메서드를 활용하여 데이터베이스 가동 오버헤드를 극소화하여야 합니다. 반면, 데이터베이스 접근이 완전히 부재하고 순수한 파일 I/O, 메모리 연산 및 데이터 파싱만을 검증하는 독립 유틸리티성 테스트는 표준 라이브러리의 `unittest.TestCase`를 상속받도록 격리 설계함으로써 불필요한 가상 DB 기동 및 장고 설정 오버헤드를 원천적으로 회피하여 초고속 개발자 피드백 루프를 수호하도록 규정합니다.
+
+### IX. ruff 및 pre-commit 자동화 품질 가드 수호 (Ruff Linter & pre-commit Quality Guard)
+
+코드 스타일의 일관성 및 사전 결함 예방을 위해 Rust 기반의 초고속 린터/포매터인 `ruff`와 `pre-commit` 훅 자동화 가드를 수호합니다. 모든 파이썬 소스 코드는 로컬 커밋 전에 반드시 pre-commit 훅을 통과하여 린팅 및 포매팅 정합성이 기계적으로 검증되어야 합니다. 임의로 이 검사를 우회하거나 무효화하여 커밋하는 행위를 금지하며, 개발 환경 변경 시 `pre-commit` 도구의 선언적 버전 관리를 준수하여 코드 무결성을 유지해야 합니다.
 
 ## 기술 스택 및 아키텍처 제약 조건 (Tech Stack & Architectural Constraints)
 
@@ -98,4 +103,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.5.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-05-31
+**Version**: v1.6.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-03

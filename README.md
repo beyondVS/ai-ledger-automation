@@ -2,7 +2,7 @@
 
 **AI-Powered Tax/Receipt PDF Analyzer & Automated Ledger with Vision-First PWA**
 
-본 프로젝트는 귀찮은 영수증 수동 기입 과정을 전격 자동화하는 서비스입니다. 사용자가 웹 UI 또는 전용 이메일 주소로 영수증 파일(PDF, 이미지)을 포워딩하는 것만으로 **Gemini-2.5-Flash** 멀티모달 AI가 사업자 정보, 결제 금액, 세부 품목 스키마를 판독하여 정밀한 PostgreSQL 가계부 원장 데이터베이스에 적재합니다. 
+본 프로젝트는 귀찮은 영수증 수동 기입 과정을 전격 자동화하는 서비스입니다. 사용자가 웹 UI 또는 전용 이메일 주소로 영수증 파일(PDF, 이미지)을 포워딩하는 것만으로 **Gemini-2.5-Flash** 멀티모달 AI가 사업자 정보, 결제 금액, 세부 품목 스키마를 판독하여 정밀한 PostgreSQL 가계부 원장 데이터베이스에 적재합니다.
 
 모바일 웹 네이티브 바로가기(A2HS) 및 카메라 연동을 지원하는 PWA 하이브리드 앱 환경과 대량 처리를 위한 Celery/Redis 비동기 인프라, 그리고 API 비용을 0원으로 수렴하게 하는 하이브리드 바이패스 파서를 구축하여 프리미엄 사용자 경험과 뛰어난 엔지니어링 신뢰성을 완벽하게 제공합니다.
 
@@ -68,10 +68,10 @@ graph TD
     UI -->|1. 로그인/가입 요청| AuthRouter
     AuthRouter -->|사용자 세션 검증| RedisCache
     Email -->|1. 이메일 포워딩 BE-01| EmailRouter
-      
+
     UploadRouter -->|3. 비동기 작업 발행 BE-02| RedisQueue
     EmailRouter -->|3. 비동기 작업 발행 BE-02| RedisQueue
-      
+
     RedisQueue -->|4. 작업 소비 BE-03| SharpWorker
     SharpWorker -->|5. 최적 이미지 버퍼 인계| BypassParser
     BypassParser -->|6. 캐시 적중 시 LLM 우회 파싱| TxLoader
@@ -83,7 +83,7 @@ graph TD
     RedisQueue -->|11. 푸시 알림 발송 수행| NotificationWorker
     NotificationWorker <==>|12. VAPID 인증서 명세 전송| PushServer
     PushServer -->|13. 단말기 푸시 알림 전달| UI
-      
+
     UI -.->|14. 대시보드 동기 조회 API BE-07| PostgreSQL
 ```
 
@@ -180,7 +180,7 @@ graph TD
 이 자동화 도구는 `.venv` 가상환경 자동 구축, `uv sync` 의존성 패키지 동기화, `backend/.env` 환경설정 파일 복사 및 자격증명 폴백 부재(No Fallback) 유효성 검사를 원스톱으로 처리합니다.
 
 ### 2. 환경 변수 설정
-`backend/.env` 파일을 편집하고 아래 자격 증명을 주입합니다. 
+`backend/.env` 파일을 편집하고 아래 자격 증명을 주입합니다.
 *(통합 컨트롤러 가동 시 `backend/.env`가 발견되지 않으면 `backend/.env.example`에서 자동으로 복제 생성됩니다.)*
 
 ```env
@@ -218,7 +218,21 @@ chmod +x scripts/local-db-controller.sh
 * PowerShell: `powershell -ExecutionPolicy Bypass -File scripts/local-db-controller.ps1 -Action Reset`
 * Bash: `./scripts/local-db-controller.sh --action reset`
 
-### 3. 전체 Docker Compose 백그라운드 서비스 기동 (향후 3~4주차 범위)
+### 3. 린트 및 코드 포맷 검사 자동화 (Ruff & pre-commit)
+
+본 프로젝트는 제IX조(ruff 및 pre-commit 자동화 품질 가드 수호)에 따라, 모든 파이썬 파일의 스타일 및 린팅 상태를 기계적으로 통제하고 있습니다. 로컬 가상환경 구축 시 pre-commit 훅이 자동으로 장착되지만, 수동으로 훅을 등록하거나 실행하고 싶다면 아래 명령어를 활용해 보정 검사를 실행할 수 있습니다.
+
+* **pre-commit 훅 Git 저장소 연동 설치:**
+  ```bash
+  uv run pre-commit install
+  ```
+
+* **전체 파일 대상 린트/포맷 정합성 수동 검사:**
+  ```bash
+  uv run pre-commit run --all-files
+  ```
+
+### 4. 전체 Docker Compose 백그라운드 서비스 기동 (향후 3~4주차 범위)
 Celery 워커, Redis 브로커 등 전체 비동기 인프라 기동 시에는 아래 명령을 통해 일괄 백그라운드 구동합니다.
 
 ```bash
