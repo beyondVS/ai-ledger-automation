@@ -1,8 +1,10 @@
-import unittest
 import unicodedata
+import unittest
 from io import BytesIO
+
 import fitz
-from utils.pdf_extractor import PDFTextExtractor, ExtractionResult
+from utils.pdf_extractor import PDFTextExtractor
+
 
 class TestPDFTextExtractor(unittest.TestCase):
     def setUp(self) -> None:
@@ -29,30 +31,30 @@ class TestPDFTextExtractor(unittest.TestCase):
     def test_korean_unicode_nfc_normalization(self) -> None:
         """macOS NFD 방식으로 인코딩된 한글 텍스트가 NFC 완성형 한글로 안전하게 정규화 복원되는지 검증합니다."""
         extractor = PDFTextExtractor(file_source=BytesIO(b"dummy"), engine_preference="pymupdf", normalize_unicode=True)
-        
+
         # NFD 자모 분리 한글 준비
-        nfd_text = unicodedata.normalize('NFD', "가계부 자동화")
-        
+        nfd_text = unicodedata.normalize("NFD", "가계부 자동화")
+
         # NFC 정규화 함수 직접 작동
         normalized_text = extractor._normalize(nfd_text)
-        
+
         # 조합이 정상 복원되었는지 검증
         self.assertEqual(normalized_text, "가계부 자동화")
-        
+
         # 분리형 낱자가 더 이상 매칭되지 않는지 검증
         self.assertNotIn(nfd_text, normalized_text)
 
     def test_pymupdf_fallback_to_pdfplumber(self) -> None:
         """PyMuPDF 파싱 오류 시 pdfplumber로 자동 Fallback 처리되는지 검증합니다."""
         from unittest.mock import patch
-        
+
         stream = BytesIO(self.normal_pdf_bytes)
         extractor = PDFTextExtractor(file_source=stream, engine_preference="pymupdf")
-        
+
         # PyMuPDF의 텍스트 추출 행위(fitz.Page.get_text)를 Mocking하여 강제 예외 유도
-        with patch('fitz.Page.get_text', side_effect=RuntimeError("PyMuPDF internal error simulation")):
+        with patch("fitz.Page.get_text", side_effect=RuntimeError("PyMuPDF internal error simulation")):
             result = extractor.extract_text(layout=True)
-            
+
         self.assertTrue(result.success, msg=result.error_message)
         # 1차 실패 후 pdfplumber로 성공적으로 Fallback 복원되었음을 검증
         self.assertEqual(result.used_engine, "pdfplumber")
@@ -65,11 +67,7 @@ class TestPDFTextExtractor(unittest.TestCase):
         enc_doc = fitz.open()
         enc_doc.new_page()
         # 암호화 바이트 작성
-        enc_bytes = enc_doc.write(
-            encryption=fitz.PDF_ENCRYPT_AES_256,
-            owner_pw="owner",
-            user_pw="secret"
-        )
+        enc_bytes = enc_doc.write(encryption=fitz.PDF_ENCRYPT_AES_256, owner_pw="owner", user_pw="secret")
         enc_doc.close()
 
         extractor = PDFTextExtractor(file_source=BytesIO(enc_bytes))
@@ -93,5 +91,3 @@ class TestPDFTextExtractor(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertFalse(result.has_text_layer)
         self.assertIn("물리적 텍스트", result.error_message)
-
-

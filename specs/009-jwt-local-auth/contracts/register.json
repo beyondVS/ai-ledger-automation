@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Register API Request and Response",
+  "type": "object",
+  "properties": {
+    "request": {
+      "type": "object",
+      "required": ["email", "password"],
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "사용자가 가입하고자 하는 유일한 이메일 주소"
+        },
+        "password": {
+          "type": "string",
+          "minLength": 8,
+          "description": "보안 규정을 충족하는 비밀번호"
+        }
+      }
+    },
+    "response_success": {
+      "type": "object",
+      "required": ["id", "email", "provider", "date_joined"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "생성된 사용자의 고유 식별자 (UUIDv7)"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "등록된 사용자 이메일"
+        },
+        "provider": {
+          "type": "string",
+          "enum": ["local", "google", "kakao"],
+          "description": "가입 제공처"
+        },
+        "date_joined": {
+          "type": "string",
+          "format": "date-time",
+          "description": "가입 처리 완료 일시"
+        }
+      }
+    },
+    "response_error": {
+      "type": "object",
+      "required": ["error_code", "message"],
+      "properties": {
+        "error_code": {
+          "type": "string",
+          "enum": ["EMAIL_ALREADY_EXISTS", "INVALID_PASSWORD_FORMAT", "VALIDATION_ERROR"],
+          "description": "에러 상태 식별 코드"
+        },
+        "message": {
+          "type": "string",
+          "description": "사용자 및 개발자용 상세 에러 메시지"
+        }
+      }
+    }
+  }
+}

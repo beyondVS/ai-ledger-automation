@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Login API Request and Response",
+  "type": "object",
+  "properties": {
+    "request": {
+      "type": "object",
+      "required": ["email", "password"],
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "가입된 사용자의 이메일 주소"
+        },
+        "password": {
+          "type": "string",
+          "description": "사용자의 비밀번호"
+        }
+      }
+    },
+    "response_success": {
+      "type": "object",
+      "required": ["access", "refresh"],
+      "properties": {
+        "access": {
+          "type": "string",
+          "description": "API 요청 시 헤더에 실어 보낼 Access Token (유효시간 30분)"
+        },
+        "refresh": {
+          "type": "string",
+          "description": "Access Token 갱신을 위해 사용할 Refresh Token (유효시간 14일)"
+        }
+      }
+    },
+    "response_error": {
+      "type": "object",
+      "required": ["detail"],
+      "properties": {
+        "detail": {
+          "type": "string",
+          "description": "인증 실패 상세 원인 설명 (예: 'No active account found with the given credentials')"
+        }
+      }
+    }
+  }
+}

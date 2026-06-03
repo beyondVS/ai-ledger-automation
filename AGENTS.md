@@ -30,10 +30,10 @@
 
 ### 2.2 하네스 명령어 (Harness Commands)
 에이전트는 코드 수정 후 아래 명령어를 터미널에서 능동적으로 실행하여 스스로 결과를 검증해야 합니다.
-- **Install**: `docker compose build`
-- **Lint / Format**: `docker compose exec api_server black .` (또는 eslint 등 프론트엔드 포매터)
-- **Test**: `docker compose exec api_server python manage.py test`
-- **Build**: `docker compose up -d`
+- **Install**: `uv sync`
+- **Lint / Format**: `uv run ruff check` 및 `uv run ruff format` (커밋 전 `uv run pre-commit run --all-files` 강제 통과 보장)
+- **Test**: `uv run pytest` (백엔드 디렉토리 내 가동)
+- **Build**: `docker compose -f docker-compose.db.yml up -d` (로컬 DB 컨테이너 기동)
 
 ### 2.3 디렉토리 지도 (Directory Map)
 - `.specify/`: Spec-Kit 프레임워크 설정, 템플릿 및 프로젝트 헌법 메모리 (순수 Spec-Kit 코어 도구 및 자산만 정결하게 보존)
@@ -48,7 +48,7 @@
 AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 하드 제약(Hard Constraints)을 기계적으로 준수해야 합니다.
 
 ### 3.1 기계적 하네스 최우선 (Harness-First)
-- 코드 작성 후 스스로 정확성을 추측하지 마십시오. **[반드시]** 위 2.2항에 명시된 기계적 검증 도구(Linter, Test Runner)를 실행하십시오.
+- 코드 작성 후 스스로 정확성을 추측하지 마십시오. **[반드시]** 위 2.2항에 명시된 기계적 검증 도구(Linter, Test Runner, pre-commit 훅)를 실행하여 정합성을 입증하십시오.
 - 에러 발생 시, 에러 메시지가 없어질 때까지 스스로 코드를 수정(Self-healing)하십시오.
 
 ### 3.2 출력 무결성 및 금지 표현 (Zero Tolerance) - [매우 중요]
@@ -74,15 +74,15 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 
 코드베이스 검색만으로는 파악할 수 없는 아키텍처 결정의 "이유(Why)", 비직관적 도메인 로직, 해결되지 않은 기술 부채 등은 이 섹션에 명시하여 AI가 치명적인 실수를 하지 않도록 방어합니다.
 
-- **아키텍처 결정의 이유**: 
+- **아키텍처 결정의 이유**:
   - 금융 가계부 데이터의 강력한 일관성을 지키며 중복 입력을 인덱스 상에서 사전에 효율적으로 방지하고 월별 지출 애그리게이션 성능을 최적화하기 위해 NoSQL 대신 **관계형 PostgreSQL(최신 v18+)**을 주 데이터베이스로 선정하고, 미정형 파서 백업을 위해 JSONB 필드 결합. (v18의 Native UUIDv7 시계열 인덱스 및 AIO 비동기 I/O 성능 혜택 적극 활용)
   - 유료 멀티모달 LLM API 연동에 수반되는 예산 비용 소비를 0원에 수렴하도록 완벽히 차단하고 정적 파싱하기 위해 가맹점 사업자등록번호 기반 레이아웃 캐시 테이블(`merchant_templates`) 및 우회 바이패스(Bypass) 파서 적용.
-- **엄격한 접근 제약**: 
+- **엄격한 접근 제약**:
   - 영수증 1장 적재 시 `ledgers` 마스터 레코드와 `ledger_items` 상세품목 데이터 생성/수정 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리되어야 하며 장애 시 전격 롤백 보장 필수.
-- **비직관적 비즈니스 로직**: 
+- **비직관적 비즈니스 로직**:
   - 자가 제안(Auto-Generation)되는 사업자번호 기반 정규식 캐싱 규칙은 무조건 `is_verified: false` 격리 통제 필터로 차단 적재하며, 오직 관리자 수동 승인(`is_verified: true`) 시에만 우회 파서 가동.
   - 이메일 유입 시 SPF 및 DKIM 전자서명 대조 정합성을 검증하고, 사용자당 사전에 등록된 최대 3개의 화이트리스트 메일 발송인 정보와 100% 일치할 경우에만 비동기 Celery 태스크 적재를 허용.
-- **해결되지 않은 기술 부채**: 
+- **해결되지 않은 기술 부채**:
   - AWS Free tier, Supabase Free plan 등 제한된 DBMS의 최대 가용 커넥션 풀 크기 병목 고갈을 예방하기 위해, 풀 제한 크기를 api_server 컨테이너 최대 5개, Celery async_worker 최대 3개, 전체 합산 8개 이하로 엄격하게 제약 통제 필수.
 
 ---
@@ -122,5 +122,5 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/008-upload-api-integration/plan.md)
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/009-jwt-local-auth/plan.md)
 <!-- SPECKIT END -->
