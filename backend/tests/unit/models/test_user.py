@@ -27,6 +27,7 @@ def test_create_user_with_whitelist_emails():
     User 모델의 정상 생성 및 필드 유입 상태를 검증합니다.
     """
     user = User.objects.create(
+        username="owner",
         email="owner@example.com",
         registered_forward_email_1="whitelist1@example.com",
         registered_forward_email_2="whitelist2@example.com",
@@ -45,7 +46,7 @@ def test_user_push_subscription_uniqueness():
     """
     VAPID 표준 웹 푸시 구독 엔드포인트의 고유성(Unique)을 검증합니다.
     """
-    user = User.objects.create(email="push_uniq_user@example.com")
+    user = User.objects.create(username="push_uniq", email="push_uniq_user@example.com")
     
     UserPushSubscription.objects.create(
         user=user,
@@ -69,7 +70,7 @@ def test_user_push_subscription_cascade():
     """
     User 레코드 삭제 시 연관된 구독 정보까지 동시 소멸하는 CASCADE 정합성을 검증합니다.
     """
-    user = User.objects.create(email="push_cascade_user@example.com")
+    user = User.objects.create(username="push_cascade", email="push_cascade_user@example.com")
     
     subscription = UserPushSubscription.objects.create(
         user=user,

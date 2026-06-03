@@ -2,6 +2,7 @@ import os
 import time
 import uuid
 from django.db import models
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 
 def generate_uuidv7() -> uuid.UUID:
     """
@@ -28,14 +29,14 @@ def generate_uuidv7() -> uuid.UUID:
     return uuid.UUID(bytes=bytes(byte_list))
 
 
-class User(models.Model):
+class User(AbstractUser):
     """
-    [T004] User 데이터 모델
-    - 가입 회원 계정 정보 관리 및 메일 인바운드 수집 시 스팸 차단을 위한 
-      이메일 화이트리스트 주소 매핑 필드(최대 3개)를 갖춥니다.
+    [T004] User 데이터 모델 (AbstractUser 상속)
+    - 장고 기본 AbstractUser 사양을 따르며, username 필드를 주 식별자로 사용합니다.
+    - 메일 인바운드 수집 시 스팸 차단을 위한 이메일 화이트리스트 주소 매핑 필드(최대 3개)를 갖춥니다.
     """
     id = models.UUIDField(primary_key=True, default=generate_uuidv7, editable=False, db_index=True)
-    email = models.EmailField(unique=True, max_length=254)
+    provider = models.CharField(max_length=20, default='local')
     
     # 헌법 IV조 준수: 사용자당 최대 3개의 SPF/DKIM 검증 통과 화이트리스트 메일 발송인 관리
     registered_forward_email_1 = models.EmailField(null=True, blank=True, max_length=254)
@@ -50,16 +51,8 @@ class User(models.Model):
         verbose_name = 'user'
         verbose_name_plural = 'users'
 
-    @property
-    def is_authenticated(self):
-        return True
-
-    @property
-    def is_anonymous(self):
-        return False
-
     def __str__(self):
-        return self.email
+        return self.username
 
 
 class UserPushSubscription(models.Model):
