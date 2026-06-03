@@ -15,5 +15,7 @@ repos:
       # Linter 실행 및 자동 수정 적용
       - id: ruff
         args: [ --fix ]
+        types: [python]
       # Formatter 실행
       - id: ruff-format
+        types: [python]
