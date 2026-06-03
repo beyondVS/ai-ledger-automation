@@ -1,13 +1,14 @@
-from django.test import TestCase
 from apps.ledgers.models import MerchantTemplate
 from apps.ledgers.services.parser import ReceiptParserService
-import json
+from django.test import TestCase
+
 
 class ReceiptParserTestCase(TestCase):
     """
     [T009] ReceiptParserService 비즈니스 로직 테스트 케이스
     - 사업자등록번호 기반 정규식 캐싱 및 우회 바이패스(Bypass) 파싱 검증
     """
+
     @classmethod
     def setUpTestData(cls):
         # 1. 수동 승인 완료(is_verified=True) 캐시 템플릿 적재 (헌법 III조 수호)
@@ -19,10 +20,10 @@ class ReceiptParserTestCase(TestCase):
                 "total_amount_regex": "합계\\s+(\\d+)",
                 "default_items": [
                     {"name": "아이스 아메리카노", "quantity": 2, "price": 5000.00},
-                    {"name": "초콜릿 칩 스콘", "quantity": 1, "price": 5000.00}
-                ]
+                    {"name": "초콜릿 칩 스콘", "quantity": 1, "price": 5000.00},
+                ],
             },
-            is_verified=True
+            is_verified=True,
         )
 
         # 2. 미승인(is_verified=False) 캐시 템플릿 적재
@@ -30,13 +31,13 @@ class ReceiptParserTestCase(TestCase):
             vendor_registration_number="9998877777",
             vendor_name="미검증 상점",
             parsing_rules={"merchant_name_regex": "미검증.*"},
-            is_verified=False
+            is_verified=False,
         )
 
     def test_parser_bypass_with_verified_template(self):
         # 수동 승인된 템플릿 존재 시, 로컬 우회 파서가 작동하여 캐시된 데이터를 기반으로 파싱 결과를 즉시 리턴
         ocr_text = "스타벅스 역삼역점 / 사업자번호: 1208612345 / 합계 15000"
-        
+
         # 파서 실행 (임의의 이미지 바이트를 넘김)
         result = ReceiptParserService.parse_receipt(b"fake_image_bytes", ocr_text_mock=ocr_text)
 

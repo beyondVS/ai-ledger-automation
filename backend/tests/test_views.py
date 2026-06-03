@@ -1,24 +1,24 @@
+import uuid
+
+from apps.accounts.models import User
+from apps.ledgers.models import Ledger, MerchantTemplate
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
-from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
-from apps.accounts.models import User
-from apps.ledgers.models import Ledger, LedgerItem, MerchantTemplate
-import uuid
+
 
 class ReceiptUploadAPITestCase(TestCase):
     """
     [T008] ReceiptUploadView API 통합 테스트 케이스
     - DRF APIClient의 force_authenticate를 활용하여 last_login 필드가 없는 커스텀 유저 로그인을 지원합니다.
     """
+
     @classmethod
     def setUpTestData(cls):
         # 헌법 제VIII조 준수: setUpTestData(cls)를 통한 공통 테스트 유저 생성
-        cls.user = User.objects.create(
-            username="testuser",
-            email="testuser@example.com"
-        )
-        cls.upload_url = reverse('receipt-upload')
+        cls.user = User.objects.create(username="testuser", email="testuser@example.com")
+        cls.upload_url = reverse("receipt-upload")
 
         # [T008] 캐시 바이패스 검증을 위한 승인된 템플릿 세팅
         MerchantTemplate.objects.create(
@@ -29,10 +29,10 @@ class ReceiptUploadAPITestCase(TestCase):
                 "total_amount_regex": "합계\\s+(\\d+)",
                 "default_items": [
                     {"name": "아이스 아메리카노", "quantity": 2, "price": 5000.00},
-                    {"name": "초콜릿 칩 스콘", "quantity": 1, "price": 5000.00}
-                ]
+                    {"name": "초콜릿 칩 스콘", "quantity": 1, "price": 5000.00},
+                ],
             },
-            is_verified=True
+            is_verified=True,
         )
 
     def setUp(self):
@@ -43,27 +43,21 @@ class ReceiptUploadAPITestCase(TestCase):
     def test_receipt_upload_success_and_db_persistence(self):
         # 1. 가상 영수증 이미지 데이터 생성 (파서의 금액 파싱 정합성을 위해 텍스트 포함 파일명 지정)
         receipt_image = SimpleUploadedFile(
-            name="1208612345 합계 15000.jpg",
-            content=b"dummy_image_data_mock",
-            content_type="image/jpeg"
+            name="1208612345 합계 15000.jpg", content=b"dummy_image_data_mock", content_type="image/jpeg"
         )
 
         # 2. 동기 업로드 API 요청
-        response = self.client.post(
-            self.upload_url,
-            {"file": receipt_image},
-            format='multipart'
-        )
+        response = self.client.post(self.upload_url, {"file": receipt_image}, format="multipart")
 
         # 3. 응답 데이터 스펙 검증
         self.assertEqual(response.status_code, 200)
         response_json = response.json()
-        
+
         # 3주차 비동기 대응 하위 호환성 필드 검증 (job_id, status)
         self.assertIn("job_id", response_json)
         self.assertEqual(response_json["status"], "COMPLETED")
         self.assertIn("data", response_json)
-        
+
         # 반환 데이터 검증
         data = response_json["data"]
         self.assertEqual(data["merchant_name"], "스타벅스 역삼역점")
@@ -80,32 +74,24 @@ class ReceiptUploadAPITestCase(TestCase):
     def test_receipt_upload_unauthenticated(self):
         # 비인증 상태 요청 시 401 Unauthorized 검증
         self.client.force_authenticate(user=None)
-        receipt_image = SimpleUploadedFile(
-            name="test.jpg",
-            content=b"dummy_data",
-            content_type="image/jpeg"
-        )
+        receipt_image = SimpleUploadedFile(name="test.jpg", content=b"dummy_data", content_type="image/jpeg")
         response = self.client.post(self.upload_url, {"file": receipt_image})
         self.assertEqual(response.status_code, 401)
 
     def test_receipt_status_not_found(self):
         # [T017] 존재하지 않는 UUID 조회 시 404 반환 검증
         random_job_id = uuid.uuid4()
-        status_url = reverse('receipt-status', kwargs={'job_id': random_job_id})
+        status_url = reverse("receipt-status", kwargs={"job_id": random_job_id})
         response = self.client.get(status_url)
         self.assertEqual(response.status_code, 404)
 
     def test_receipt_status_success(self):
         # [T017] ReceiptUploadJob 수동 생성하여 단계적 상태 조회 검증
         from apps.ledgers.models import ReceiptUploadJob
-        
+
         # 1. PENDING 상태 조회 검증
-        job = ReceiptUploadJob.objects.create(
-            user=self.user,
-            status="PENDING",
-            raw_file_name="pending_receipt.jpg"
-        )
-        status_url = reverse('receipt-status', kwargs={'job_id': job.id})
+        job = ReceiptUploadJob.objects.create(user=self.user, status="PENDING", raw_file_name="pending_receipt.jpg")
+        status_url = reverse("receipt-status", kwargs={"job_id": job.id})
         response = self.client.get(status_url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "PENDING")
@@ -126,12 +112,12 @@ class ReceiptUploadAPITestCase(TestCase):
             transaction_date="2026-06-03",
             total_amount=15000.00,
             supply_value=13636.36,
-            vat_amount=1363.64
+            vat_amount=1363.64,
         )
         job.status = "COMPLETED"
         job.ledger = ledger
         job.save()
-        
+
         response = self.client.get(status_url)
         self.assertEqual(response.status_code, 200)
         resp_json = response.json()
@@ -140,4 +126,3 @@ class ReceiptUploadAPITestCase(TestCase):
         self.assertEqual(resp_json["data"]["ledger_id"], str(ledger.id))
         self.assertEqual(resp_json["data"]["merchant_name"], "스타벅스")
         self.assertEqual(float(resp_json["data"]["total_amount"]), 15000.00)
-
