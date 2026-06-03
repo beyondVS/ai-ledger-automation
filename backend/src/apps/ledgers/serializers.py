@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from apps.ledgers.models import Ledger
 
 class LedgerItemResponseSerializer(serializers.Serializer):
     """
@@ -31,3 +32,17 @@ class ReceiptUploadResponseSerializer(serializers.Serializer):
     job_id = serializers.UUIDField()
     status = serializers.CharField()
     data = LedgerDetailsResponseSerializer(allow_null=True)
+
+
+class LedgerListSerializer(serializers.ModelSerializer):
+    """
+    [T023] 가계부 리스트 조회 응답 직렬화기
+    - Ledger 모델 필드를 그대로 응답으로 내보냅니다. (vendor_name 필드 검증 대응)
+    """
+    class Meta:
+        model = Ledger
+        fields = [
+            'id', 'vendor_name', 'vendor_registration_number',
+            'transaction_date', 'total_amount', 'supply_value',
+            'vat_amount', 'created_at', 'updated_at'
+        ]

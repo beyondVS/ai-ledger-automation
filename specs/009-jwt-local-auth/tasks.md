@@ -14,9 +14,9 @@
 
 **Purpose**: 프로젝트 초기화 및 인증 라이브러리 의존성 장착
 
-- [ ] T001 backend/pyproject.toml 및 backend/uv.lock 파일에 djangorestframework-simplejwt 의존성 패키지 선언적 추가 및 환경 동기화 (uv sync 실행)
-- [ ] T002 backend/config/settings.py 내 INSTALLED_APPS 및 REST_FRAMEWORK 인증 환경 설정에 SimpleJWT 라이브러리 추가 구성
-- [ ] T003 [P] backend/apps/accounts/ 신규 사용자 계정 및 인증 처리를 담당하는 장고 앱 초기 디렉토리 및 보일러플레이트 모듈 생성
+- [X] T001 backend/pyproject.toml 및 backend/uv.lock 파일에 djangorestframework-simplejwt 의존성 패키지 선언적 추가 및 환경 동기화 (uv sync 실행)
+- [X] T002 backend/config/settings.py 내 INSTALLED_APPS 및 REST_FRAMEWORK 인증 환경 설정에 SimpleJWT 라이브러리 추가 구성
+- [X] T003 [P] backend/apps/accounts/ 신규 사용자 계정 및 인증 처리를 담당하는 장고 앱 초기 디렉토리 및 보일러플레이트 모듈 생성
 
 ---
 
@@ -24,9 +24,9 @@
 
 **Purpose**: 사용자 스토리 구현 전 필수적인 기본 Custom User 데이터베이스 스키마 구성
 
-- [ ] T004 backend/apps/accounts/models.py 경로에 Django AbstractUser를 상속받은 Custom User 모델 초기 뼈대 생성 및 provider 필드 정의
-- [ ] T005 backend/config/settings.py 내 AUTH_USER_MODEL 설정을 Custom User 모델(accounts.User)로 교체 선언
-- [ ] T006 [P] Custom User 모델 초기 마이그레이션 생성 및 docker-compose DB 마이그레이션 실행 검증 (docker compose exec api_server python manage.py migrate)
+- [X] T004 backend/apps/accounts/models.py 경로에 Django AbstractUser를 상속받은 Custom User 모델 초기 뼈대 생성 및 provider 필드 정의
+- [X] T005 backend/config/settings.py 내 AUTH_USER_MODEL 설정을 Custom User 모델(accounts.User)로 교체 선언
+- [X] T006 [P] Custom User 모델 초기 마이그레이션 생성 및 docker-compose DB 마이그레이션 실행 검증 (docker compose exec api_server python manage.py migrate)
 
 ---
 
@@ -40,16 +40,16 @@
 
 > **NOTE: 구현 작업 착수 전에 아래 테스트 코드를 먼저 작성하고, 테스트가 실패(FAIL)하는지 확인해야 합니다.**
 
-- [ ] T007 [P] [US1] backend/tests/accounts/test_models.py 경로에 Custom User 모델의 이메일 유일성(unique=True) 및 기본 가입처(local) 정합성 검증 테스트 코드 작성
-- [ ] T008 [P] [US1] backend/tests/accounts/test_views.py 경로에 회원가입 API(/api/auth/register/) 호출 및 중복 메일 가입 에러 핸들링을 테스트하는 API 계약 테스트 코드 작성
+- [X] T007 [P] [US1] backend/tests/accounts/test_models.py 경로에 Custom User 모델의 이메일 유일성(unique=True) 및 기본 가입처(local) 정합성 검증 테스트 코드 작성
+- [X] T008 [P] [US1] backend/tests/accounts/test_views.py 경로에 회원가입 API(/api/auth/register/) 호출 및 중복 메일 가입 에러 핸들링을 테스트하는 API 계약 테스트 코드 작성
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] backend/apps/accounts/models.py 내 Custom User 모델에 이메일 주소를 고유 식별자로 설정(USERNAME_FIELD = 'email', email unique 제약)하는 비즈니스 스키마 구현
-- [ ] T010 [US1] backend/apps/accounts/serializers.py 경로에 비밀번호 암호화 해싱 및 이메일 포맷 규격을 검증하는 UserRegisterSerializer 구현
-- [ ] T011 [US1] backend/apps/accounts/views.py 경로에 회원가입 처리 시 DB 트랜잭션 원자성 보장 블록(transaction.atomic())을 적용하여 가입 처리하는 UserRegisterView 구현
-- [ ] T012 [US1] backend/apps/accounts/urls.py 및 backend/config/urls.py 경로에 회원가입(/api/auth/register/) 엔드포인트 URL 라우팅 바인딩 설정 적용
-- [ ] T013 [US1] 로컬 테스트 러너를 실행하여 작성된 US1 가입 테스트 코드가 정상적으로 통과(Pass)하는지 E2E 검증 (docker compose exec api_server pytest backend/tests/accounts/)
+- [X] T009 [P] [US1] backend/apps/accounts/models.py 내 Custom User 모델에 이메일 주소를 고유 식별자로 설정(USERNAME_FIELD = 'email', email unique 제약)하는 비즈니스 스키마 구현
+- [X] T010 [US1] backend/apps/accounts/serializers.py 경로에 비밀번호 암호화 해싱 및 이메일 포맷 규격을 검증하는 UserRegisterSerializer 구현
+- [X] T011 [US1] backend/apps/accounts/views.py 경로에 회원가입 처리 시 DB 트랜잭션 원자성 보장 블록(transaction.atomic())을 적용하여 가입 처리하는 UserRegisterView 구현
+- [X] T012 [US1] backend/apps/accounts/urls.py 및 backend/config/urls.py 경로에 회원가입(/api/auth/register/) 엔드포인트 URL 라우팅 바인딩 설정 적용
+- [X] T013 [US1] 로컬 테스트 러너를 실행하여 작성된 US1 가입 테스트 코드가 정상적으로 통과(Pass)하는지 E2E 검증 (docker compose exec api_server pytest backend/tests/accounts/)
 
 **Checkpoint**: 본 단계 완료 시, 로컬 회원가입 API가 안전하게 독립 기동 및 E2E 테스트 검증 완료 상태가 됩니다.
 
@@ -63,15 +63,15 @@
 
 ### Tests for User Story 2 (TDD 필수)
 
-- [ ] T014 [P] [US2] backend/tests/accounts/test_views.py 경로에 올바른 자격 증명으로 로그인 시 JWT 토큰 세트 정상 수신 및 잘못된 자격 증명 유입 시 401 Unauthorized 에러 검증 테스트 코드 작성
-- [ ] T015 [P] [US2] backend/tests/accounts/test_views.py 경로에 로그아웃 API(/api/auth/logout/) 호출 시 수신된 리프레시 토큰이 블랙리스트 데이터베이스에 등재되어 무효화되는지 검증하는 테스트 코드 작성
+- [X] T014 [P] [US2] backend/tests/accounts/test_views.py 경로에 올바른 자격 증명으로 로그인 시 JWT 토큰 세트 정상 수신 및 잘못된 자격 증명 유입 시 401 Unauthorized 에러 검증 테스트 코드 작성
+- [X] T015 [P] [US2] backend/tests/accounts/test_views.py 경로에 로그아웃 API(/api/auth/logout/) 호출 시 수신된 리프레시 토큰이 블랙리스트 데이터베이스에 등재되어 무효화되는지 검증하는 테스트 코드 작성
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] backend/apps/accounts/views.py 경로에 simplejwt의 TokenObtainPairView를 래핑하거나 바인딩하여 /api/auth/login/ 뷰 구현
-- [ ] T017 [US2] backend/apps/accounts/views.py 경로에 리프레시 토큰을 데이터베이스 블랙리스트로 이동시켜 파기 처리하는 UserLogoutView 구현
-- [ ] T018 [US2] backend/apps/accounts/urls.py 경로에 로그인(/api/auth/login/) 및 로그아웃(/api/auth/logout/) 엔드포인트 URL 라우팅 추가 연동
-- [ ] T019 [US2] 로컬 테스트 러너를 실행하여 작성된 로그인/로그아웃 JWT 토큰 제어 테스트 코드가 정상적으로 통과(Pass)하는지 기계적으로 증명
+- [X] T016 [US2] backend/apps/accounts/views.py 경로에 simplejwt의 TokenObtainPairView를 래핑하거나 바인딩하여 /api/auth/login/ 뷰 구현
+- [X] T017 [US2] backend/apps/accounts/views.py 경로에 리프레시 토큰을 데이터베이스 블랙리스트로 이동시켜 파기 처리하는 UserLogoutView 구현
+- [X] T018 [US2] backend/apps/accounts/urls.py 경로에 로그인(/api/auth/login/) 및 로그아웃(/api/auth/logout/) 엔드포인트 URL 라우팅 추가 연동
+- [X] T019 [US2] 로컬 테스트 러너를 실행하여 작성된 로그인/로그아웃 JWT 토큰 제어 테스트 코드가 정상적으로 통과(Pass)하는지 기계적으로 증명
 
 **Checkpoint**: 본 단계 완료 시, 로컬 가입 및 로그인/로그아웃으로 연결되는 사용자 보안 세션 및 인증 토큰 제어 파이프라인 E2E 흐름이 완결됩니다.
 
@@ -85,14 +85,14 @@
 
 ### Tests for User Story 3 (TDD 필수)
 
-- [ ] T020 [P] [US3] backend/tests/accounts/test_tokens.py 경로에 위조되거나 만료된 JWT Access Token을 헤더에 실어 요청을 보냈을 때 미들웨어가 401 Unauthorized 오류로 안전하게 방어하는지 검증하는 테스트 코드 작성
-- [ ] T021 [P] [US3] backend/tests/ledgers/test_views.py 경로에 로그인된 사용자가 가계부 리스트를 요청할 시 오직 자신의 데이터만 데이터베이스에서 필터링 조회되며 타인의 데이터 유출이 차단되는지 검증하는 격리 테스트 코드 작성
+- [X] T020 [P] [US3] backend/tests/accounts/test_tokens.py 경로에 위조되거나 만료된 JWT Access Token을 헤더에 실어 요청을 보냈을 때 미들웨어가 401 Unauthorized 오류로 안전하게 방어하는지 검증하는 테스트 코드 작성
+- [X] T021 [P] [US3] backend/tests/ledgers/test_views.py 경로에 로그인된 사용자가 가계부 리스트를 요청할 시 오직 자신의 데이터만 데이터베이스에서 필터링 조회되며 타인의 데이터 유출이 차단되는지 검증하는 격리 테스트 코드 작성
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] backend/config/settings.py 내 DRF 전역 인증 설정(DEFAULT_PERMISSION_CLASSES 및 DEFAULT_AUTHENTICATION_CLASSES)에 IsAuthenticated 및 JWTAuthentication 기본 탑재
-- [ ] T023 [US3] backend/apps/ledgers/views.py 또는 가계부 조회 API 뷰의 get_queryset() 메서드를 오버라이드하여 request.user와 일치하는 데이터만 반환하도록 사용자 격리 쿼리 필터 구현
-- [ ] T024 [US3] 로컬 테스트 러너를 기동하여 토큰 검증 미들웨어 및 가계부 조회 유저 격리 테스트 스위트가 최종 통과(Pass)하는지 통합 검증 수행
+- [X] T022 [US3] backend/config/settings.py 내 DRF 전역 인증 설정(DEFAULT_PERMISSION_CLASSES 및 DEFAULT_AUTHENTICATION_CLASSES)에 IsAuthenticated 및 JWTAuthentication 기본 탑재
+- [X] T023 [US3] backend/apps/ledgers/views.py 또는 가계부 조회 API 뷰의 get_queryset() 메서드를 오버라이드하여 request.user와 일치하는 데이터만 반환하도록 사용자 격리 쿼리 필터 구현
+- [X] T024 [US3] 로컬 테스트 러너를 기동하여 토큰 검증 미들웨어 및 가계부 조회 유저 격리 테스트 스위트가 최종 통과(Pass)하는지 통합 검증 수행
 
 **Checkpoint**: 본 단계 완료 시, 가계부 데이터 CRUD와 대시보드 리스트 조회가 로그인 사용자 단위로 안전하게 데이터가 격리 통제됩니다.
 
@@ -102,9 +102,9 @@
 
 **Purpose**: 코드 최적화, 보안 리팩토링 및 최종 수동 작동성 멱등 검증
 
-- [ ] T025 [P] specs/009-jwt-local-auth/quickstart.md 문서에 기록된 로컬 E2E 테스트(curl 가입 및 로그인) 시나리오대로 전체 시스템 멱등 가동성 최종 확인
-- [ ] T026 [P] backend/config/settings.py 내 SimpleJWT 설정 값(Access/Refresh 토큰 만료 시간)을 환경 변수와 바인딩하여 유연하게 동작하도록 리팩토링
-- [ ] T027 [P] backend/apps/accounts/ 디렉토리 내에 구현된 모든 Python 코드에 스타일 포매터 및 린터(black/flake8 등)를 기동하여 코드 품질 규격 완수
+- [X] T025 [P] specs/009-jwt-local-auth/quickstart.md 문서에 기록된 로컬 E2E 테스트(curl 가입 및 로그인) 시나리오대로 전체 시스템 멱등 가동성 최종 확인
+- [X] T026 [P] backend/config/settings.py 내 SimpleJWT 설정 값(Access/Refresh 토큰 만료 시간)을 환경 변수와 바인딩하여 유연하게 동작하도록 리팩토링
+- [X] T027 [P] backend/apps/accounts/ 디렉토리 내에 구현된 모든 Python 코드에 스타일 포매터 및 린터(black/flake8 등)를 기동하여 코드 품질 규격 완수
 
 ---
 

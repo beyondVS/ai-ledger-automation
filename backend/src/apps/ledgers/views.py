@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from apps.ledgers.models import ReceiptUploadJob, Ledger
 from apps.ledgers.services.parser import ReceiptParserService
 from apps.ledgers.services import create_ledger_transactional
-from apps.ledgers.serializers import ReceiptUploadResponseSerializer
+from apps.ledgers.serializers import ReceiptUploadResponseSerializer, LedgerListSerializer
 
 logger = logging.getLogger('apps.ledgers')
 
@@ -129,3 +129,17 @@ class ReceiptStatusView(APIView):
                 {"error": "API_STATUS_SYSTEM_ERROR", "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class LedgerListView(APIView):
+    """
+    [T023] 가계부 리스트 조회 API
+    - 로그인한 사용자 본인의 가계부 데이터만 격리하여 조회합니다.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # 헌법 I조 수호: 로그인한 사용자의 데이터만 격리 쿼리 필터 적용
+        ledgers = Ledger.objects.filter(user=request.user).order_by('-transaction_date')
+        serializer = LedgerListSerializer(ledgers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

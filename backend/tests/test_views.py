@@ -15,6 +15,7 @@ class ReceiptUploadAPITestCase(TestCase):
     def setUpTestData(cls):
         # 헌법 제VIII조 준수: setUpTestData(cls)를 통한 공통 테스트 유저 생성
         cls.user = User.objects.create(
+            username="testuser",
             email="testuser@example.com"
         )
         cls.upload_url = reverse('receipt-upload')
@@ -77,7 +78,7 @@ class ReceiptUploadAPITestCase(TestCase):
         self.assertEqual(ledger.items.count(), 2)
 
     def test_receipt_upload_unauthenticated(self):
-        # 비인증 상태 요청 시 403 Forbidden 검증
+        # 비인증 상태 요청 시 401 Unauthorized 검증
         self.client.force_authenticate(user=None)
         receipt_image = SimpleUploadedFile(
             name="test.jpg",
@@ -85,7 +86,7 @@ class ReceiptUploadAPITestCase(TestCase):
             content_type="image/jpeg"
         )
         response = self.client.post(self.upload_url, {"file": receipt_image})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_receipt_status_not_found(self):
         # [T017] 존재하지 않는 UUID 조회 시 404 반환 검증
