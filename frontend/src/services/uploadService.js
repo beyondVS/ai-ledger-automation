@@ -5,6 +5,7 @@
  * @param {File} file - 업로드할 원본 이미지 파일
  * @returns {Promise<Blob|File>} - 압축된 이미지 Blob (PDF 등은 원본 파일 그대로 반환)
  */
+import { getAuthHeader } from './authService';
 import { resizeAndCompressImage } from '../utils/imageResizer';
 
 /**
@@ -33,7 +34,8 @@ export async function uploadReceiptApi(file, fileName) {
     method: 'POST',
     body: formData,
     headers: {
-      'X-Requested-With': 'XMLHttpRequest'
+      'X-Requested-With': 'XMLHttpRequest',
+      ...getAuthHeader()
     }
   })
 
