@@ -5,51 +5,18 @@
  * @param {File} file - 업로드할 원본 이미지 파일
  * @returns {Promise<Blob|File>} - 압축된 이미지 Blob (PDF 등은 원본 파일 그대로 반환)
  */
+import { getAuthHeader } from './authService';
+import { resizeAndCompressImage } from '../utils/imageResizer';
+
+/**
+ * HTML5 Canvas를 이용해 이미지를 가로 최대 1000px로 축소하고 JPEG Blob으로 변환합니다.
+ * - 헌법 제V조 PWA 사양 수호: 전송 대역폭 절감 및 서버 리사이징 연산 부하 경감을 위해
+ *   업로드 직전 클라이언트단 Canvas API를 통해 가로 최대 1000px 1차 압축을 강제합니다.
+ * @param {File} file - 업로드할 원본 이미지 파일
+ * @returns {Promise<File|Blob>} - 압축된 이미지 파일
+ */
 export async function compressImage(file) {
-  if (file.type === 'application/pdf') {
-    // PDF 형식은 이미지 리사이징 대상이 아니므로 그대로 리턴
-    return file
-  }
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onload = (event) => {
-      const img = new Image()
-      img.src = event.target.result
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-
-        const MAX_WIDTH = 1000
-        let width = img.width
-        let height = img.height
-
-        if (width > MAX_WIDTH) {
-          height = Math.round((height * MAX_WIDTH) / width)
-          width = MAX_WIDTH
-        }
-
-        canvas.width = width
-        canvas.height = height
-        ctx.drawImage(img, 0, 0, width, height)
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob)
-            } else {
-              reject(new Error("Canvas compression failed"))
-            }
-          },
-          'image/jpeg',
-          0.85 // 헌법 제V조 준수: 압축률 0.85
-        )
-      }
-      img.onerror = (err) => reject(err)
-    }
-    reader.onerror = (err) => reject(err)
-  })
+  return resizeAndCompressImage(file);
 }
 
 /**
@@ -67,7 +34,8 @@ export async function uploadReceiptApi(file, fileName) {
     method: 'POST',
     body: formData,
     headers: {
-      'X-Requested-With': 'XMLHttpRequest'
+      'X-Requested-With': 'XMLHttpRequest',
+      ...getAuthHeader()
     }
   })
 

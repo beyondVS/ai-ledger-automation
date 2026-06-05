@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import App from '../App.vue'
+import DashboardView from '../components/DashboardView.vue'
 import Dropzone from '../components/Dropzone.vue'
 import ReceiptList from '../components/ReceiptList.vue'
+import router from '../router/index'
 
 // 1. 이미지 압축 및 API 전송 서비스 모킹
 vi.mock('../services/uploadService', () => ({
@@ -27,15 +28,33 @@ vi.mock('../services/pollingService', () => ({
   }
 }))
 
-describe('App.vue - TDD Integration Tests', () => {
+// 3. 로그아웃 API 호출을 포함하는 authService 모킹
+vi.mock('../services/authService', () => ({
+  logout: vi.fn()
+}))
+
+describe('DashboardView.vue - TDD Integration Tests', () => {
   
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
-  // T014: 파일 감지 시 Object URL 매핑 및 삭제 시 revokeObjectURL 실행 검증
   it('should create object URL on file-detected and revoke it on file-removed', async () => {
-    const wrapper = mount(App)
+    // LocalStorage 세션 주입하여 닉네임 파싱 가능하도록 보장
+    const mockSession = {
+      accessToken: 'valid_token',
+      refreshToken: 'valid_refresh',
+      username: '테스터',
+      loginTimestamp: Date.now()
+    }
+    localStorage.setItem('ai_ledger_auth_session', JSON.stringify(mockSession))
+
+    const wrapper = mount(DashboardView, {
+      global: {
+        plugins: [router]
+      }
+    })
     
     // 1) 초기 상태: ReceiptList는 화면에 노출되지 않아야 하고 Dropzone만 노출
     expect(wrapper.findComponent(Dropzone).exists()).toBe(true)
@@ -52,7 +71,7 @@ describe('App.vue - TDD Integration Tests', () => {
     // URL.createObjectURL이 1회 안전하게 호출되었는지 감시
     expect(window.URL.createObjectURL).toHaveBeenCalledTimes(1)
     
-    // App의 currentFile 반응형 데이터가 매핑되어 ReceiptList 컴포넌트가 노출되는지 확인
+    // Dashboard의 currentFile 반응형 데이터가 매핑되어 ReceiptList 컴포넌트가 노출되는지 확인
     const receiptList = wrapper.findComponent(ReceiptList)
     expect(receiptList.exists()).toBe(true)
     expect(receiptList.props('file')).toBeTruthy()
@@ -66,7 +85,7 @@ describe('App.vue - TDD Integration Tests', () => {
     expect(window.URL.revokeObjectURL).toHaveBeenCalledTimes(1)
     expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost:5173/mock-preview-url')
     
-    // App의 currentFile 상태가 null로 깨끗이 초기화되어 ReceiptList가 언마운트 되었는지 검증
+    // Dashboard의 currentFile 상태가 null로 깨끗이 초기화되어 ReceiptList가 언마운트 되었는지 검증
     expect(wrapper.findComponent(ReceiptList).exists()).toBe(false)
   })
 })
