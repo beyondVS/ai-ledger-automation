@@ -105,6 +105,7 @@ class LedgerListView(APIView):
     """
     [T023] 가계부 리스트 조회 API
     - 로그인한 사용자 본인의 가계부 데이터만 격리하여 조회합니다.
+    - query_params로 year와 month를 입력받아 동적으로 해당 월의 데이터를 필터링합니다.
     """
 
     permission_classes = [IsAuthenticated]
@@ -112,11 +113,21 @@ class LedgerListView(APIView):
     def get(self, request, *args, **kwargs):
         # 헌법 I조 수호: 로그인한 사용자의 데이터만 격리 쿼리 필터 적용
         today = timezone.localdate() if settings.USE_TZ else datetime.date.today()
-        start_of_month = datetime.date(today.year, today.month, 1)
-        if today.month == 12:
-            end_of_month = datetime.date(today.year + 1, 1, 1)
+
+        try:
+            year = int(request.query_params.get("year", today.year))
+            month = int(request.query_params.get("month", today.month))
+            if not (1 <= month <= 12):
+                month = today.month
+        except (ValueError, TypeError):
+            year = today.year
+            month = today.month
+
+        start_of_month = datetime.date(year, month, 1)
+        if month == 12:
+            end_of_month = datetime.date(year + 1, 1, 1)
         else:
-            end_of_month = datetime.date(today.year, today.month + 1, 1)
+            end_of_month = datetime.date(year, month + 1, 1)
 
         ledgers = Ledger.objects.filter(
             user=request.user,

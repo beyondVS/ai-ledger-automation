@@ -3,16 +3,23 @@ import { getAuthHeader } from './authService';
 const BASE_URL = '/api/v1/receipts';
 
 /**
-   * 로그인한 사용자의 당월 가계부 목록 조회
+   * 로그인한 사용자의 연도 및 월별 가계부 목록 조회 (US1 MVP)
+   * @param {number} [year] - 조회할 연도
+   * @param {number} [month] - 조회할 월
    * @returns {Promise<Array>} - 가계부 목록 배열
    */
-export async function fetchLedgerList() {
+export async function fetchLedgerList(year, month) {
   const headers = {
     'Content-Type': 'application/json',
     ...getAuthHeader() // Authorization: Bearer <token> 자동 바인딩
   };
 
-  const response = await fetch(`${BASE_URL}/`, {
+  let url = `${BASE_URL}/`;
+  if (year && month) {
+    url += `?year=${year}&month=${month}`;
+  }
+
+  const response = await fetch(url, {
     method: 'GET',
     headers
   });

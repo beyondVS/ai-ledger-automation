@@ -71,14 +71,34 @@
 
       <!-- 가계부 리스트 뷰 영역 (US1 MVP) -->
       <section class="w-full max-w-md mx-auto mt-8 p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
-        <h2 class="text-sm font-semibold text-slate-300 tracking-wider mb-4 font-mono uppercase flex justify-between items-center">
-          <span>당월 지출 내역</span>
-          <span class="text-indigo-400 font-bold font-outfit">{{ formattedMonthlyTotal }} 원</span>
-        </h2>
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center gap-2 select-none">
+            <button 
+              @click="changeMonth(-1)"
+              class="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            <span class="text-xs font-semibold text-slate-300 tracking-wider font-mono uppercase">
+              {{ selectedYear }}년 {{ selectedMonth }}월 지출
+            </span>
+            <button 
+              @click="changeMonth(1)"
+              class="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </div>
+          <span class="text-indigo-400 font-bold font-outfit text-sm">{{ formattedMonthlyTotal }} 원</span>
+        </div>
 
         <!-- 빈 화면 대응 -->
         <div v-if="ledgerList.length === 0 && pendingJobs.length === 0" class="text-center py-8 text-slate-500 text-xs">
-          등록된 이번 달 가계부 지출 내역이 없습니다.
+          선택하신 달의 가계부 지출 내역이 없습니다.
         </div>
 
         <!-- 가계부 카드 목록 -->
@@ -161,6 +181,11 @@ export default {
     const pollingStatus = ref(null);
     let errorTimeout = null;
 
+    // 선택된 년/월 상태 변수 (US1 MVP)
+    const today = new Date();
+    const selectedYear = ref(today.getFullYear());
+    const selectedMonth = ref(today.getMonth() + 1);
+
     // 모달 활성화 상태 및 타겟 정보 refs
     const isEditModalOpen = ref(false);
     const selectedLedgerForEdit = ref(null);
@@ -210,11 +235,29 @@ export default {
 
     const loadLedgerList = async () => {
       try {
-        const data = await fetchLedgerList();
+        const data = await fetchLedgerList(selectedYear.value, selectedMonth.value);
         ledgerList.value = data;
       } catch (err) {
         console.error('Failed to load ledger list', err);
       }
+    };
+
+    // 월 이동 제어 기능 (US1 MVP)
+    const changeMonth = (offset) => {
+      let year = selectedYear.value;
+      let month = selectedMonth.value + offset;
+
+      if (month > 12) {
+        month = 1;
+        year += 1;
+      } else if (month < 1) {
+        month = 12;
+        year -= 1;
+      }
+
+      selectedYear.value = year;
+      selectedMonth.value = month;
+      loadLedgerList();
     };
 
     const handleLogout = async () => {
@@ -358,6 +401,8 @@ export default {
       selectedLedgerForEdit,
       isDeleteModalOpen,
       selectedLedgerForDelete,
+      selectedYear,
+      selectedMonth,
       openEditModal,
       openDeleteModal,
       handleEditSave,
@@ -365,7 +410,8 @@ export default {
       handleLogout,
       onFileDetected,
       onFileRemoved,
-      onValidationError
+      onValidationError,
+      changeMonth
     };
   }
 };
