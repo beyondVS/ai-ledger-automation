@@ -40,6 +40,7 @@
 - **FR-004**: 서버는 Gemini API 수신 데이터를 바탕으로 `ledgers` 및 `ledger_items` 테이블의 삽입 연산을 단일 Django 트랜잭션 블록(`transaction.atomic()`) 내에서 원자적으로 수행해야 하며, 예외 발생 시 전역 롤백을 이행해야 합니다.
 - **FR-005**: 3주차 비동기 구조 전환에 대비하여 서버는 동기 응답 반환 시 `status: "COMPLETED"` 및 `job_id: null` 형식의 JSON 포맷 규격을 강제 반환해야 합니다.
 - **FR-006**: 데이터베이스 테이블 설계 시 `UNIQUE (user_id, vendor_registration_number, transaction_date, total_amount)` 복합 고유 제약조건을 강력히 준수하고 중복 적재를 사전에 방지해야 합니다.
+- **FR-007**: 10자리 사업자등록번호 파싱 시 `merchant_templates` 캐시 테이블을 최우선 조회하여 수동 검증 승인(`is_verified: true`)된 정적 정규식 규칙이 존재하면 유료 LLM 호출을 우회(Bypass)하여 즉시 로컬 파싱하고, 미등록 시에만 LLM API를 폴백 가동하며 미검증 후보 규칙을 자동 제안 등록해야 합니다.
 
 ### Key Entities
 
