@@ -33,6 +33,7 @@ def create_ledger_transactional(user_id: str, ledger_data: dict, items_data: lis
                 total_amount=ledger_data["total_amount"],
                 supply_value=ledger_data["supply_value"],
                 vat_amount=ledger_data["vat_amount"],
+                category=ledger_data.get("category", "미분류"),
                 raw_llm_response=ledger_data.get("raw_llm_response"),
             )
 
