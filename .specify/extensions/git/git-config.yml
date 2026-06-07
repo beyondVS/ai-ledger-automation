@@ -38,7 +38,7 @@ auto_commit:
     message: "[Spec Kit] Add project constitution"
   after_specify:
     enabled: true
-    message: "[Spec Kit] Add specification"
+    message: "docs: 014 MVP 통합 테스트 기능 명세서(spec.md) 추가"
   after_clarify:
     enabled: true
     message: "[Spec Kit] Clarify specification"
