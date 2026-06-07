@@ -124,7 +124,7 @@ graph TD
 | **Backend Core** | Python 3.11 + Django Framework & Django REST Framework (DRF) (패키지 관리: **uv**) |
 | **Task Queue** | Celery + Redis Broker & Celery Worker Process |
 | **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) + **psycopg3** (psycopg[binary] C 가속 적용) |
-| **AI Engine** | Gemini-2.5-Flash Multimodal API (JSON Structured Outputs) |
+| **AI Engine** | google-genai SDK (Gemini-2.5-Flash API) & LiteLLM (로컬 Ollama / gemma4:e4b 라우팅 지원) |
 | **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router |
 | **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS |
 | **Web Push** | VAPID v2 Web Push API (FCM / APNs 연동 백그라운드 알림) |
@@ -193,6 +193,11 @@ JWT_ACCESS_SECRET=your_jwt_access_secret
 JWT_REFRESH_SECRET=your_jwt_refresh_secret
 VAPID_PUBLIC_KEY=your_vapid_public_key
 VAPID_PRIVATE_KEY=your_vapid_private_key
+
+# Ollama 로컬 개발 연동 설정 (True 설정 시 로컬 gemma4:e4b 모델 사용)
+OLLAMA_ENABLED=False
+OLLAMA_API_BASE=http://localhost:11434
+OLLAMA_MODEL=gemma4:e4b
 ```
 
 ### 2. 원클릭 데이터베이스 인프라 기동 및 정합성 검증
