@@ -83,3 +83,28 @@ class LedgerListViewTest(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["vendor_name"], "유저 A의 상점")
         self.assertNotEqual(response.data[0]["vendor_name"], "이전 달 상점")
+
+    def test_list_ledgers_by_custom_month(self):
+        """year와 month 쿼리 파라미터를 제공했을 때 해당 월의 지출 내역이 정확하게 필터링되어 반환되는지 검증합니다."""
+        # 1. 5월(이전 달) 지출 건 추가 생성
+        Ledger.objects.create(
+            user=self.user_a,
+            vendor_name="이전 달 상점",
+            vendor_registration_number="1111111111",
+            transaction_date=datetime.date(2026, 5, 15),  # 5월
+            total_amount=5000.00,
+            supply_value=4545.45,
+            vat_amount=454.55,
+        )
+
+        token = AccessToken.for_user(self.user_a)
+        headers = {"HTTP_AUTHORIZATION": f"Bearer {str(token)}"}
+
+        # 2. 5월로 쿼리 스트링 지정하여 조회 요청
+        response = self.client.get(f"{self.list_url}?year=2026&month=5", **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 3. 5월 15일 건만 반환되고, 6월 1일 건(유저 A의 상점)은 제외되어야 함
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["vendor_name"], "이전 달 상점")
+        self.assertNotEqual(response.data[0]["vendor_name"], "유저 A의 상점")

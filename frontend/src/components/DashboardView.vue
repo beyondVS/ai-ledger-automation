@@ -260,6 +260,20 @@ export default {
       loadLedgerList();
     };
 
+    // 업로드된 영수증 날짜의 월로 대시보드 포커스 강제 동기화 (US1 MVP)
+    const syncDashboardMonthToReceipt = (dateStr) => {
+      if (!dateStr) return;
+      try {
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+          selectedYear.value = date.getFullYear();
+          selectedMonth.value = date.getMonth() + 1;
+        }
+      } catch (e) {
+        console.error('Failed to sync dashboard month to receipt date', e);
+      }
+    };
+
     const handleLogout = async () => {
       try {
         await logout();
@@ -307,6 +321,7 @@ export default {
           // 동기 파싱 성공 즉시 렌더링 바인딩
           parsedData.value = response.data;
           pollingStatus.value = 'COMPLETED';
+          syncDashboardMonthToReceipt(response.data.transaction_date);
           loadLedgerList();
         } else {
           // 3주차 비동기 호환을 위한 가상 폴링 대기 루프 개시
@@ -340,6 +355,7 @@ export default {
           parsedData.value = completedData;
           pollingStatus.value = 'COMPLETED';
           pendingJobs.value = pendingJobs.value.filter(j => j.id !== jobId);
+          syncDashboardMonthToReceipt(completedData.transaction_date);
           loadLedgerList();
         },
         (error) => {
