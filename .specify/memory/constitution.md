@@ -1,7 +1,7 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.5.0 -> v1.6.0
-- Ratified: 2026-05-29 | Last Amended: 2026-06-03
+- Version Change: v1.7.0 -> v1.8.0
+- Ratified: 2026-05-29 | Last Amended: 2026-06-08
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
   2. II. 비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Processing & Scale Isolation)
@@ -12,8 +12,8 @@
   7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
   8. VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
   9. IX. ruff 및 pre-commit 자동화 품질 가드 수호 (Ruff Linter & pre-commit Quality Guard)
-- Added/Modified: 백엔드 개발 시 파이썬 코드 스타일 정합성 유지 및 사전 린트 검증 자동화를 위해 ruff와 pre-commit 훅을 제IX조로 영구 비준하고, 커밋 전 자동 린트/포매팅 정합성 보장 의무를 수립(v1.6.0).
-- Added Sections: IX. ruff 및 pre-commit 자동화 품질 가드 수호
+- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트로 직접 전달하여 분석하는 네이티브 PDF 파이프라인을 구축(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0).
+- Added Sections: 없음
 - Deleted Sections: 없음
 - Synchronized Templates:
   - plan-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\plan-template.md)
@@ -71,7 +71,7 @@
 * **백엔드 코어 (Backend Core)**: Python 3.11 + Django Web Framework & Django REST Framework (DRF) (패키지 관리: **uv**)
 * **비동기 처리 엔진 (Task Queue)**: Celery Worker + Redis Broker (JWT 세션 블랙리스트 및 캐시 통합 병용)
 * **데이터 보존 레이어 (Storage Layer)**: PostgreSQL v18+ (주요 ACID 데이터, Native UUIDv7 & AIO) + JSONB 지원 (비정형 원시 LLM 백업용)
-* **인공지능 연동 모듈 (AI Core)**: Gemini-2.5-Flash Multimodal API (강력한 JSON Structured Outputs 규격 강제 바인딩)
+* **인공지능 연동 모듈 (AI Core)**: LiteLLM Router 기반 다이내믹 라우터 (로컬 환경: Ollama gemma4:e4b 우선 및 동일 모델 폴백 / 프로덕션 환경: Gemini-2.5-Flash 우선 및 Ollama 폴백. ReceiptLLMClient를 통한 단일 base64 image_url 통합 및 Pydantic Structured Outputs 규격 강제 바인딩)
 * **수집 파이프라인 (Email Ingestion)**: SendGrid / Mailgun Inbound Parser Webhook + SPF/DKIM 및 사용자 이메일 화이트리스트 이중 매핑 필터
 * **프론트엔드 플랫폼 (PWA Client)**: Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS
 * **푸시 허브 (Notification)**: VAPID v2 표준 규격 Web Push API (백그라운드 디스패치를 위한 Celery 전용 Notification Queue 분리 운영)
@@ -83,6 +83,7 @@
 
 * **Phase 1 (동기식 MVP) 품질 게이트**:
   - 드래그앤드롭 및 원시 PDF/이미지 단일 웹 루프 동기식 업로드 E2E 동작 무결성 달성.
+  - PDF 파일 유입 시 Pillow 전처리를 우회하여 PDF 원본 바이너리 그대로를 LLM API에 application/pdf 파트로 직접 전달하는 다이렉트 멀티모달 파이프라인 무결성 입증.
   - 메인 가계부 레코드(ledgers)와 품목 배열(ledger_items)이 Django ORM 단일 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 성공 커밋되고, 실패 시 롤백됨을 증명.
   - Canvas 다운사이징 1차 리사이징 이미지 바이트 버퍼 유입 성공 검증.
   - 3주차 비동기 구조 전환에 프론트엔드가 하위 호환성을 유지할 수 있도록 `status: "COMPLETED"` 및 `job_id: null` 형태의 MVP 폴링 호환용 JSONB 규격 강제 준수.
@@ -103,4 +104,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.6.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-03
+**Version**: v1.8.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-08

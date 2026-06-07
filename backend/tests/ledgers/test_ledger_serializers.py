@@ -55,13 +55,13 @@ class LedgerListSerializerTest(TestCase):
 
         # 2. 첫 번째 아이템 필드 검증 (API 스펙에 맞는 name, quantity, price 인지 확인)
         first_item = data["items"][0]
-        self.assertEqual(first_item["name"], "아이스 아메리카노")
+        self.assertEqual(first_item["item_name"], "아이스 아메리카노")
         self.assertEqual(first_item["quantity"], 2)
         # DecimalField는 직렬화 결과 문자열로 반환될 수 있으므로 문자열 혹은 float으로 대조
-        self.assertEqual(float(first_item["price"]), 4500.00)
+        self.assertEqual(float(first_item["unit_price"]), 4500.00)
 
         # 3. 두 번째 아이템 필드 검증
         second_item = data["items"][1]
-        self.assertEqual(second_item["name"], "클래식 스콘")
+        self.assertEqual(second_item["item_name"], "클래식 스콘")
         self.assertEqual(second_item["quantity"], 1)
-        self.assertEqual(float(second_item["price"]), 4500.00)
+        self.assertEqual(float(second_item["unit_price"]), 4500.00)

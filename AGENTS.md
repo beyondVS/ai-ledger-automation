@@ -25,7 +25,7 @@
 ### 2.1 기술 스택 및 패키지 관리
 - **Package Manager**: `uv` (Python/Django) & `npm` (Vue.js 3) / `Docker Compose` 통합 환경 제어
   - **백엔드 선언적 의존성 통제**: 백엔드의 모든 파이썬 의존성은 반드시 `backend/pyproject.toml` 및 `backend/uv.lock`에 선언적으로 완전 명세 및 잠금 관리되어야 하며, 격리된 가상 환경을 우회하는 ad-hoc `pip install` 혹은 `uv pip install` 방식의 임의 설치는 엄격히 금지됩니다. 환경 동기화 시에는 오직 `uv sync` 또는 `uv run`을 사용하십시오.
-- **Language / Framework**: `Python 3.11 (Django REST Framework)` & `Vue.js 3 (PWA, Tailwind CSS)`
+- **Language / Framework**: `Python 3.11 (Django REST Framework, google-genai SDK 및 litellm.Router 다이내믹 라우팅)` & `Vue.js 3 (PWA, Tailwind CSS)`
 - **Database / ORM**: `PostgreSQL v18+ (with JSONB support, Native UUIDv7 & AIO) / Django ORM (with psycopg3 [psycopg[binary] C 가속])`
 
 ### 2.2 하네스 명령어 (Harness Commands)
@@ -77,11 +77,13 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 - **아키텍처 결정의 이유**:
   - 금융 가계부 데이터의 강력한 일관성을 지키며 중복 입력을 인덱스 상에서 사전에 효율적으로 방지하고 월별 지출 애그리게이션 성능을 최적화하기 위해 NoSQL 대신 **관계형 PostgreSQL(최신 v18+)**을 주 데이터베이스로 선정하고, 미정형 파서 백업을 위해 JSONB 필드 결합. (v18의 Native UUIDv7 시계열 인덱스 및 AIO 비동기 I/O 성능 혜택 적극 활용)
   - 유료 멀티모달 LLM API 연동에 수반되는 예산 비용 소비를 0원에 수렴하도록 완벽히 차단하고 정적 파싱하기 위해 가맹점 사업자등록번호 기반 레이아웃 캐시 테이블(`merchant_templates`) 및 우회 바이패스(Bypass) 파서 적용.
+  - 구글 공식 지원이 종료된 `google-generativeai`를 완전히 배제하고 `litellm.Router`를 활용하여 로컬 개발 환경(DEBUG=True)에서는 로컬 Ollama 모델(`gemma4:e4b`)을 최우선 및 폴백 모델로 단독 기동하고, 프로덕션 환경(DEBUG=False)에서만 외부 `gemini-2.5-flash` 모델을 우선적으로 호출하도록 동적 라우팅을 통제함.
 - **엄격한 접근 제약**:
   - 영수증 1장 적재 시 `ledgers` 마스터 레코드와 `ledger_items` 상세품목 데이터 생성/수정 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리되어야 하며 장애 시 전격 롤백 보장 필수.
 - **비직관적 비즈니스 로직**:
   - 자가 제안(Auto-Generation)되는 사업자번호 기반 정규식 캐싱 규칙은 무조건 `is_verified: false` 격리 통제 필터로 차단 적재하며, 오직 관리자 수동 승인(`is_verified: true`) 시에만 우회 파서 가동.
   - 이메일 유입 시 SPF 및 DKIM 전자서명 대조 정합성을 검증하고, 사용자당 사전에 등록된 최대 3개의 화이트리스트 메일 발송인 정보와 100% 일치할 경우에만 비동기 Celery 태스크 적재를 허용.
+  - PDF 파일 인입 시 Pillow 이미지 변환기(`ImageProcessor`)에서 발생하는 식별 장애를 회피하기 위해, 전처리를 전면 우회하고 PDF 바이트 데이터를 그대로 Gemini API의 `application/pdf` 파트를 통해 네이티브하게 멀티모달 분석을 태움. (기계적 텍스트 추출에 의한 파싱 오류를 원천 차단함)
 - **해결되지 않은 기술 부채**:
   - AWS Free tier, Supabase Free plan 등 제한된 DBMS의 최대 가용 커넥션 풀 크기 병목 고갈을 예방하기 위해, 풀 제한 크기를 api_server 컨테이너 최대 5개, Celery async_worker 최대 3개, 전체 합산 8개 이하로 엄격하게 제약 통제 필수.
 
@@ -122,5 +124,5 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/013-align-branch-number/plan.md)
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/014-mvp-integration-test/plan.md)
 <!-- SPECKIT END -->
