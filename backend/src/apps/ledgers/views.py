@@ -189,6 +189,25 @@ class ReceiptDetailView(APIView):
             # 3. 헌법 I조 수호: 단일 트랜잭션 atomic 보장
             with transaction.atomic():
                 serializer.save()
+
+                # 카테고리 자율 학습 업데이트 연동 (T018)
+                if "category" in data and ledger.vendor_registration_number != "0000000000":
+                    from apps.ledgers.models import MerchantTemplate
+
+                    template, created = MerchantTemplate.objects.get_or_create(
+                        vendor_registration_number=ledger.vendor_registration_number,
+                        defaults={
+                            "vendor_name": ledger.vendor_name,
+                            "parsing_rules": {"default_category": data["category"]},
+                            "is_verified": False,  # 헌법 III조에 의해 미승인으로 생성
+                        },
+                    )
+                    if not created:
+                        rules = template.parsing_rules or {}
+                        rules["default_category"] = data["category"]
+                        template.parsing_rules = rules
+                        template.save()
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"ReceiptDetailView PATCH Exception: {str(e)}", exc_info=True)

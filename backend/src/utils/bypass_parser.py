@@ -35,6 +35,7 @@ class BypassParser:
                 "vendor_registration_number": vendor_registration_number,
                 "transaction_date": None,
                 "total_amount": 0.0,
+                "category": rules.get("default_category", "미분류"),
                 "items": [],
             }
 

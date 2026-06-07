@@ -84,6 +84,34 @@ class ReceiptDetailViewTest(TestCase):
         self.assertAlmostEqual(float(self.ledger_a.supply_value), 18181.82, places=2)
         self.assertAlmostEqual(float(self.ledger_a.vat_amount), 1818.18, places=2)
 
+    def test_patch_ledger_updates_merchant_template_category(self):
+        """카테고리 정정 시 해당 가맹점의 MerchantTemplate default_category도 함께 자동 갱신되는지 검증 (T018 피드백 루프)"""
+        token = AccessToken.for_user(self.user_a)
+        headers = {"HTTP_AUTHORIZATION": f"Bearer {str(token)}"}
+        payload = {"category": "문화/여가"}
+
+        # 템플릿이 없는 상태에서 PATCH 요청
+        from apps.ledgers.models import MerchantTemplate
+
+        self.assertFalse(MerchantTemplate.objects.filter(vendor_registration_number="1234567890").exists())
+
+        response = self.client.patch(self.url_a, payload, content_type="application/json", **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 템플릿 자동 제안 등록 및 default_category 확인
+        self.assertTrue(MerchantTemplate.objects.filter(vendor_registration_number="1234567890").exists())
+        template = MerchantTemplate.objects.get(vendor_registration_number="1234567890")
+        self.assertEqual(template.parsing_rules.get("default_category"), "문화/여가")
+        self.assertFalse(template.is_verified)  # 헌법 III조에 의해 여전히 미승인(False) 상태여야 함
+
+        # 템플릿이 이미 존재할 때 카테고리 재수정 시 덮어쓰기 검증
+        payload2 = {"category": "식비"}
+        response = self.client.patch(self.url_a, payload2, content_type="application/json", **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        template.refresh_from_db()
+        self.assertEqual(template.parsing_rules.get("default_category"), "식비")
+
     def test_patch_ledger_isolation(self):
         """타인의 가계부를 정정하려고 시도하면 404 Not Found 또는 403 Forbidden이 반환되어야 합니다. (T007)"""
         token = AccessToken.for_user(self.user_a)
