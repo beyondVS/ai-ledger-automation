@@ -167,6 +167,7 @@ class LedgerService:
                 "total_amount": total_amount,
                 "supply_value": supply_value,
                 "vat_amount": vat_amount,
+                "category": parsed_data.get("category", "미분류"),
                 "raw_llm_response": parsed_data if not used_bypass else None,
             }
 

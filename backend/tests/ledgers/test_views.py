@@ -42,6 +42,7 @@ class ReceiptUploadViewTest(TestCase):
             "vendor_registration_number": "1208612345",
             "transaction_date": "2026-06-07T12:34:56Z",
             "total_amount": 15000.00,
+            "category": "식비",
             "items": [
                 {"item_name": "카페아메리카노 Tall", "unit_price": 4500.00, "quantity": 2, "total_price": 9000.00},
                 {"item_name": "부드러운 생크림 카스텔라", "unit_price": 6000.00, "quantity": 1, "total_price": 6000.00},
@@ -82,6 +83,7 @@ class ReceiptUploadViewTest(TestCase):
             "vendor_registration_number": "1208612345",
             "transaction_date": "2026-06-07T12:34:56Z",
             "total_amount": 15000.00,
+            "category": "식비",
             "items": [],
         }
 
