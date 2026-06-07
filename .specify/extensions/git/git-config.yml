@@ -46,8 +46,8 @@ auto_commit:
     enabled: false
     message: "[Spec Kit] Add implementation plan"
   after_tasks:
-    enabled: false
-    message: "[Spec Kit] Add tasks"
+    enabled: true
+    message: "docs: 013 번호 매칭을 위한 빈 스펙 및 구현 계획, 태스크 뼈대 생성"
   after_implement:
     enabled: true
     message: "feat: 영수증 업로드 API 및 가상 폴링 연동 구현 완료"
