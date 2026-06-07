@@ -140,6 +140,11 @@ class LedgerService:
                     raise ValueError("Gemini API 영수증 분석 결과 획득 실패")
 
             # 4. 데이터 정제 및 마스터/상세 데이터 구조 생성
+            raw_biz_num = parsed_data.get("vendor_registration_number", "0000000000")
+            clean_biz_num = re.sub(r"\D", "", str(raw_biz_num))[:10]
+            if not clean_biz_num:
+                clean_biz_num = "0000000000"
+
             total_amount = float(parsed_data.get("total_amount", 0.0))
             supply_value = round(total_amount / 1.1, 2)
             vat_amount = round(total_amount - supply_value, 2)
@@ -156,7 +161,7 @@ class LedgerService:
                 tx_date = timezone.now().date()
 
             ledger_data = {
-                "vendor_registration_number": parsed_data.get("vendor_registration_number", "0000000000"),
+                "vendor_registration_number": clean_biz_num,
                 "vendor_name": parsed_data.get("vendor_name"),
                 "transaction_date": tx_date,
                 "total_amount": total_amount,
