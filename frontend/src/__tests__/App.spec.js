@@ -30,7 +30,13 @@ vi.mock('../services/pollingService', () => ({
 
 // 3. 로그아웃 API 호출을 포함하는 authService 모킹
 vi.mock('../services/authService', () => ({
-  logout: vi.fn()
+  logout: vi.fn(),
+  getAuthHeader: vi.fn(() => ({ 'Authorization': 'Bearer valid_token' }))
+}))
+
+// 4. 가계부 리스트 API 서비스 모킹
+vi.mock('../services/ledgerService', () => ({
+  fetchLedgerList: vi.fn(() => Promise.resolve([]))
 }))
 
 describe('DashboardView.vue - TDD Integration Tests', () => {

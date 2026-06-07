@@ -69,6 +69,36 @@
         />
       </div>
 
+      <!-- 가계부 리스트 뷰 영역 (US1 MVP) -->
+      <section class="w-full max-w-md mx-auto mt-8 p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+        <h2 class="text-sm font-semibold text-slate-300 tracking-wider mb-4 font-mono uppercase flex justify-between items-center">
+          <span>당월 지출 내역</span>
+          <span class="text-indigo-400 font-bold font-outfit">{{ formattedMonthlyTotal }} 원</span>
+        </h2>
+
+        <!-- 빈 화면 대응 -->
+        <div v-if="ledgerList.length === 0 && pendingJobs.length === 0" class="text-center py-8 text-slate-500 text-xs">
+          등록된 이번 달 가계부 지출 내역이 없습니다.
+        </div>
+
+        <!-- 가계부 카드 목록 -->
+        <div v-else class="space-y-3 max-h-96 overflow-y-auto pr-1">
+          <!-- 비동기 분석 대기중인 스켈레톤 로더 -->
+          <LedgerShimmer
+            v-for="job in pendingJobs"
+            :key="job.id"
+            :job="job"
+            class="mb-3 animate-fade-in"
+          />
+
+          <LedgerListItem 
+            v-for="ledger in ledgerList" 
+            :key="ledger.id"
+            :ledger="ledger"
+          />
+        </div>
+      </section>
+
       <!-- 정보 푸터 -->
       <footer class="text-center text-slate-600 text-xs font-mono tracking-wider mt-12 select-none">
         AI Ledger Automation v1.0.0 &copy; 2026
@@ -78,11 +108,14 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Dropzone from './Dropzone.vue';
 import ReceiptList from './ReceiptList.vue';
+import LedgerListItem from './LedgerListItem.vue';
+import LedgerShimmer from './LedgerShimmer.vue';
 import { compressImage, uploadReceiptApi } from '../services/uploadService';
+import { fetchLedgerList } from '../services/ledgerService';
 import { VirtualPollingManager } from '../services/pollingService';
 import { logout } from '../services/authService';
 
@@ -90,7 +123,9 @@ export default {
   name: 'DashboardView',
   components: {
     Dropzone,
-    ReceiptList
+    ReceiptList,
+    LedgerListItem,
+    LedgerShimmer
   },
   setup() {
     const router = useRouter();
@@ -99,10 +134,13 @@ export default {
     const parsedData = ref(null);
     const isUploading = ref(false);
     const errorMessage = ref(null);
+    const ledgerList = ref([]);
+    const pendingJobs = ref([]);
     const pollingStatus = ref(null);
     let errorTimeout = null;
 
     onMounted(() => {
+      loadLedgerList();
       const sessionData = localStorage.getItem('ai_ledger_auth_session');
       if (sessionData) {
         try {
@@ -115,6 +153,15 @@ export default {
         }
       }
     });
+
+    const loadLedgerList = async () => {
+      try {
+        const data = await fetchLedgerList();
+        ledgerList.value = data;
+      } catch (err) {
+        console.error('Failed to load ledger list', err);
+      }
+    };
 
     const handleLogout = async () => {
       try {
@@ -163,9 +210,18 @@ export default {
           // 동기 파싱 성공 즉시 렌더링 바인딩
           parsedData.value = response.data;
           pollingStatus.value = 'COMPLETED';
+          loadLedgerList();
         } else {
           // 3주차 비동기 호환을 위한 가상 폴링 대기 루프 개시
           pollingStatus.value = status;
+
+          // 리스트 최상단에 스켈레톤 로더 추가
+          pendingJobs.value.push({
+            id: jobId,
+            status: status,
+            raw_file_name: file.name
+          });
+
           startVirtualPolling(jobId, status);
         }
 
@@ -186,10 +242,19 @@ export default {
         (completedData) => {
           parsedData.value = completedData;
           pollingStatus.value = 'COMPLETED';
+          pendingJobs.value = pendingJobs.value.filter(j => j.id !== jobId);
+          loadLedgerList();
         },
         (error) => {
           onValidationError(error.message || '비동기 폴링 상태 조회에 실패했습니다.');
           pollingStatus.value = 'FAILED';
+          pendingJobs.value = pendingJobs.value.filter(j => j.id !== jobId);
+        },
+        (newStatus) => {
+          const job = pendingJobs.value.find(j => j.id === jobId);
+          if (job) {
+            job.status = newStatus;
+          }
         }
       );
     };
@@ -220,7 +285,15 @@ export default {
       if (errorTimeout) clearTimeout(errorTimeout);
     };
 
+    const formattedMonthlyTotal = computed(() => {
+      const total = ledgerList.value.reduce((acc, item) => acc + Number(item.total_amount), 0);
+      return total.toLocaleString();
+    });
+
     return {
+      ledgerList,
+      pendingJobs,
+      formattedMonthlyTotal,
       currentUsername,
       currentFile,
       parsedData,
