@@ -122,5 +122,5 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/010-auth-ui-image-resize/plan.md)
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/011-dashboard-ledger-list/plan.md)
 <!-- SPECKIT END -->
