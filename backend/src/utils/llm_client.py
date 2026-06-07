@@ -28,62 +28,74 @@ class ReceiptSchema(BaseModel):
 
 class ReceiptLLMClient:
     """
-    [T013] [US1] LiteLLM Router를 활용하여 로컬 Ollama(gemma4:e4b) 우선 가동 및 프로덕션 Gemini-2.5-Flash 폴백 지원 클래스
+    [T013] [US1] LiteLLM Router를 활용하여 로컬 Ollama 우선 가동 및 프로덕션 Gemini 폴백 지원 클래스
     """
 
     def __init__(self):
         # 1. 설정 및 자격증명 조회
-        is_production = not getattr(settings, "DEBUG", True)
+        gemini_enabled = getattr(settings, "GEMINI_ENABLED", False)
         gemini_api_key = getattr(settings, "GEMINI_API_KEY", None) or os.environ.get("GEMINI_API_KEY")
+        gemini_model = getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
 
         ollama_model = getattr(settings, "OLLAMA_MODEL", "gemma4:e4b")
-        if not ollama_model.startswith("ollama/"):
-            ollama_model = f"ollama/{ollama_model}"
         ollama_api_base = getattr(settings, "OLLAMA_API_BASE", "http://localhost:11434")
 
-        # 2. 동적 모델 리스트 및 폴백 정의
-        if is_production and gemini_api_key:
-            logger.info("프로덕션 모드: Gemini-2.5-Flash 우선 적용 및 로컬 Ollama 폴백 가동")
-            model_list = [
+        # LiteLLM 형식 명세 보정
+        gemini_model_param = f"gemini/{gemini_model}" if not gemini_model.startswith("gemini/") else gemini_model
+        ollama_model_param = f"ollama/{ollama_model}" if not ollama_model.startswith("ollama/") else ollama_model
+
+        # 2. 동적 모델 리스트 구성
+        active_models = []
+
+        if gemini_enabled and gemini_api_key:
+            active_models.append(
                 {
-                    "model_name": "receipt-analyzer",  # 주 모델
+                    "model_name": "receipt-analyzer-gemini",
                     "litellm_params": {
-                        "model": "gemini/gemini-2.5-flash",
+                        "model": gemini_model_param,
                         "api_key": gemini_api_key,
                         "request_timeout": 15.0,
                     },
-                },
-                {
-                    "model_name": "ollama-fallback",  # 폴백 모델
-                    "litellm_params": {
-                        "model": ollama_model,
-                        "api_base": ollama_api_base,
-                        "request_timeout": 25.0,
-                    },
-                },
-            ]
-            self.router = Router(
-                model_list=model_list,
-                fallbacks=[{"receipt-analyzer": ["ollama-fallback"]}],
-                allowed_fails=1,
-            )
-        else:
-            logger.info(f"로컬 개발 모드: 로컬 Ollama ({ollama_model}) 최우선 적용 및 폴백 구성")
-            model_list = [
-                {
-                    "model_name": "receipt-analyzer",  # 주 모델 (Ollama)
-                    "litellm_params": {
-                        "model": ollama_model,
-                        "api_base": ollama_api_base,
-                        "request_timeout": 90.0,
-                    },
                 }
-            ]
-            self.router = Router(
-                model_list=model_list,
-                fallbacks=[{"receipt-analyzer": ["receipt-analyzer"]}],
-                allowed_fails=1,
             )
+
+        # Ollama 모델은 항상 fallback용 혹은 로컬 전용으로 활성화해 둡니다.
+        active_models.append(
+            {
+                "model_name": "receipt-analyzer-ollama",
+                "litellm_params": {
+                    "model": ollama_model_param,
+                    "api_base": ollama_api_base,
+                    "request_timeout": 90.0,
+                },
+            }
+        )
+
+        # Router 구성용 모델 리스트 및 fallbacks 구성
+        router_model_list = []
+        fallbacks = []
+
+        if len(active_models) >= 2:
+            primary = active_models[0]
+            fallback = active_models[1]
+            primary["model_name"] = "receipt-analyzer"
+            fallback["model_name"] = "ollama-fallback"
+
+            router_model_list = [primary, fallback]
+            fallbacks = [{"receipt-analyzer": ["ollama-fallback"]}]
+            logger.info("LiteLLM Router 구성 완료: Gemini -> Ollama 폴백 체계")
+        else:
+            single = active_models[0]
+            single["model_name"] = "receipt-analyzer"
+            router_model_list = [single]
+            fallbacks = [{"receipt-analyzer": ["receipt-analyzer"]}]
+            logger.info("LiteLLM Router 구성 완료: 단일 모델 체계")
+
+        self.router = Router(
+            model_list=router_model_list,
+            fallbacks=fallbacks,
+            allowed_fails=1,
+        )
 
     def parse_receipt(self, file_buffer: io.BytesIO, mime_type: str = "image/webp") -> dict | None:
         """
@@ -95,8 +107,11 @@ class ReceiptLLMClient:
                 logger.error("파일 버퍼 바이트가 비어 있습니다.")
                 return None
 
-            # 1. 로컬 Ollama 모델을 가동할 때 PDF 유입 시 PyMuPDF 이미지 렌더링 전처리
-            is_ollama_target = self.router.model_list[0]["litellm_params"]["model"].startswith("ollama/")
+            # 1. 대상 식별 (GEMINI_ENABLED 스위치 및 API KEY의 존재 여부 기준)
+            gemini_enabled = getattr(settings, "GEMINI_ENABLED", False)
+            gemini_api_key = getattr(settings, "GEMINI_API_KEY", None) or os.environ.get("GEMINI_API_KEY")
+            is_ollama_target = not (gemini_enabled and gemini_api_key)
+
             if is_ollama_target and mime_type == "application/pdf":
                 logger.info("로컬 Ollama 가동 감지: PDF 영수증을 PNG 이미지로 가상 렌더링합니다.")
                 try:
