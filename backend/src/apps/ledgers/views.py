@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from apps.ledgers.models import Ledger, ReceiptUploadJob
@@ -6,6 +7,7 @@ from apps.ledgers.services import create_ledger_transactional
 from apps.ledgers.services.parser import ReceiptParserService
 from django.conf import settings
 from django.db import IntegrityError
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -126,6 +128,17 @@ class LedgerListView(APIView):
 
     def get(self, request, *args, **kwargs):
         # 헌법 I조 수호: 로그인한 사용자의 데이터만 격리 쿼리 필터 적용
-        ledgers = Ledger.objects.filter(user=request.user).order_by("-transaction_date")
+        today = timezone.localdate() if settings.USE_TZ else datetime.date.today()
+        start_of_month = datetime.date(today.year, today.month, 1)
+        if today.month == 12:
+            end_of_month = datetime.date(today.year + 1, 1, 1)
+        else:
+            end_of_month = datetime.date(today.year, today.month + 1, 1)
+
+        ledgers = Ledger.objects.filter(
+            user=request.user,
+            transaction_date__gte=start_of_month,
+            transaction_date__lt=end_of_month,
+        ).order_by("-transaction_date")
         serializer = LedgerListSerializer(ledgers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

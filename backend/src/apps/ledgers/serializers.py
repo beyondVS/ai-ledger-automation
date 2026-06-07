@@ -44,6 +44,8 @@ class LedgerListSerializer(serializers.ModelSerializer):
     - Ledger 모델 필드를 그대로 응답으로 내보냅니다. (vendor_name 필드 검증 대응)
     """
 
+    items = LedgerItemResponseSerializer(many=True, read_only=True)
+
     class Meta:
         model = Ledger
         fields = [
@@ -54,6 +56,7 @@ class LedgerListSerializer(serializers.ModelSerializer):
             "total_amount",
             "supply_value",
             "vat_amount",
+            "items",
             "created_at",
             "updated_at",
         ]

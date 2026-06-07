@@ -7,9 +7,19 @@ export class VirtualPollingManager {
    * @param {string} initialStatus 초기 상태 (PENDING, PROCESSING, COMPLETED)
    * @param {function} onSuccess 분석 성공 시 콜백
    * @param {function} onError 분석 실패 또는 네트워크 에러 시 콜백
+   * @param {function|number} onStatusChangeOrInterval 상태 변경 시 콜백 또는 폴링 주기
    * @param {number} intervalMs 폴링 주기 (기본값: 1000ms)
    */
-  static async startPolling(jobId, initialStatus, onSuccess, onError, intervalMs = 1000) {
+  static async startPolling(jobId, initialStatus, onSuccess, onError, onStatusChangeOrInterval = null, intervalMs = 1000) {
+    let onStatusChange = null;
+    let interval = intervalMs;
+
+    if (typeof onStatusChangeOrInterval === 'function') {
+      onStatusChange = onStatusChangeOrInterval;
+    } else if (typeof onStatusChangeOrInterval === 'number') {
+      interval = onStatusChangeOrInterval;
+    }
+
     // 이미 해당 jobId에 대한 폴링이 활성화된 경우 중복 실행을 피하기 위해 기존 타이머 강제 해제
     this.stopPolling(jobId);
 
@@ -27,11 +37,20 @@ export class VirtualPollingManager {
       }
     }
 
+    let currentStatus = initialStatus;
+
     // 2단계: PENDING 혹은 PROCESSING 상태인 경우 타이머 가동하여 비동기 추적 개시
     const timerId = setInterval(async () => {
       try {
         const response = await this.fetchStatus(jobId);
         
+        if (response.status !== currentStatus) {
+          currentStatus = response.status;
+          if (onStatusChange) {
+            onStatusChange(currentStatus);
+          }
+        }
+
         if (response.status === 'COMPLETED') {
           this.stopPolling(jobId);
           onSuccess(response.data);
@@ -44,7 +63,7 @@ export class VirtualPollingManager {
         this.stopPolling(jobId);
         onError(err);
       }
-    }, intervalMs);
+    }, interval);
 
     this.activePolls.set(jobId, timerId);
   }
@@ -73,6 +92,12 @@ export class VirtualPollingManager {
         'Accept': 'application/json',
       }
     });
+
+    if (response.status === 401) {
+      localStorage.removeItem('ai_ledger_auth_session');
+      window.location.hash = '/login';
+      throw new Error('인증 세션이 만료되었습니다. 다시 로그인해주세요.');
+    }
 
     if (!response.ok) {
       throw new Error(`상태 조회 HTTP 에러: ${response.status}`);

@@ -59,3 +59,27 @@ class LedgerListViewTest(TestCase):
         self.assertEqual(response.data[0]["vendor_name"], "유저 A의 상점")
         # 유저 B의 데이터가 섞여있지 않은지 검증
         self.assertNotEqual(response.data[0]["vendor_name"], "유저 B의 상점")
+
+    def test_list_ledgers_current_month_only(self):
+        """유저 A가 가계부를 조회할 때, 당월(현재 월) 결제 건만 조회되고 이전 달 결제 건은 제외되는지 검증합니다."""
+        # 1. 5월(이전 달) 지출 건 추가 생성 (setUpTestData의 ledger_a는 6월 1일이므로 당월임)
+        Ledger.objects.create(
+            user=self.user_a,
+            vendor_name="이전 달 상점",
+            vendor_registration_number="1111111111",
+            transaction_date=datetime.date(2026, 5, 15),  # 5월
+            total_amount=5000.00,
+            supply_value=4545.45,
+            vat_amount=454.55,
+        )
+
+        token = AccessToken.for_user(self.user_a)
+        headers = {"HTTP_AUTHORIZATION": f"Bearer {str(token)}"}
+
+        response = self.client.get(self.list_url, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 6월 1일 건만 조회되고 5월 15일 건은 필터링되어 응답에 없어야 함
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["vendor_name"], "유저 A의 상점")
+        self.assertNotEqual(response.data[0]["vendor_name"], "이전 달 상점")
