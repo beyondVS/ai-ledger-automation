@@ -12,9 +12,9 @@
 
 **Purpose**: 프로젝트 구조 검증 및 모노레포 TDD 테스트 환경 동기화
 
-- [ ] T001 `backend/` 및 `frontend/` 모노레포 구조 및 12일차 가계부 목록 연동 연동 상태 재확인
-- [ ] T002 `backend/pyproject.toml`에 `pytest-django` 등 TDD 테스트 의존성이 유지 및 동기화된 상태인지 확인
-- [ ] T003 [P] `pre-commit` 훅 설정이 활성화되어 로컬 린터/포매터(ruff) 작동 확인
+- [X] T001 `backend/` 및 `frontend/` 모노레포 구조 및 12일차 가계부 목록 연동 연동 상태 재확인
+- [X] T002 `backend/pyproject.toml`에 `pytest-django` 등 TDD 테스트 의존성이 유지 및 동기화된 상태인지 확인
+- [X] T003 [P] `pre-commit` 훅 설정이 활성화되어 로컬 린터/포매터(ruff) 작동 확인
 
 ---
 
@@ -24,9 +24,9 @@
 
 **⚠️ CRITICAL**: 이 단계가 완료되기 전에는 어떠한 사용자 스토리도 구현을 시작할 수 없습니다.
 
-- [ ] T004 `backend/src/apps/ledgers/models.py` 에 `category` 필드(`models.CharField(max_length=100, default="미분류", db_index=True)`) 추가 및 `makemigrations`/`migrate` 실행을 위한 준비
-- [ ] T005 [P] 백엔드 REST API 라우팅을 위한 `backend/src/apps/ledgers/urls.py`에 상세 PATCH/DELETE API 뷰 경로 `/api/v1/receipts/<uuid:pk>/` 선배치 및 매핑 준비
-- [ ] T006 [P] `frontend/src/services/ledgerService.js` 에 수동 정정(PATCH) 및 삭제(DELETE) fetch 헬퍼 함수 뼈대 선언
+- [X] T004 `backend/src/apps/ledgers/models.py` 에 `category` 필드(`models.CharField(max_length=100, default="미분류", db_index=True)`) 추가 및 `makemigrations`/`migrate` 실행을 위한 준비
+- [X] T005 [P] 백엔드 REST API 라우팅을 위한 `backend/src/apps/ledgers/urls.py`에 상세 PATCH/DELETE API 뷰 경로 `/api/v1/receipts/<uuid:pk>/` 선배치 및 매핑 준비
+- [X] T006 [P] `frontend/src/services/ledgerService.js` 에 수동 정정(PATCH) 및 삭제(DELETE) fetch 헬퍼 함수 뼈대 선언
 
 **Checkpoint**: Foundation ready - user story implementation can now begin.
 
@@ -42,17 +42,17 @@
 
 > **TDD 원칙: 아래 테스트 코드를 먼저 구현하고 실행하여 테스트가 실패(FAIL)하는 것을 먼저 확인하십시오.**
 
-- [ ] T007 [P] [US1] `backend/tests/ledgers/test_ledger_detail_views.py` 경로에 사용자 데이터 격리가 수호된 PATCH API 뷰의 유효성 검사 및 정정 완료를 검증하는 TDD 테스트 코드 작성
-- [ ] T008 [P] [US1] `frontend/tests/components/LedgerEditModal.spec.js` 경로에 수정 모달 활성화, 내부 폼 바인딩, 유효성 검사 경고 및 저장 요청을 검증하는 TDD 컴포넌트 테스트 코드 작성
+- [X] T007 [P] [US1] `backend/tests/ledgers/test_ledger_detail_views.py` 경로에 사용자 데이터 격리가 수호된 PATCH API 뷰의 유효성 검사 및 정정 완료를 검증하는 TDD 테스트 코드 작성
+- [X] T008 [P] [US1] `frontend/tests/components/LedgerEditModal.spec.js` 경로에 수정 모달 활성화, 내부 폼 바인딩, 유효성 검사 경고 및 저장 요청을 검증하는 TDD 컴포넌트 테스트 코드 작성
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] `backend/src/apps/ledgers/serializers.py` 의 `LedgerListSerializer`에 `category` 필드 직렬화 추가 및 유효성 검사 룰 작성
-- [ ] T010 [US1] `backend/src/apps/ledgers/views.py` 에 `ReceiptDetailView.patch` 구현 (사용자 데이터 격리 `Ledger.objects.filter(user=request.user)` 수호 및 atomic 트랜잭션 적용)
-- [ ] T011 [US1] `frontend/src/services/ledgerService.js` 에 JWT Bearer 토큰을 실어 `PATCH /api/v1/receipts/${id}/`를 호출하는 비동기 fetch 함수 구현
-- [ ] T012 [US1] `frontend/src/components/LedgerEditModal.vue` 경로에 Glassmorphism 스타일 모달 폼 디자인, 공백 입력 검사, 저장 시 로딩 비활성화 처리 구현
-- [ ] T013 [US1] `frontend/src/components/LedgerListItem.vue` 및 `DashboardView.vue`에 수정 버튼 연동, 클릭 시 수정 모달 바인딩 및 저장 완료 후 목록 데이터 즉시 갱신 로직 E2E 연결
-- [ ] T014 [US1] 백엔드 및 프론트엔드 유닛 테스트를 실행하여 TDD 테스트가 모두 성공(Pass)으로 전환됨을 증명
+- [X] T009 [US1] `backend/src/apps/ledgers/serializers.py` 의 `LedgerListSerializer`에 `category` 필드 직렬화 추가 및 유효성 검사 룰 작성
+- [X] T010 [US1] `backend/src/apps/ledgers/views.py` 에 `ReceiptDetailView.patch` 구현 (사용자 데이터 격리 `Ledger.objects.filter(user=request.user)` 수호 및 atomic 트랜잭션 적용)
+- [X] T011 [US1] `frontend/src/services/ledgerService.js` 에 JWT Bearer 토큰을 실어 `PATCH /api/v1/receipts/${id}/`를 호출하는 비동기 fetch 함수 구현
+- [X] T012 [US1] `frontend/src/components/LedgerEditModal.vue` 경로에 Glassmorphism 스타일 모달 폼 디자인, 공백 입력 검사, 저장 시 로딩 비활성화 처리 구현
+- [X] T013 [US1] `frontend/src/components/LedgerListItem.vue` 및 `DashboardView.vue`에 수정 버튼 연동, 클릭 시 수정 모달 바인딩 및 저장 완료 후 목록 데이터 즉시 갱신 로직 E2E 연결
+- [X] T014 [US1] 백엔드 및 프론트엔드 유닛 테스트를 실행하여 TDD 테스트가 모두 성공(Pass)으로 전환됨을 증명
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently.
 
@@ -68,16 +68,16 @@
 
 > **TDD 원칙: 아래 테스트 코드를 먼저 구현하고 실행하여 테스트가 실패(FAIL)하는 것을 먼저 확인하십시오.**
 
-- [ ] T015 [P] [US2] `backend/tests/ledgers/test_ledger_detail_views.py` 에 타인 소유 데이터 삭제 차단 및 본인 데이터 삭제 시 LedgerItem이 CASCADE 연쇄 삭제됨을 검증하는 TDD 테스트 코드 작성
-- [ ] T016 [P] [US2] `frontend/tests/components/LedgerDeleteModal.spec.js` 경로에 삭제 경고 팝업 활성화, 취소 시 무반응, 확인 시 DELETE API 트리거를 검증하는 TDD 컴포넌트 테스트 코드 작성
+- [X] T015 [P] [US2] `backend/tests/ledgers/test_ledger_detail_views.py` 에 타인 소유 데이터 삭제 차단 및 본인 데이터 삭제 시 LedgerItem이 CASCADE 연쇄 삭제됨을 검증하는 TDD 테스트 코드 작성
+- [X] T016 [P] [US2] `frontend/tests/components/LedgerDeleteModal.spec.js` 경로에 삭제 경고 팝업 활성화, 취소 시 무반응, 확인 시 DELETE API 트리거를 검증하는 TDD 컴포넌트 테스트 코드 작성
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] `backend/src/apps/ledgers/views.py` 에 `ReceiptDetailView.delete` 구현 (자식 items 데이터 CASCADE 원자적 연쇄 삭제 보장)
-- [ ] T018 [US2] `frontend/src/services/ledgerService.js` 에 JWT Bearer 토큰을 실어 `DELETE /api/v1/receipts/${id}/`를 호출하는 비동기 fetch 함수 구현
-- [ ] T019 [US2] `frontend/src/components/LedgerDeleteModal.vue` 경로에 삭제 경고 모달 다이얼로그(붉은색 테두리 및 확정 확인 텍스트 영역) 구현
-- [ ] T020 [US2] `frontend/src/components/LedgerListItem.vue` 및 `DashboardView.vue`에 삭제 확인 모달 연동, 성공 시 300ms 이내 렌더링 갱신 및 차감 계산 연계 완료
-- [ ] T021 [US2] 테스트 러너를 실행하여 삭제 CRUD 관련 TDD 테스트 케이스가 성공(Pass)으로 전환됨을 입증
+- [X] T017 [US2] `backend/src/apps/ledgers/views.py` 에 `ReceiptDetailView.delete` 구현 (자식 items 데이터 CASCADE 원자적 연쇄 삭제 보장)
+- [X] T018 [US2] `frontend/src/services/ledgerService.js` 에 JWT Bearer 토큰을 실어 `DELETE /api/v1/receipts/${id}/`를 호출하는 비동기 fetch 함수 구현
+- [X] T019 [US2] `frontend/src/components/LedgerDeleteModal.vue` 경로에 삭제 경고 모달 다이얼로그(붉은색 테두리 및 확정 확인 텍스트 영역) 구현
+- [X] T020 [US2] `frontend/src/components/LedgerListItem.vue` 및 `DashboardView.vue`에 삭제 확인 모달 연동, 성공 시 300ms 이내 렌더링 갱신 및 차감 계산 연계 완료
+- [X] T021 [US2] 테스트 러너를 실행하여 삭제 CRUD 관련 TDD 테스트 케이스가 성공(Pass)으로 전환됨을 입증
 
 **Checkpoint**: At this point, User Stories 1 and 2 should both work independently.
 
@@ -93,13 +93,13 @@
 
 > **TDD 원칙: 아래 테스트 코드를 먼저 구현하고 실행하여 테스트가 실패(FAIL)하는 것을 먼저 확인하십시오.**
 
-- [ ] T022 [P] [US3] `frontend/tests/components/LedgerEditModal.spec.js` 에 카테고리 선택 콤보박스 데이터 바인딩 및 저장 시 카테고리 값 전송을 검증하는 TDD 테스트 코드 추가
+- [X] T022 [P] [US3] `frontend/tests/components/LedgerEditModal.spec.js` 에 카테고리 선택 콤보박스 데이터 바인딩 및 저장 시 카테고리 값 전송을 검증하는 TDD 테스트 코드 추가
 
 ### Implementation for User Story 3
 
-- [ ] T023 [US3] `frontend/src/components/LedgerEditModal.vue` 내부 폼에 카테고리 선택용 드롭다운(식비, 교통비, 쇼핑, 주거/통신, 기타) 추가 및 바인딩
-- [ ] T024 [US3] `frontend/src/components/LedgerListItem.vue` 의 카드 레이아웃에 현재 가계부의 카테고리 태그(디자인 에스테틱에 맞는 세련된 뱃지 스타일) 렌더링 적용
-- [ ] T025 [US3] 프론트엔드 테스트를 재실행하여 카테고리 TDD 검증 케이스가 최종 성공(Pass)함을 확인
+- [X] T023 [US3] `frontend/src/components/LedgerEditModal.vue` 내부 폼에 카테고리 선택용 드롭다운(식비, 교통비, 쇼핑, 주거/통신, 기타) 추가 및 바인딩
+- [X] T024 [US3] `frontend/src/components/LedgerListItem.vue` 의 카드 레이아웃에 현재 가계부의 카테고리 태그(디자인 에스테틱에 맞는 세련된 뱃지 스타일) 렌더링 적용
+- [X] T025 [US3] 프론트엔드 테스트를 재실행하여 카테고리 TDD 검증 케이스가 최종 성공(Pass)함을 확인
 
 **Checkpoint**: All user stories should now be independently functional.
 
@@ -109,9 +109,9 @@
 
 **Purpose**: 기능 조율, 다듬기, 성능 최적화 및 횡단 관심사 보완
 
-- [ ] T026 [P] 수동 정정 시 공급가액(`supply_value`)과 부가세(`vat_amount`)가 변경된 최종 금액(`total_amount`)에 따라 10% 비율로 자동 정합 보정되어 DB에 적재되는지 최종 확인
-- [ ] T027 [P] `specs/012-ledger-details-crud/quickstart.md` 가이드에 명시된 명령어로 데이터베이스 셋업 및 TDD 통합 테스트 멱등성 재실행 점검
-- [ ] T028 [P] `pre-commit run --all-files` 명령어를 실행하여 Ruff 린터 및 포매팅 사전 품질 검사를 100% 만족함을 보장
+- [X] T026 [P] 수동 정정 시 공급가액(`supply_value`)과 부가세(`vat_amount`)가 변경된 최종 금액(`total_amount`)에 따라 10% 비율로 자동 정합 보정되어 DB에 적재되는지 최종 확인
+- [X] T027 [P] `specs/012-ledger-details-crud/quickstart.md` 가이드에 명시된 명령어로 데이터베이스 셋업 및 TDD 통합 테스트 멱등성 재실행 점검
+- [X] T028 [P] `pre-commit run --all-files` 명령어를 실행하여 Ruff 린터 및 포매팅 사전 품질 검사를 100% 만족함을 보장
 
 ---
 
