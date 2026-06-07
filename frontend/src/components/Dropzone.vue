@@ -100,8 +100,63 @@ const onFileChange = (event) => {
   }
 }
 
+// 클라이언트 단 HTML5 Canvas API 활용 1차 이미지 리사이징 및 압축 (헌법 제V조 강력 준수)
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    // PDF 등 이미지가 아닌 경우는 압축 우회
+    if (file.type === 'application/pdf') {
+      resolve(file)
+      return
+    }
+
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target.result
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Canvas 2D context 획득 실패'))
+          return
+        }
+
+        const MAX_WIDTH = 1000
+        let width = img.width
+        let height = img.height
+
+        // 가로가 1000px을 초과하는 경우 비례축소 리사이징
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width)
+          width = MAX_WIDTH
+        }
+
+        canvas.width = width
+        canvas.height = height
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // Quality 0.8 JPEG 압축 바이트로 변환
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Canvas blob 변환 실패'))
+            return
+          }
+          const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          })
+          resolve(compressedFile)
+        }, 'image/jpeg', 0.8)
+      }
+      img.onerror = () => reject(new Error('이미지 로드 실패'))
+    }
+    reader.onerror = () => reject(new Error('파일 리더 오류'))
+  })
+}
+
 // 파일 정합성 1차 유효성 검사 및 바인딩 송출
-const processFile = (file) => {
+const processFile = async (file) => {
   // 1) 파일 크기 유효성 검사 (10MB 제한)
   const maxSize = 10 * 1024 * 1024
   if (file.size > maxSize) {
@@ -116,7 +171,13 @@ const processFile = (file) => {
     return
   }
 
-  // 유효성 검사를 모두 충족한 정상 영수증 감지 데이터 발송
-  emit('file-detected', file)
+  try {
+    // 1차 이미지 Canvas 압축 가동
+    const processedFile = await compressImage(file)
+    emit('file-detected', processedFile)
+  } catch (err) {
+    console.error('Image compression error:', err)
+    emit('validation-error', '영수증 이미지 압축 전처리 중 에러가 발생했습니다.')
+  }
 }
 </script>

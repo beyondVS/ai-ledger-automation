@@ -89,3 +89,23 @@ npm run dev
 # 백엔드 전체 pytest 실행
 uv run pytest
 ```
+
+---
+
+## 5. Integration Test Execution Results
+
+본 2주차 MVP 통합 기능은 TDD 원칙 하에 구현 완료되었으며, 백엔드 Django(pytest) 및 프론트엔드 Vue 3(Vitest) 테스트 수트를 통해 검증을 완수했습니다.
+
+### 5.1 Backend Test Results (`uv run pytest`)
+- **총 테스트 수**: 49 Passed
+- **핵심 검증 항목**:
+  - `ledgers` 및 `ledger_items` 단일 트랜잭션 롤백 안정성 입증
+  - `UNIQUE (user_id, vendor_registration_number, transaction_date, total_amount)` 제약조건에 의한 중복 인입 탐지 및 409 차단 검증
+  - 템플릿 기반 바이패스 캐싱 파싱 및 제안 생성 파이프라인 정합성 검증
+
+### 5.2 Frontend Test Results (`npm run test -- --run`)
+- **총 테스트 수**: 38 Passed
+- **핵심 검증 항목**:
+  - HTML5 Canvas를 활용한 가로 최대 1000px, Quality 0.8 JPEG 1차 압축 및 파일 인스턴스 재생성 검증
+  - PWA 사양 수호 모바일 카메라 네이티브 연동 속성 검증
+  - 아코디언 컴포넌트 렌더링 및 동기식 업로드 완료 갱신 검증

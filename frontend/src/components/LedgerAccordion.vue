@@ -33,11 +33,11 @@
             :key="idx"
             class="hover:bg-slate-800/20 transition-colors duration-150"
           >
-            <td class="py-2.5 pr-4 font-medium">{{ item.name }}</td>
-            <td class="py-2.5 text-right font-mono">{{ formatCurrency(item.price) }}원</td>
+            <td class="py-2.5 pr-4 font-medium">{{ item.item_name }}</td>
+            <td class="py-2.5 text-right font-mono">{{ formatCurrency(item.unit_price) }}원</td>
             <td class="py-2.5 text-center font-mono text-slate-400">{{ item.quantity }}</td>
             <td class="py-2.5 text-right font-mono text-indigo-300 font-semibold">
-              {{ formatCurrency(Number(item.price) * item.quantity) }}원
+              {{ formatCurrency(item.amount || (Number(item.unit_price) * item.quantity)) }}원
             </td>
           </tr>
           <tr v-if="!items || items.length === 0">

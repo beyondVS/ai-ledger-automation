@@ -4,8 +4,8 @@ import LedgerAccordion from '../../src/components/LedgerAccordion.vue';
 
 describe('LedgerAccordion.vue', () => {
   const mockItems = [
-    { name: '아이스 아메리카노', quantity: 2, price: '4500.00' },
-    { name: '클래식 스콘', quantity: 1, price: '4500.00' }
+    { item_name: '아이스 아메리카노', quantity: 2, unit_price: '4500.00' },
+    { item_name: '클래식 스콘', quantity: 1, unit_price: '4500.00' }
   ];
   const mockVrn = '1208112345';
 
