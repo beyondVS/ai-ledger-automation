@@ -1,6 +1,6 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.6.0 -> v1.7.0
+- Version Change: v1.7.0 -> v1.8.0
 - Ratified: 2026-05-29 | Last Amended: 2026-06-08
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
@@ -12,7 +12,7 @@
   7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
   8. VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
   9. IX. ruff 및 pre-commit 자동화 품질 가드 수호 (Ruff Linter & pre-commit Quality Guard)
-- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트로 직접 전달하여 분석하는 네이티브 PDF 파이프라인을 구축(v1.7.0).
+- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트로 직접 전달하여 분석하는 네이티브 PDF 파이프라인을 구축(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0).
 - Added Sections: 없음
 - Deleted Sections: 없음
 - Synchronized Templates:
@@ -71,7 +71,7 @@
 * **백엔드 코어 (Backend Core)**: Python 3.11 + Django Web Framework & Django REST Framework (DRF) (패키지 관리: **uv**)
 * **비동기 처리 엔진 (Task Queue)**: Celery Worker + Redis Broker (JWT 세션 블랙리스트 및 캐시 통합 병용)
 * **데이터 보존 레이어 (Storage Layer)**: PostgreSQL v18+ (주요 ACID 데이터, Native UUIDv7 & AIO) + JSONB 지원 (비정형 원시 LLM 백업용)
-* **인공지능 연동 모듈 (AI Core)**: Gemini-2.5-Flash Multimodal API (최신 google-genai SDK 직접 구동 및 로컬 Ollama gemma4:e4b 모델 대응을 위한 litellm 다이내믹 라우팅 결합, 강력한 Pydantic 스키마 Structured Outputs 규격 강제 바인딩)
+* **인공지능 연동 모듈 (AI Core)**: LiteLLM Router 기반 다이내믹 라우터 (로컬 환경: Ollama gemma4:e4b 우선 및 동일 모델 폴백 / 프로덕션 환경: Gemini-2.5-Flash 우선 및 Ollama 폴백. ReceiptLLMClient를 통한 단일 base64 image_url 통합 및 Pydantic Structured Outputs 규격 강제 바인딩)
 * **수집 파이프라인 (Email Ingestion)**: SendGrid / Mailgun Inbound Parser Webhook + SPF/DKIM 및 사용자 이메일 화이트리스트 이중 매핑 필터
 * **프론트엔드 플랫폼 (PWA Client)**: Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS
 * **푸시 허브 (Notification)**: VAPID v2 표준 규격 Web Push API (백그라운드 디스패치를 위한 Celery 전용 Notification Queue 분리 운영)
@@ -104,4 +104,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.7.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-08
+**Version**: v1.8.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-08

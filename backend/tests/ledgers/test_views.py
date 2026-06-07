@@ -33,7 +33,7 @@ class ReceiptUploadViewTest(TestCase):
             name="test_receipt.gif", content=self.dummy_image_bytes, content_type="image/gif"
         )
 
-    @patch("utils.gemini_client.GeminiClient.parse_receipt")
+    @patch("utils.llm_client.ReceiptLLMClient.parse_receipt")
     def test_receipt_upload_success(self, mock_parse_receipt):
         """영수증 이미지 업로드 성공 시, 동기적으로 가계부에 적재되고 COMPLETED 응답을 반환하는지 검증"""
         # Gemini API Mock 응답 데이터 설정
@@ -62,7 +62,7 @@ class ReceiptUploadViewTest(TestCase):
         self.assertEqual(ledger.items.count(), 2)
         self.assertEqual(ledger.total_amount, 15000.00)
 
-    @patch("utils.gemini_client.GeminiClient.parse_receipt")
+    @patch("utils.llm_client.ReceiptLLMClient.parse_receipt")
     def test_receipt_upload_duplicate_error(self, mock_parse_receipt):
         """동일한 가계부 내역이 중복 적재 시도될 때 409 Conflict로 차단되는지 검증"""
         # 먼저 하나의 가계부를 직접 적재
@@ -92,7 +92,7 @@ class ReceiptUploadViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.data["error_code"], "DUPLICATE_RECEIPT")
 
-    @patch("utils.gemini_client.GeminiClient.parse_receipt")
+    @patch("utils.llm_client.ReceiptLLMClient.parse_receipt")
     def test_receipt_upload_parsing_fail(self, mock_parse_receipt):
         """Gemini 파싱 실패(필수값 누락 등) 시 422 Unprocessable Entity를 반환하고 롤백되는지 검증"""
         # Gemini가 None 또는 파싱 오류를 반환하도록 모킹

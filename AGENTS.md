@@ -25,7 +25,7 @@
 ### 2.1 기술 스택 및 패키지 관리
 - **Package Manager**: `uv` (Python/Django) & `npm` (Vue.js 3) / `Docker Compose` 통합 환경 제어
   - **백엔드 선언적 의존성 통제**: 백엔드의 모든 파이썬 의존성은 반드시 `backend/pyproject.toml` 및 `backend/uv.lock`에 선언적으로 완전 명세 및 잠금 관리되어야 하며, 격리된 가상 환경을 우회하는 ad-hoc `pip install` 혹은 `uv pip install` 방식의 임의 설치는 엄격히 금지됩니다. 환경 동기화 시에는 오직 `uv sync` 또는 `uv run`을 사용하십시오.
-- **Language / Framework**: `Python 3.11 (Django REST Framework, google-genai 최신 SDK 및 litellm 라우터 도입)` & `Vue.js 3 (PWA, Tailwind CSS)`
+- **Language / Framework**: `Python 3.11 (Django REST Framework, google-genai SDK 및 litellm.Router 다이내믹 라우팅)` & `Vue.js 3 (PWA, Tailwind CSS)`
 - **Database / ORM**: `PostgreSQL v18+ (with JSONB support, Native UUIDv7 & AIO) / Django ORM (with psycopg3 [psycopg[binary] C 가속])`
 
 ### 2.2 하네스 명령어 (Harness Commands)
@@ -77,7 +77,7 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 - **아키텍처 결정의 이유**:
   - 금융 가계부 데이터의 강력한 일관성을 지키며 중복 입력을 인덱스 상에서 사전에 효율적으로 방지하고 월별 지출 애그리게이션 성능을 최적화하기 위해 NoSQL 대신 **관계형 PostgreSQL(최신 v18+)**을 주 데이터베이스로 선정하고, 미정형 파서 백업을 위해 JSONB 필드 결합. (v18의 Native UUIDv7 시계열 인덱스 및 AIO 비동기 I/O 성능 혜택 적극 활용)
   - 유료 멀티모달 LLM API 연동에 수반되는 예산 비용 소비를 0원에 수렴하도록 완벽히 차단하고 정적 파싱하기 위해 가맹점 사업자등록번호 기반 레이아웃 캐시 테이블(`merchant_templates`) 및 우회 바이패스(Bypass) 파서 적용.
-  - 구글 공식 지원이 종료된 `google-generativeai`를 완전히 배제하고 `google-genai` 최신 공식 SDK 및 다중 모델 라우팅용 `litellm`을 결합하여, API 키가 유효하지 않거나 로컬 디버그 환경일 때 로컬 Ollama 모델(`gemma4:e4b`)로 자동 스위칭 분기하는 비용 통제 체계를 구축함.
+  - 구글 공식 지원이 종료된 `google-generativeai`를 완전히 배제하고 `litellm.Router`를 활용하여 로컬 개발 환경(DEBUG=True)에서는 로컬 Ollama 모델(`gemma4:e4b`)을 최우선 및 폴백 모델로 단독 기동하고, 프로덕션 환경(DEBUG=False)에서만 외부 `gemini-2.5-flash` 모델을 우선적으로 호출하도록 동적 라우팅을 통제함.
 - **엄격한 접근 제약**:
   - 영수증 1장 적재 시 `ledgers` 마스터 레코드와 `ledger_items` 상세품목 데이터 생성/수정 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리되어야 하며 장애 시 전격 롤백 보장 필수.
 - **비직관적 비즈니스 로직**:

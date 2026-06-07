@@ -88,9 +88,9 @@ class LedgerService:
     """
 
     def __init__(self):
-        from utils.gemini_client import GeminiClient
+        from utils.llm_client import ReceiptLLMClient
 
-        self.gemini_client = GeminiClient()
+        self.llm_client = ReceiptLLMClient()
 
     def ingest_receipt(self, user, image_file, raw_ocr_text=None):
         import re
@@ -131,10 +131,10 @@ class LedgerService:
                     import io
 
                     pdf_buffer = io.BytesIO(image_file.read())
-                    parsed_data = self.gemini_client.parse_receipt(pdf_buffer, mime_type="application/pdf")
+                    parsed_data = self.llm_client.parse_receipt(pdf_buffer, mime_type="application/pdf")
                 else:
                     webp_buffer = ImageProcessor.process_image_to_webp(image_file, quality=80)
-                    parsed_data = self.gemini_client.parse_receipt(webp_buffer, mime_type="image/webp")
+                    parsed_data = self.llm_client.parse_receipt(webp_buffer, mime_type="image/webp")
 
                 if not parsed_data:
                     raise ValueError("Gemini API 영수증 분석 결과 획득 실패")

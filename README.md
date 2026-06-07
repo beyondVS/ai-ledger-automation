@@ -124,7 +124,7 @@ graph TD
 | **Backend Core** | Python 3.11 + Django Framework & Django REST Framework (DRF) (패키지 관리: **uv**) |
 | **Task Queue** | Celery + Redis Broker & Celery Worker Process |
 | **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) + **psycopg3** (psycopg[binary] C 가속 적용) |
-| **AI Engine** | google-genai SDK (Gemini-2.5-Flash API) & LiteLLM (로컬 Ollama / gemma4:e4b 라우팅 지원) |
+| **AI Engine** | LiteLLM Router (로컬: Ollama gemma4:e4b 최우선 및 폴백 / 프로덕션: Gemini-2.5-Flash 우선 및 Ollama 폴백) |
 | **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router |
 | **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS |
 | **Web Push** | VAPID v2 Web Push API (FCM / APNs 연동 백그라운드 알림) |

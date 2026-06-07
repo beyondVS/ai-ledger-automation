@@ -179,7 +179,7 @@ graph TD
 \[Hybrid Bypass Router\] \-\> (6) 사업자번호 패턴 매핑, DB 캐시 레이아웃 적중 시 LLM 우회 처리 (Bypass)  
                                 │  
                                 ▼ (Bypass Fail 시에만 7단계 진행)  
-\[AI Analysis Layer\] \--\> (7) 멀티모달 LLM API 호출 (google-genai SDK를 활용한 Gemini-2.5-Flash 호출 혹은 로컬 개발 대역 LiteLLM 라우터를 경유한 Ollama gemma4:e4b 분석 연동)  
+\[AI Analysis Layer\] \--\> (7) 멀티모달 LLM API 호출 (LiteLLM Router를 통해 로컬 개발 환경(DEBUG=True)에서는 로컬 Ollama gemma4:e4b를 최우선/폴백 가동하여 외부 호출을 전면 차단하고, 프로덕션 환경(DEBUG=False)에서만 외부 Gemini-2.5-Flash를 우선 라우팅하도록 통제)  
                                 │  
                                 ▼  
 \[Storage & Logic\] \----\> (8) 단일 DB 트랜잭션 시작 (Transaction Atomicity 보장)  
@@ -475,7 +475,7 @@ networks:
 * [x] **11일차:** **[추가 계획] 프론트엔드 로그인 상태 체크(인증 토큰 기반 라우터 가드 구현) 및 실제 사용자 로그인/회원가입 UI 화면 개발.** 모바일 사용자 전용 클라이언트 사이드 이미지 리사이징 모듈 내장 (HTML5 Canvas API를 이용하여 업로드 단추를 누르기 직전 1000px 규격 최적화 압축 처리 가동하여 네트워크 트래픽 절감).  
 * [x] **12일차:** 대시보드 메인 가계부 리스트 뷰 및 개별 상세 내역 조회 아코디언 컴포넌트 개발. API 서버를 통해 Django ORM에서 누적 적재 데이터를 받아와 화면에 정상 렌더링 확인. (이미 10일차에 구현된 로그인 기능을 바탕으로 실제 인증된 사용자의 가계부 데이터를 호출하여 렌더링)  
 * [x] **13일차:** 가계부 상세 레코드 수동 정정(가맹점명 변경, 오분류 카테고리 교정 등) 및 수동 삭제(CRUD) 프론트엔드 모달 다이얼로그 기능 최종 개발 및 연결.  
-* [x] **14일차:** 2주차 동기식 MVP 완전체 통합 테스트 및 AI 분석 모듈 현대화. 지원 종료된 `google-generativeai` SDK를 2026년 기준 최신 `google-genai` SDK로 전격 마이그레이션하고, 로컬 디버깅 환경 대응을 위해 `litellm` 라우터와 Ollama `gemma4:e4b` 연동 가교 구축 완료. PDF 파일 업로드 시 Pillow 전처리 오류를 예외 분기 처리하여 원본 PDF Bytes 데이터 및 MIME 타입을 Gemini API에 직접 전달하는 전처리 고도화 구현. 백엔드 pytest 49개 및 프론트엔드 테스트 38개 전원 그린 패스 완료.
+* [x] **14일차:** 2주차 동기식 MVP 완전체 통합 테스트 및 AI 분석 모듈 현대화. 지원 종료된 `google-generativeai` SDK를 완전히 배제하고, `litellm.Router`를 도입하여 로컬 환경(DEBUG=True)에서는 로컬 Ollama `gemma4:e4b`를 최우선 및 폴백으로 단독 가동하며 프로덕션 환경(DEBUG=False)에서만 외부 Gemini-2.5-Flash를 우선 라우팅하는 다이내믹 라우터(`ReceiptLLMClient`)를 구축 완료. PDF 파일 업로드 시 Pillow 전처리 오류를 예외 분기 처리하여 원본 PDF Bytes 데이터 및 MIME 타입을 API에 직접 전달하는 전처리 고도화 구현. 백엔드 pytest 49개 및 프론트엔드 테스트 38개 전원 그린 패스 완료.
 
 ### **6.3. 3주차: 비동기 분산 아키텍처 및 비용/보안 고도화 (15일차 \~ 21일차)**
 
