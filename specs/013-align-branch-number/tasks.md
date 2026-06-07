@@ -25,9 +25,9 @@
 
 **Purpose**: Project spec-kit directory and configuration initialization
 
-- [ ] T001 specs/013-align-branch-number 디렉토리 및 spec.md, plan.md 생성 완료
-- [ ] T002 [P] .specify/feature.json의 feature_directory를 specs/013-align-branch-number로 올바르게 갱신
-- [ ] T003 [P] AGENTS.md 파일 하단의 SPECKIT START 마커 내 계획 경로를 specs/013-align-branch-number/plan.md로 업데이트
+- [X] T001 specs/013-align-branch-number 디렉토리 및 spec.md, plan.md 생성 완료
+- [X] T002 [P] .specify/feature.json의 feature_directory를 specs/013-align-branch-number로 올바르게 갱신
+- [X] T003 [P] AGENTS.md 파일 하단의 SPECKIT START 마커 내 계획 경로를 specs/013-align-branch-number/plan.md로 업데이트
 
 ---
 
@@ -35,7 +35,7 @@
 
 **Purpose**: Core infrastructure and git branch verification before finalizing the alignment
 
-- [ ] T004 git status를 통한 작업 트리 깨끗함 확인 및 브랜치 013-align-branch-number 정상 체크아웃 상태 검증
+- [X] T004 git status를 통한 작업 트리 깨끗함 확인 및 브랜치 013-align-branch-number 정상 체크아웃 상태 검증
 
 **Checkpoint**: Foundation ready - git branch and directory placeholders are established.
 
@@ -49,8 +49,8 @@
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] specs/013-align-branch-number/checklists/requirements.md 파일 생성 및 품질 체크리스트 수립 검증
-- [ ] T006 [US1] specs/013-align-branch-number/quickstart.md 파일 작성 및 번호 정합성 확인 가이드 검증
+- [X] T005 [US1] specs/013-align-branch-number/checklists/requirements.md 파일 생성 및 품질 체크리스트 수립 검증
+- [X] T006 [US1] specs/013-align-branch-number/quickstart.md 파일 작성 및 번호 정합성 확인 가이드 검증
 
 **Checkpoint**: At this point, the skeleton and metadata for feature index 013 are fully set up.
 
@@ -60,7 +60,7 @@
 
 **Purpose**: Final verification of the alignment
 
-- [ ] T007 quickstart.md 파일에 명시된 가이드에 따라 전체 013 번호 매칭 여부 최종 검증 수행
+- [X] T007 quickstart.md 파일에 명시된 가이드에 따라 전체 013 번호 매칭 여부 최종 검증 수행
 
 ---
 
