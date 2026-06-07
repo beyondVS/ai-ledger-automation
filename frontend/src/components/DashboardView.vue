@@ -95,6 +95,8 @@
             v-for="ledger in ledgerList" 
             :key="ledger.id"
             :ledger="ledger"
+            @edit="openEditModal"
+            @delete="openDeleteModal"
           />
         </div>
       </section>
@@ -104,6 +106,22 @@
         AI Ledger Automation v1.0.0 &copy; 2026
       </footer>
     </div>
+
+    <!-- 수정 모달 (T013) -->
+    <LedgerEditModal
+      :is-open="isEditModalOpen"
+      :ledger="selectedLedgerForEdit || {}"
+      @close="isEditModalOpen = false"
+      @save="handleEditSave"
+    />
+
+    <!-- 삭제 경고 모달 (T020) -->
+    <LedgerDeleteModal
+      :is-open="isDeleteModalOpen"
+      :ledger="selectedLedgerForDelete || {}"
+      @close="isDeleteModalOpen = false"
+      @confirm="handleDeleteConfirm"
+    />
   </main>
 </template>
 
@@ -118,6 +136,8 @@ import { compressImage, uploadReceiptApi } from '../services/uploadService';
 import { fetchLedgerList } from '../services/ledgerService';
 import { VirtualPollingManager } from '../services/pollingService';
 import { logout } from '../services/authService';
+import LedgerEditModal from './LedgerEditModal.vue';
+import LedgerDeleteModal from './LedgerDeleteModal.vue';
 
 export default {
   name: 'DashboardView',
@@ -125,7 +145,9 @@ export default {
     Dropzone,
     ReceiptList,
     LedgerListItem,
-    LedgerShimmer
+    LedgerShimmer,
+    LedgerEditModal,
+    LedgerDeleteModal
   },
   setup() {
     const router = useRouter();
@@ -138,6 +160,38 @@ export default {
     const pendingJobs = ref([]);
     const pollingStatus = ref(null);
     let errorTimeout = null;
+
+    // 모달 활성화 상태 및 타겟 정보 refs
+    const isEditModalOpen = ref(false);
+    const selectedLedgerForEdit = ref(null);
+    const isDeleteModalOpen = ref(false);
+    const selectedLedgerForDelete = ref(null);
+
+    const openEditModal = (ledger) => {
+      selectedLedgerForEdit.value = ledger;
+      isEditModalOpen.value = true;
+    };
+
+    const openDeleteModal = (ledger) => {
+      selectedLedgerForDelete.value = ledger;
+      isDeleteModalOpen.value = true;
+    };
+
+    const handleEditSave = (updatedLedger) => {
+      // 300ms 이내에 즉시 목록과 누적 월 합산 갱신
+      ledgerList.value = ledgerList.value.map(item => 
+        item.id === updatedLedger.id ? updatedLedger : item
+      );
+    };
+
+    const handleDeleteConfirm = () => {
+      // 300ms 이내에 즉시 삭제 및 소비 누계 갱신
+      if (selectedLedgerForDelete.value) {
+        ledgerList.value = ledgerList.value.filter(item => 
+          item.id !== selectedLedgerForDelete.value.id
+        );
+      }
+    };
 
     onMounted(() => {
       loadLedgerList();
@@ -300,6 +354,14 @@ export default {
       isUploading,
       errorMessage,
       pollingStatus,
+      isEditModalOpen,
+      selectedLedgerForEdit,
+      isDeleteModalOpen,
+      selectedLedgerForDelete,
+      openEditModal,
+      openDeleteModal,
+      handleEditSave,
+      handleDeleteConfirm,
       handleLogout,
       onFileDetected,
       onFileRemoved,

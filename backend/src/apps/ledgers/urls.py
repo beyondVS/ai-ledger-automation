@@ -1,4 +1,4 @@
-from apps.ledgers.views import LedgerListView, ReceiptStatusView, ReceiptUploadView
+from apps.ledgers.views import LedgerListView, ReceiptDetailView, ReceiptStatusView, ReceiptUploadView
 from django.urls import path
 
 urlpatterns = [
@@ -8,4 +8,6 @@ urlpatterns = [
     path("upload/", ReceiptUploadView.as_view(), name="receipt-upload"),
     # [T007, T019] 영수증 비동기 호환 상태 조회 API
     path("status/<uuid:job_id>/", ReceiptStatusView.as_view(), name="receipt-status"),
+    # [T005, T010, T017] 영수증 수동 수정(PATCH) 및 삭제(DELETE) API (UUID pk 매핑)
+    path("<uuid:pk>/", ReceiptDetailView.as_view(), name="receipt-detail"),
 ]

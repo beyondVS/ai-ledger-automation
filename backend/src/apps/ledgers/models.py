@@ -21,6 +21,9 @@ class Ledger(models.Model):
     supply_value = models.DecimalField(max_digits=12, decimal_places=2)
     vat_amount = models.DecimalField(max_digits=12, decimal_places=2)
 
+    # 지출 카테고리 (T004)
+    category = models.CharField(max_length=100, default="미분류", db_index=True)
+
     # LLM 파싱 성공 원시 응답 JSONB 백업 보존
     raw_llm_response = models.JSONField(null=True, blank=True)
 

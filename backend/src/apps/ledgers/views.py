@@ -1,12 +1,13 @@
 import datetime
 import logging
+from decimal import ROUND_HALF_UP, Decimal
 
 from apps.ledgers.models import Ledger, ReceiptUploadJob
 from apps.ledgers.serializers import LedgerListSerializer, ReceiptUploadResponseSerializer
 from apps.ledgers.services import create_ledger_transactional
 from apps.ledgers.services.parser import ReceiptParserService
 from django.conf import settings
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -142,3 +143,85 @@ class LedgerListView(APIView):
         ).order_by("-transaction_date")
         serializer = LedgerListSerializer(ledgers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ReceiptDetailView(APIView):
+    """
+    [T005, T010, T017] ReceiptDetailView
+    - 개별 가계부 레코드에 대한 수동 정정(PATCH) 및 수동 삭제(DELETE)를 처리합니다.
+    - 헌법 I조에 의거하여 로그인한 사용자 본인의 데이터에 대해서만 수정 및 삭제가 수행됩니다.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk, *args, **kwargs):
+        try:
+            # 1. 헌법 I조 수호: 로그인 유저 데이터 격리 필터 적용
+            ledger = Ledger.objects.get(id=pk, user=request.user)
+        except Ledger.DoesNotExist:
+            return Response(
+                {"error": "NOT_FOUND", "message": "해당 가계부 내역을 찾을 수 없거나 권한이 없습니다."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        data = request.data.copy()
+
+        # 2. total_amount 수정 시 10% 공급가액/부가세 자동 보정 (T026 수호)
+        if "total_amount" in data and data["total_amount"] is not None:
+            try:
+                total_amount = Decimal(str(data["total_amount"]))
+                if total_amount < 0:
+                    return Response(
+                        {"error": "VALIDATION_ERROR", "message": "총 금액은 0원 이상이어야 합니다."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # 공급가액 및 부가세 1:10 비율 계산 (소수점 2째 자리 반올림)
+                supply_value = (total_amount / Decimal("1.1")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                vat_amount = (total_amount - supply_value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+                data["supply_value"] = supply_value
+                data["vat_amount"] = vat_amount
+            except (ValueError, TypeError, ArithmeticError):
+                return Response(
+                    {"error": "VALIDATION_ERROR", "message": "올바르지 않은 금액 형식입니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        serializer = LedgerListSerializer(ledger, data=data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # 3. 헌법 I조 수호: 단일 트랜잭션 atomic 보장
+            with transaction.atomic():
+                serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"ReceiptDetailView PATCH Exception: {str(e)}", exc_info=True)
+            return Response(
+                {"error": "SYSTEM_ERROR", "message": "수정 처리 중 서버 에러가 발생했습니다."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def delete(self, request, pk, *args, **kwargs):
+        try:
+            # 1. 헌법 I조 수호: 로그인 유저 데이터 격리 필터 적용
+            ledger = Ledger.objects.get(id=pk, user=request.user)
+        except Ledger.DoesNotExist:
+            return Response(
+                {"error": "NOT_FOUND", "message": "해당 가계부 내역을 찾을 수 없거나 권한이 없습니다."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            # 2. 헌법 I조 수호: 원자적 연쇄 삭제 보장
+            with transaction.atomic():
+                ledger.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error(f"ReceiptDetailView DELETE Exception: {str(e)}", exc_info=True)
+            return Response(
+                {"error": "SYSTEM_ERROR", "message": "삭제 처리 중 서버 에러가 발생했습니다."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

@@ -24,6 +24,7 @@ class LedgerDetailsResponseSerializer(serializers.Serializer):
     vendor_registration_number = serializers.CharField()
     transaction_date = serializers.DateField()
     total_amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    category = serializers.CharField(required=False, default="미분류")
     items = LedgerItemResponseSerializer(many=True)
 
 
@@ -56,7 +57,13 @@ class LedgerListSerializer(serializers.ModelSerializer):
             "total_amount",
             "supply_value",
             "vat_amount",
+            "category",
             "items",
             "created_at",
             "updated_at",
         ]
+
+    def validate_vendor_name(self, value):
+        if not value or value.strip() == "":
+            raise serializers.ValidationError("가맹점명을 입력해주세요.")
+        return value
