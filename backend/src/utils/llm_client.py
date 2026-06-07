@@ -95,6 +95,14 @@ class ReceiptLLMClient:
                 logger.error("파일 버퍼 바이트가 비어 있습니다.")
                 return None
 
+            # 1. 로컬 Ollama 모델의 물리적 PDF 비전 분석 불가 예외 가드
+            is_ollama_target = self.router.model_list[0]["litellm_params"]["model"].startswith("ollama/")
+            if is_ollama_target and mime_type == "application/pdf":
+                logger.warning(
+                    "로컬 Ollama 비전은 PDF 직접 분석을 지원하지 않습니다. 텍스트 추출 또는 Gemini로 처리하십시오."
+                )
+                return None
+
             prompt = (
                 "제공된 영수증 파일의 정보에서 가맹점명, 10자리 사업자등록번호(하이픈 제외), "
                 "결제 일시(날짜와 시간 모두 포함된 ISO 8601 형식), 총 결제 금액, 그리고 세부 품목 목록 "
@@ -102,14 +110,20 @@ class ReceiptLLMClient:
                 "사업자등록번호가 보이지 않는 경우에는 '0000000000'으로 채워주세요."
             )
 
-            # LiteLLM 표준 멀티모달 메시지 포맷 구성
+            # 2. 백엔드 성격에 따른 base64 접두사 동적 조율
             base64_data = base64.b64encode(file_bytes).decode("utf-8")
+            if is_ollama_target:
+                # 로컬 Ollama는 data url prefix가 있으면 illegal base64 데이터로 판단해 400 에러를 냅니다.
+                image_url_value = base64_data
+            else:
+                image_url_value = f"data:{mime_type};base64,{base64_data}"
+
             messages = [
                 {
                     "role": "user",
                     "content": [
                         {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_data}"}},
+                        {"type": "image_url", "image_url": {"url": image_url_value}},
                     ],
                 }
             ]
