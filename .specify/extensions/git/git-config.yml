@@ -37,20 +37,20 @@ auto_commit:
     enabled: false
     message: "[Spec Kit] Add project constitution"
   after_specify:
-    enabled: false
+    enabled: true
     message: "[Spec Kit] Add specification"
   after_clarify:
-    enabled: false
+    enabled: true
     message: "[Spec Kit] Clarify specification"
   after_plan:
-    enabled: false
+    enabled: true
     message: "[Spec Kit] Add implementation plan"
   after_tasks:
-    enabled: false
+    enabled: true
     message: "[Spec Kit] Add tasks"
   after_implement:
     enabled: true
-    message: "docs: 013 번호 매칭 태스크 목록(tasks.md) 완료 상태 반영"
+    message: "[Spec Kit] Implementation progress"
   after_checklist:
     enabled: false
     message: "[Spec Kit] Add checklist"
