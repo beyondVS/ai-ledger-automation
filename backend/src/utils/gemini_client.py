@@ -1,9 +1,13 @@
+import base64
 import io
 import json
 import logging
+import os
 
-import google.generativeai as genai
+import litellm
 from django.conf import settings
+from google import genai
+from google.genai import types
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -26,61 +30,84 @@ class ReceiptSchema(BaseModel):
 
 class GeminiClient:
     """
-    [T013] [US1] Gemini-2.5-Flash API를 연동하여 영수증 이미지 분석 및 Structured Outputs 수신 클래스
+    [T013] [US1] google-genai 및 litellm을 활용하여 최신 Gemini API 및 로컬 Ollama 연동 지원 클래스
     """
 
     def __init__(self):
-        # base.py에 설정된 API Key 로드
-        api_key = getattr(settings, "GEMINI_API_KEY", None)
-        if not api_key:
-            import os
+        self.api_key = getattr(settings, "GEMINI_API_KEY", None)
+        if not self.api_key:
+            self.api_key = os.environ.get("GEMINI_API_KEY")
 
-            api_key = os.environ.get("GEMINI_API_KEY")
+        # 로컬 Ollama 가동 조건
+        self.use_ollama = getattr(settings, "OLLAMA_ENABLED", False) or not self.api_key
+        self.ollama_model = getattr(settings, "OLLAMA_MODEL", "ollama/gemma4:e4b")
+        self.ollama_api_base = getattr(settings, "OLLAMA_API_BASE", "http://localhost:11434")
 
-        if api_key:
-            genai.configure(api_key=api_key)
+        if not self.use_ollama:
+            self.client = genai.Client(api_key=self.api_key)
         else:
-            logger.warning("GEMINI_API_KEY가 설정되어 있지 않습니다.")
+            logger.info(f"로컬 Ollama 연동 가동 예정 (모델: {self.ollama_model})")
 
-    def parse_receipt(self, image_buffer: io.BytesIO) -> dict | None:
+    def parse_receipt(self, file_buffer: io.BytesIO, mime_type: str = "image/webp") -> dict | None:
         """
-        WebP 이미지 버퍼를 수신하여 Gemini-2.5-Flash API로 송신하고,
-        강제된 JSON Schema 형식의 영수증 데이터 구조를 반환합니다.
-        오류 발생 시 None을 반환합니다.
+        MIME 타입에 맞춰 파일 버퍼를 최신 Gemini API 또는 로컬 Ollama 모델로 분석시킵니다.
         """
         try:
-            image_bytes = image_buffer.getvalue()
-            if not image_bytes:
-                logger.error("이미지 버퍼 바이트가 비어 있습니다.")
+            file_bytes = file_buffer.getvalue()
+            if not file_bytes:
+                logger.error("파일 버퍼 바이트가 비어 있습니다.")
                 return None
 
-            model = genai.GenerativeModel("gemini-2.5-flash")
-
             prompt = (
-                "제공된 영수증 이미지의 텍스트 정보에서 가맹점명, 10자리 사업자등록번호(하이픈 제외), "
+                "제공된 영수증 파일의 정보에서 가맹점명, 10자리 사업자등록번호(하이픈 제외), "
                 "결제 일시(날짜와 시간 모두 포함된 ISO 8601 형식), 총 결제 금액, 그리고 세부 품목 목록 "
                 "(품목명, 단가, 수량, 합계 금액)을 정확히 추출하여 지정된 JSON 스키마에 맞춰 반환해주세요. "
                 "사업자등록번호가 보이지 않는 경우에는 '0000000000'으로 채워주세요."
             )
 
-            # Structured Outputs API 호출
-            response = model.generate_content(
-                [{"mime_type": "image/webp", "data": image_bytes}, prompt],
-                generation_config=genai.GenerationConfig(
-                    response_mime_type="application/json",
-                    response_schema=ReceiptSchema,
-                    temperature=0.1,  # 정확도 높은 추출을 위해 낮게 설정
-                ),
-            )
+            # 1. 로컬 Ollama 분기 (LiteLLM)
+            if self.use_ollama:
+                base64_data = base64.b64encode(file_bytes).decode("utf-8")
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_data}"}},
+                        ],
+                    }
+                ]
+                response = litellm.completion(
+                    model=self.ollama_model,
+                    messages=messages,
+                    response_format=ReceiptSchema,
+                    api_base=self.ollama_api_base,
+                    temperature=0.1,
+                )
+                response_text = response.choices[0].message.content
 
-            if not response.text:
-                logger.error("Gemini API가 빈 응답을 반환했습니다.")
+            # 2. 클라우드 Gemini 분기 (google-genai)
+            else:
+                part = types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
+                response = self.client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[part, prompt],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=ReceiptSchema,
+                        temperature=0.1,
+                    ),
+                )
+                response_text = response.text
+
+            if not response_text:
+                logger.error("API가 빈 응답을 반환했습니다.")
                 return None
 
-            parsed_data = json.loads(response.text)
-            logger.info(f"Gemini 영수증 파싱 성공: {parsed_data.get('vendor_name')}")
+            parsed_data = json.loads(response_text)
+            logger.info(f"영수증 파싱 성공: {parsed_data.get('vendor_name')}")
             return parsed_data
 
         except Exception as e:
-            logger.exception(f"Gemini API 영수증 분석 중 오류 발생: {str(e)}")
+            logger.exception(f"영수증 분석 중 오류 발생: {str(e)}")
             return None

@@ -126,8 +126,16 @@ class LedgerService:
 
             # 3. 로컬 바이패스 실패 시 2차 Pillow WebP 이미지 변환 및 Gemini API 폴백 가동
             if not parsed_data:
-                webp_buffer = ImageProcessor.process_image_to_webp(image_file, quality=80)
-                parsed_data = self.gemini_client.parse_receipt(webp_buffer)
+                file_name = getattr(image_file, "name", "").lower()
+                if file_name.endswith(".pdf"):
+                    import io
+
+                    pdf_buffer = io.BytesIO(image_file.read())
+                    parsed_data = self.gemini_client.parse_receipt(pdf_buffer, mime_type="application/pdf")
+                else:
+                    webp_buffer = ImageProcessor.process_image_to_webp(image_file, quality=80)
+                    parsed_data = self.gemini_client.parse_receipt(webp_buffer, mime_type="image/webp")
+
                 if not parsed_data:
                     raise ValueError("Gemini API 영수증 분석 결과 획득 실패")
 
