@@ -95,13 +95,25 @@ class ReceiptLLMClient:
                 logger.error("파일 버퍼 바이트가 비어 있습니다.")
                 return None
 
-            # 1. 로컬 Ollama 모델의 물리적 PDF 비전 분석 불가 예외 가드
+            # 1. 로컬 Ollama 모델을 가동할 때 PDF 유입 시 PyMuPDF 이미지 렌더링 전처리
             is_ollama_target = self.router.model_list[0]["litellm_params"]["model"].startswith("ollama/")
             if is_ollama_target and mime_type == "application/pdf":
-                logger.warning(
-                    "로컬 Ollama 비전은 PDF 직접 분석을 지원하지 않습니다. 텍스트 추출 또는 Gemini로 처리하십시오."
-                )
-                return None
+                logger.info("로컬 Ollama 가동 감지: PDF 영수증을 PNG 이미지로 가상 렌더링합니다.")
+                try:
+                    import fitz  # PyMuPDF
+
+                    doc = fitz.open(stream=file_bytes, filetype="pdf")
+                    if doc.page_count > 0:
+                        page = doc[0]  # 첫 페이지만 추출
+                        pix = page.get_pixmap(dpi=150)
+                        file_bytes = pix.tobytes("png")
+                        mime_type = "image/png"
+                    else:
+                        logger.error("PDF 파일에 페이지가 존재하지 않습니다.")
+                        return None
+                except Exception as e:
+                    logger.exception(f"PDF 로컬 이미지 변환 중 오류 발생: {str(e)}")
+                    return None
 
             prompt = (
                 "제공된 영수증 파일의 정보에서 가맹점명, 10자리 사업자등록번호(하이픈 제외), "
