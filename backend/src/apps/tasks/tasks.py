@@ -49,8 +49,8 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
 
         file_name = os.path.basename(file_path)
         content_type = "application/pdf" if file_name.lower().endswith(".pdf") else "image/jpeg"
-        # 2주차 레거시 파일명 시뮬레이션 바이패스 파싱 호환을 위해 원본 파일명 복원 적용
-        orig_name = job.raw_file_name or file_name
+        # 2주차 레거시 파일명 시뮬레이션 바이패스 파싱 호환을 위해 원본 파일명 복원 적용 (경로 트래버스 방지 정제)
+        orig_name = os.path.basename(job.raw_file_name) if job.raw_file_name else file_name
         image_file = SimpleUploadedFile(orig_name, file_content, content_type=content_type)
 
         # 3. 비동기 분석 및 적재 서비스 실행

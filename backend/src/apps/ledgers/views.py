@@ -26,8 +26,8 @@ class ReceiptUploadView(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            # 다중 파일 추출 지원 (file 혹은 image 필드 모두 지원)
-            image_files = request.FILES.getlist("file") or request.FILES.getlist("image")
+            # 다중 파일 추출 지원 (file 및 image 필드 병합 수신 지원)
+            image_files = request.FILES.getlist("file") + request.FILES.getlist("image")
             if not image_files:
                 single_file = request.FILES.get("image") or request.FILES.get("file")
                 if single_file:
