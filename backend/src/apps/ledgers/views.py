@@ -67,8 +67,19 @@ class ReceiptUploadView(APIView):
                 saved_filename = fs.save(temp_filename, image_file)
                 file_path = fs.path(saved_filename)
 
-                # 3. Celery 백그라운드 태스크 기동
-                extract_receipt_text_task.delay(str(job.id), file_path)
+                # 3. Celery 백그라운드 태스크 기동 및 장애 격리
+                try:
+                    extract_receipt_text_task.delay(str(job.id), file_path)
+                except Exception as queue_err:
+                    if os.path.exists(file_path):
+                        try:
+                            os.remove(file_path)
+                        except OSError:
+                            pass
+                    job.status = "FAILED"
+                    job.failure_reason = f"메시지 큐 적재 장애: {str(queue_err)}"
+                    job.save()
+                    raise queue_err
 
                 # 4. 응답 페이로드 누적
                 jobs_payload.append({"job_id": job.id, "status": "PENDING", "ledger": None})

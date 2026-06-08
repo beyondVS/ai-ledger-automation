@@ -86,11 +86,11 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
             logger.info(
                 f"[Celery] Retrying task in {countdown} seconds (Retry {self.request.retries + 1}/{self.max_retries})"
             )
-            # 재시도 대기 상태이므로 상태를 다시 PROCESSING으로 복구
+            # 재시도 대기 상태이므로 상태를 다시 PENDING으로 복구
             try:
                 with transaction.atomic():
                     job = ReceiptUploadJob.objects.select_for_update().get(id=job_id)
-                    job.status = "PROCESSING"
+                    job.status = "PENDING"
                     job.save()
             except Exception as db_err:
                 logger.error(f"[Celery] Failed to restore status on retry: {str(db_err)}")
