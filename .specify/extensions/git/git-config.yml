@@ -44,7 +44,7 @@ auto_commit:
     message: "docs: 015 비동기 처리(Redis/Celery) 격리 기획 명확화 반영 및 품질 체크 완료"
   after_plan:
     enabled: true
-    message: "[Spec Kit] Add implementation plan"
+    message: "docs: 015 비동기 처리(Redis/Celery) 아키텍처 설계 산출물(plan.md) 및 인터페이스 계약서 추가"
   after_tasks:
     enabled: true
     message: "[Spec Kit] Add tasks"

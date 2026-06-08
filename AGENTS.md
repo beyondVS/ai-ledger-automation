@@ -124,5 +124,5 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/014-mvp-integration-test/plan.md)
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/015-redis-celery-integration/plan.md)
 <!-- SPECKIT END -->
