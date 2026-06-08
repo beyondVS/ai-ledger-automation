@@ -93,7 +93,7 @@ class LedgerService:
 
         self.llm_client = ReceiptLLMClient()
 
-    def ingest_receipt(self, user, image_file, raw_ocr_text=None):
+    def ingest_receipt(self, user, image_file, raw_ocr_text=None, existing_job=None):
         import re
 
         from apps.ledgers.models import Ledger, ReceiptUploadJob
@@ -101,10 +101,16 @@ class LedgerService:
         from utils.bypass_parser import BypassParser
         from utils.image_processor import ImageProcessor
 
-        # 1. 3주차 호환 작업 추적 Job 생성 (PENDING 상태)
-        job = ReceiptUploadJob.objects.create(
-            user=user, status="PENDING", raw_file_name=getattr(image_file, "name", "unknown_receipt.jpg")
-        )
+        # 1. 3주차 호환 작업 추적 Job 생성 또는 기존 Job 재사용
+        if existing_job:
+            job = existing_job
+            if getattr(image_file, "name", None):
+                job.raw_file_name = image_file.name
+                job.save()
+        else:
+            job = ReceiptUploadJob.objects.create(
+                user=user, status="PENDING", raw_file_name=getattr(image_file, "name", "unknown_receipt.jpg")
+            )
 
         # 테스트용 시뮬레이션: raw_ocr_text가 제공되지 않은 경우 파일명을 OCR 텍스트로 보완 시도
         if not raw_ocr_text and image_file:

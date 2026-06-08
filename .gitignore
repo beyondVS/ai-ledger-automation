@@ -367,3 +367,7 @@ $RECYCLE.BIN/
 !.env.*.example
 !.env.example
 !*.env.example
+
+# Receipt Upload Temporary Directory Excludes
+temp_receipts/
+backend/src/temp_receipts/

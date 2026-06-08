@@ -35,7 +35,7 @@ class ReceiptUploadViewTest(TestCase):
 
     @patch("utils.llm_client.ReceiptLLMClient.parse_receipt")
     def test_receipt_upload_success(self, mock_parse_receipt):
-        """영수증 이미지 업로드 성공 시, 동기적으로 가계부에 적재되고 COMPLETED 응답을 반환하는지 검증"""
+        """영수증 이미지 업로드 성공 시, 비동기 접수(202) 후 Eager 모드로 가계부에 COMPLETED 적재되는지 검증"""
         # Gemini API Mock 응답 데이터 설정
         mock_parse_receipt.return_value = {
             "vendor_name": "스타벅스 역삼대로점",
@@ -52,10 +52,16 @@ class ReceiptUploadViewTest(TestCase):
         # API 호출
         response = self.client.post(self.upload_url, {"image": self.uploaded_file}, format="multipart", **self.headers)
 
-        # 10초 이내 동기 갱신 응답 검증 (HTTP 200)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["status"], "COMPLETED")
-        self.assertIsNone(response.data["job_id"])
+        # 202 Accepted 접수 확인
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.data["status"], "PENDING")
+        self.assertIsNotNone(response.data["job_id"])
+
+        # Eager 모드 실행 완료 후 Job 상태가 COMPLETED인지 확인
+        from apps.ledgers.models import ReceiptUploadJob
+
+        job = ReceiptUploadJob.objects.get(id=response.data["job_id"])
+        self.assertEqual(job.status, "COMPLETED")
 
         # 적재된 가계부 마스터 및 세부 품목 DB 검증
         self.assertTrue(Ledger.objects.filter(user=self.user, vendor_registration_number="1208612345").exists())
@@ -65,7 +71,7 @@ class ReceiptUploadViewTest(TestCase):
 
     @patch("utils.llm_client.ReceiptLLMClient.parse_receipt")
     def test_receipt_upload_duplicate_error(self, mock_parse_receipt):
-        """동일한 가계부 내역이 중복 적재 시도될 때 409 Conflict로 차단되는지 검증"""
+        """동일한 가계부 내역이 중복 적재 시도될 때 비동기 처리에서 FAILED로 격리 차단되는지 검증"""
         # 먼저 하나의 가계부를 직접 적재
         Ledger.objects.create(
             user=self.user,
@@ -87,16 +93,26 @@ class ReceiptUploadViewTest(TestCase):
             "items": [],
         }
 
+        ledger_count_before = Ledger.objects.count()
+
         # API 호출
         response = self.client.post(self.upload_url, {"image": self.uploaded_file}, format="multipart", **self.headers)
 
-        # 409 Conflict 에러 및 차단 응답 검증
-        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
-        self.assertEqual(response.data["error_code"], "DUPLICATE_RECEIPT")
+        # 202 Accepted 접수 확인
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+        # Eager 모드 실행 후 중복 제약에 걸려 FAILED 상태가 되었는지 확인
+        from apps.ledgers.models import ReceiptUploadJob
+
+        job = ReceiptUploadJob.objects.get(id=response.data["job_id"])
+        self.assertEqual(job.status, "FAILED")
+
+        # 중복 차단되어 가계부 총 개수가 늘어나지 않았는지 확인
+        self.assertEqual(Ledger.objects.count(), ledger_count_before)
 
     @patch("utils.llm_client.ReceiptLLMClient.parse_receipt")
     def test_receipt_upload_parsing_fail(self, mock_parse_receipt):
-        """Gemini 파싱 실패(필수값 누락 등) 시 422 Unprocessable Entity를 반환하고 롤백되는지 검증"""
+        """Gemini 파싱 실패(필수값 누락 등) 시 비동기 작업이 FAILED가 되고 정상 롤백되는지 검증"""
         # Gemini가 None 또는 파싱 오류를 반환하도록 모킹
         mock_parse_receipt.return_value = None
 
@@ -105,7 +121,14 @@ class ReceiptUploadViewTest(TestCase):
         # API 호출
         response = self.client.post(self.upload_url, {"image": self.uploaded_file}, format="multipart", **self.headers)
 
-        # 422 Unprocessable Entity 에러 검증 및 데이터 롤백 확인
-        self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
-        self.assertEqual(response.data["error_code"], "PARSING_FAILED")
+        # 202 Accepted 접수 확인
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+        # Eager 모드 실행 후 파싱 에러로 FAILED 상태가 되었는지 확인
+        from apps.ledgers.models import ReceiptUploadJob
+
+        job = ReceiptUploadJob.objects.get(id=response.data["job_id"])
+        self.assertEqual(job.status, "FAILED")
+
+        # 가계부 및 상세 데이터 롤백 확인
         self.assertEqual(Ledger.objects.count(), ledger_count_before)

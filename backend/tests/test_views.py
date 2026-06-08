@@ -47,27 +47,25 @@ class ReceiptUploadAPITestCase(TestCase):
             name="1208612345 합계 15000.jpg", content=dummy_image_bytes, content_type="image/jpeg"
         )
 
-        # 2. 동기 업로드 API 요청
+        # 2. 비동기 업로드 API 요청
         response = self.client.post(self.upload_url, {"file": receipt_image}, format="multipart")
 
         # 3. 응답 데이터 스펙 검증
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 202)
         response_json = response.json()
 
         # 3주차 비동기 대응 하위 호환성 필드 검증 (job_id, status)
         self.assertIn("job_id", response_json)
-        self.assertEqual(response_json["status"], "COMPLETED")
-        self.assertIn("data", response_json)
+        self.assertEqual(response_json["status"], "PENDING")
 
-        # 반환 데이터 검증
-        data = response_json["data"]
-        self.assertEqual(data["merchant_name"], "스타벅스 역삼역점")
-        self.assertEqual(data["vendor_registration_number"], "1208612345")
-        self.assertEqual(float(data["total_amount"]), 15000.00)
-        self.assertEqual(len(data["items"]), 2)
+        # 4. Eager 모드 실행 완료 후 데이터베이스 원자적 트랜잭션 적재 결과 검증 (헌법 I조 수호)
+        from apps.ledgers.models import ReceiptUploadJob
 
-        # 4. 데이터베이스 원자적 트랜잭션 적재 결과 검증 (헌법 I조 수호)
-        ledger = Ledger.objects.get(id=data["ledger_id"])
+        job = ReceiptUploadJob.objects.select_related("ledger").get(id=response_json["job_id"])
+        self.assertEqual(job.status, "COMPLETED")
+        self.assertIsNotNone(job.ledger)
+
+        ledger = job.ledger
         self.assertEqual(ledger.vendor_registration_number, "1208612345")
         self.assertEqual(ledger.total_amount, 15000.00)
         self.assertEqual(ledger.items.count(), 2)

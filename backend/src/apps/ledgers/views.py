@@ -4,9 +4,8 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from apps.ledgers.models import Ledger, ReceiptUploadJob
 from apps.ledgers.serializers import LedgerListSerializer, ReceiptUploadResponseSerializer
-from apps.ledgers.services import LedgerService
 from django.conf import settings
-from django.db import IntegrityError, transaction
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -18,17 +17,23 @@ logger = logging.getLogger("apps.ledgers")
 
 class ReceiptUploadView(APIView):
     """
-    [T017] [US1] ReceiptUploadView
-    - 영수증 이미지를 업로드받아 1차 Canvas 압축 여부 확인 후, WebP 변환 및 Gemini API 동기 처리를 가동해 가계부에 원자적 적재합니다.
-    - 3주차 비동기 호환을 위한 job_id(None)와 status("COMPLETED")를 리턴합니다.
+    [T011] [US1] ReceiptUploadView
+    - 영수증 이미지를 업로드받아 로컬 임시 폴더에 보관한 뒤 Celery 비동기 태스크를 가동합니다.
+    - 접수 즉시 202 Accepted 응답과 함께 생성된 비동기 작업(Job) ID를 반환합니다.
     """
 
     permission_classes = [AllowAny] if settings.DEBUG else [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         try:
-            image_file = request.FILES.get("image") or request.FILES.get("file")
-            if not image_file:
+            # 다중 파일 추출 지원 (file 및 image 필드 병합 수신 지원)
+            image_files = request.FILES.getlist("file") + request.FILES.getlist("image")
+            if not image_files:
+                single_file = request.FILES.get("image") or request.FILES.get("file")
+                if single_file:
+                    image_files = [single_file]
+
+            if not image_files:
                 return Response(
                     {"error_code": "PARSING_FAILED", "message": "업로드된 영수증 이미지 파일이 없습니다."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -39,26 +44,54 @@ class ReceiptUploadView(APIView):
 
             current_user = request.user if request.user.is_authenticated else User.objects.first()
 
-            # Ledger Ingestion Service 기동
-            service = LedgerService()
-            result = service.ingest_receipt(user=current_user, image_file=image_file)
+            import os
 
-            # API 계약 명세서 응답 구조로 직렬화
-            serializer = ReceiptUploadResponseSerializer(result)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            from apps.tasks.tasks import extract_receipt_text_task
+            from django.core.files.storage import FileSystemStorage
 
-        except IntegrityError as ie:
-            logger.warning(f"ReceiptUploadView Duplicate: {str(ie)}")
-            return Response(
-                {"error_code": "DUPLICATE_RECEIPT", "message": "이미 등록된 결제 내역의 영수증입니다."},
-                status=status.HTTP_409_CONFLICT,
-            )
-        except ValueError as ve:
-            logger.error(f"ReceiptUploadView Parsing Fail: {str(ve)}")
-            return Response(
-                {"error_code": "PARSING_FAILED", "message": "영수증 이미지 분석 또는 데이터 파싱에 실패했습니다."},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            )
+            temp_dir = os.path.join(settings.BASE_DIR, "temp_receipts")
+            os.makedirs(temp_dir, exist_ok=True)
+            fs = FileSystemStorage(location=temp_dir)
+
+            jobs_payload = []
+
+            for image_file in image_files:
+                # 1. 3주차 호환 작업 추적 Job 생성 (PENDING 상태)
+                job = ReceiptUploadJob.objects.create(
+                    user=current_user, status="PENDING", raw_file_name=image_file.name
+                )
+
+                # 2. 임시 디렉토리에 파일 업로드 저장
+                ext = os.path.splitext(image_file.name)[1]
+                temp_filename = f"{job.id}{ext}"
+                saved_filename = fs.save(temp_filename, image_file)
+                file_path = fs.path(saved_filename)
+
+                # 3. Celery 백그라운드 태스크 기동 및 장애 격리
+                try:
+                    extract_receipt_text_task.delay(str(job.id), file_path)
+                except Exception as queue_err:
+                    if os.path.exists(file_path):
+                        try:
+                            os.remove(file_path)
+                        except OSError:
+                            pass
+                    job.status = "FAILED"
+                    job.failure_reason = f"메시지 큐 적재 장애: {str(queue_err)}"
+                    job.save()
+                    raise queue_err
+
+                # 4. 응답 페이로드 누적
+                jobs_payload.append({"job_id": job.id, "status": "PENDING", "ledger": None})
+
+            # 5. API 계약 응답 구조 직렬화 (단일 파일인 경우 단일 객체, 다중 파일인 경우 리스트 반환)
+            if len(image_files) == 1:
+                serializer = ReceiptUploadResponseSerializer(jobs_payload[0])
+            else:
+                serializer = ReceiptUploadResponseSerializer(jobs_payload, many=True)
+
+            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
         except Exception as e:
             logger.error(f"ReceiptUploadView Server Error: {str(e)}", exc_info=True)
             return Response(
