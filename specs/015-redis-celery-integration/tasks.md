@@ -66,13 +66,13 @@
 
 ### US2 TDD Tests (테스트 코드 먼저 작성 및 실패 확인 필수)
 
-- [ ] T015 [P] [US2] `backend/tests/apps/ledgers/test_batch_upload.py` 파일에 10개 이상의 영수증을 동시 업로드할 때 타임아웃 없이 신속히 접수되는지 검증하고, 태스크 예외 발생 시 최대 3회 지수 백오프 재시도가 수행되는지 모킹 검증하는 테스트 코드 작성 및 실패(Red) 확인
+- [X] T015 [P] [US2] `backend/tests/apps/ledgers/test_batch_upload.py` 파일에 10개 이상의 영수증을 동시 업로드할 때 타임아웃 없이 신속히 접수되는지 검증하고, 태스크 예외 발생 시 최대 3회 지수 백오프 재시도가 수행되는지 모킹 검증하는 테스트 코드 작성 및 실패(Red) 확인
 
 ### US2 Implementation
 
-- [ ] T016 [US2] `backend/src/apps/tasks/tasks.py` 파일 내에 `extract_receipt_text_task` 실패 시 재시도(`max_retries=3`, `default_retry_delay=2` 지수 백오프 인자) 매개변수 추가 및 최종 실패 시 `failure_reason` 적재 후 트랜잭션 롤백 보장 로직 보강
-- [ ] T017 [US2] `backend/src/apps/ledgers/views.py` 파일 내에 다중 영수증을 효율적으로 일괄 업로드 및 큐에 디스패치할 수 있는 벌크 업로드 엔드포인트 세부 비즈니스 로직 고도화
-- [ ] T018 [US2] `backend/tests/apps/ledgers/test_batch_upload.py` 테스트 코드를 실행하여 일괄 업로드 및 재시도 통합 시나리오 테스트가 성공(Green)하는지 검증
+- [X] T016 [US2] `backend/src/apps/tasks/tasks.py` 파일 내에 `extract_receipt_text_task` 실패 시 재시도(`max_retries=3`, `default_retry_delay=2` 지수 백오프 인자) 매개변수 추가 및 최종 실패 시 `failure_reason` 적재 후 트랜잭션 롤백 보장 로직 보강
+- [X] T017 [US2] `backend/src/apps/ledgers/views.py` 파일 내에 다중 영수증을 효율적으로 일괄 업로드 및 큐에 디스패치할 수 있는 벌크 업로드 엔드포인트 세부 비즈니스 로직 고도화
+- [X] T018 [US2] `backend/tests/apps/ledgers/test_batch_upload.py` 테스트 코드를 실행하여 일괄 업로드 및 재시도 통합 시나리오 테스트가 성공(Green)하는지 검증
 
 **Checkpoint**: 대량 업로드 스트레스 및 태스크 장애 격리 복구 기능 E2E 테스트 통과 완료.
 
@@ -82,10 +82,10 @@
 
 **Purpose**: 크로스 플랫폼 대칭 로컬 기동 스크립트 작성 및 최종 전체 린트/테스트 가드 확인
 
-- [ ] T019 [P] `scripts/start-async-dev.ps1` 및 `scripts/start-async-dev.sh` 경로에 Redis, Django API 서버, Celery Worker, Flower 대시보드를 통합 기동/중지시키는 대칭형 스크립트를 작성하여 크로스 플랫폼 가동성 확보
-- [ ] T020 [P] `docker-compose.yml` 및 로컬 환경에서 Flower 대시보드가 정상 구동되고 모니터링 메트릭 및 작업 취소 기능이 포트 5555에서 활성화되는지 연동 확인
-- [ ] T021 `quickstart.md`에 명시된 명령을 통해 통합 수동 가동 테스트를 완수하고 정합성을 검증
-- [ ] T022 [P] 백엔드 폴더 하위에서 `uv run ruff check` 및 `uv run ruff format` 명령을 수행하여 코드 린트 결함을 100% 제거하고 커밋 전 pre-commit 가드를 완전 통과하는지 확인
+- [X] T019 [P] `scripts/start-async-dev.ps1` 및 `scripts/start-async-dev.sh` 경로에 Redis, Django API 서버, Celery Worker, Flower 대시보드를 통합 기동/중지시키는 대칭형 스크립트를 작성하여 크로스 플랫폼 가동성 확보
+- [X] T020 [P] `docker-compose.yml` 및 로컬 환경에서 Flower 대시보드가 정상 구동되고 모니터링 메트릭 및 작업 취소 기능이 포트 5555에서 활성화되는지 연동 확인
+- [X] T021 `quickstart.md`에 명시된 명령을 통해 통합 수동 가동 테스트를 완수하고 정합성을 검증
+- [X] T022 [P] 백엔드 폴더 하위에서 `uv run ruff check` 및 `uv run ruff format` 명령을 수행하여 코드 린트 결함을 100% 제거하고 커밋 전 pre-commit 가드를 완전 통과하는지 확인
 
 ---
 
