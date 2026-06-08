@@ -71,7 +71,7 @@ requires-dist = [
     { name = "djangorestframework", specifier = ">=3.15.2" },
     { name = "djangorestframework-simplejwt", specifier = ">=5.4.0" },
     { name = "google-genai", specifier = ">=1.0.0" },
-    { name = "litellm", specifier = ">=1.35.0" },
+    { name = "litellm", specifier = ">=1.88.0" },
     { name = "pdfplumber", specifier = ">=0.10.0" },
     { name = "pillow", specifier = ">=10.2.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
