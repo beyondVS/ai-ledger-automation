@@ -136,6 +136,7 @@ class ReceiptUploadJob(models.Model):
     status = models.CharField(max_length=20, default="PENDING")  # PENDING, PROCESSING, COMPLETED, FAILED
     raw_file_name = models.CharField(max_length=255, null=True, blank=True)
     ledger = models.OneToOneField(Ledger, on_delete=models.SET_NULL, null=True, blank=True, related_name="upload_job")
+    failure_reason = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -14,10 +14,10 @@
 
 **Purpose**: 프로젝트 비동기 연동을 위한 인프라 초기화 및 라이브러리 가용성 셋업
 
-- [ ] T001 `backend/pyproject.toml` 및 `backend/uv.lock` 파일에 Celery와 redis-py 의존성을 선언적 추가하고 `uv sync`를 호출하여 패키지를 가상 환경에 동기화
-- [ ] T002 [P] `docker-compose.yml` 파일에 Redis(메시지 브로커, 6379 포트) 컨테이너 및 Flower(대시보드, 5555 포트) 컨테이너 사양 기술 추가
-- [ ] T003 [P] `backend/src/config/celery.py` 파일 생성 및 Celery 인스턴스 초기화, 자동 검색(autodiscover_tasks) 및 시리얼라이저 포맷 설정 추가
-- [ ] T004 `backend/src/config/__init__.py` 파일 수정하여 Django 시작 시 config/celery.py 내의 celery_app이 메모리에 자동 로드되도록 바인딩
+- [X] T001 `backend/pyproject.toml` 및 `backend/uv.lock` 파일에 Celery와 redis-py 의존성을 선언적 추가하고 `uv sync`를 호출하여 패키지를 가상 환경에 동기화
+- [X] T002 [P] `docker-compose.yml` 파일에 Redis(메시지 브로커, 6379 포트) 컨테이너 및 Flower(대시보드, 5555 포트) 컨테이너 사양 기술 추가
+- [X] T003 [P] `backend/src/config/celery.py` 파일 생성 및 Celery 인스턴스 초기화, 자동 검색(autodiscover_tasks) 및 시리얼라이저 포맷 설정 추가
+- [X] T004 `backend/src/config/__init__.py` 파일 수정하여 Django 시작 시 config/celery.py 내의 celery_app이 메모리에 자동 로드되도록 바인딩
 
 ---
 
@@ -27,9 +27,9 @@
 
 **⚠️ CRITICAL**: 이 페이즈의 모든 공통 인프라 태스크가 완수되기 전에는 어떠한 사용자 스토리도 구현을 시작할 수 없습니다.
 
-- [ ] T005 `backend/src/apps/ledgers/models.py` 파일 내에 비동기 작업 추적을 위한 `LedgerJob` 모델(UUIDv7 PK, status choices, failure_reason, ledger FK 연계)을 정의하고 마이그레이션 파일 생성 및 적용 (`uv run src/manage.py makemigrations && uv run src/manage.py migrate`)
-- [ ] T006 [P] `backend/src/config/settings.py` 파일 내에 Celery 브로커 URL(`CELERY_BROKER_URL`), 결과 백엔드(`CELERY_RESULT_BACKEND`) 설정 주입 및 헌법 준수를 위한 DB 커넥션 풀 가이드라인(Gunicorn workers=2, Celery concurrency=2) 세팅 반영
-- [ ] T007 [P] `backend/src/apps/tasks/client.py` 파일 생성 및 향후 SSE/WebSocket 확장을 유연하게 받아줄 수 있는 상태 알림 인터페이스 `NotificationClient` 추상 정의 구현
+- [X] T005 `backend/src/apps/ledgers/models.py` 파일 내에 비동기 작업 추적을 위한 `LedgerJob` 모델(UUIDv7 PK, status choices, failure_reason, ledger FK 연계)을 정의하고 마이그레이션 파일 생성 및 적용 (`uv run src/manage.py makemigrations && uv run src/manage.py migrate`)
+- [X] T006 [P] `backend/src/config/settings.py` 파일 내에 Celery 브로커 URL(`CELERY_BROKER_URL`), 결과 백엔드(`CELERY_RESULT_BACKEND`) 설정 주입 및 헌법 준수를 위한 DB 커넥션 풀 가이드라인(Gunicorn workers=2, Celery concurrency=2) 세팅 반영
+- [X] T007 [P] `backend/src/apps/tasks/client.py` 파일 생성 및 향후 SSE/WebSocket 확장을 유연하게 받아줄 수 있는 상태 알림 인터페이스 `NotificationClient` 추상 정의 구현
 
 **Checkpoint**: Foundational 인프라 빌드 완료 - 이제 각 사용자 스토리를 TDD 흐름에 맞춰 병렬/순차 가동할 준비가 되었습니다.
 
@@ -43,16 +43,16 @@
 
 ### US1 TDD Tests (테스트 코드 먼저 작성 및 실패 확인 필수)
 
-- [ ] T008 [P] [US1] `backend/tests/apps/ledgers/test_async_jobs.py` 파일에 영수증 업로드 시 즉시 202 Accepted 및 작업 ID가 반환되며, 해당 ID로 작업 조회가 성공하는지 검증하는 API 통합 테스트 코드 작성 및 실패(Red) 확인
-- [ ] T009 [P] [US1] `backend/tests/apps/tasks/test_celery_tasks.py` 파일에 `extract_receipt_text_task`가 동작할 때 작업 상태가 PENDING -> PROCESSING -> SUCCESS로 전이되며 Ledger/LedgerItem 트랜잭션이 성공 완수되는지 확인하는 Celery 가상 워커 유닛 테스트 코드 작성 및 실패(Red) 확인
+- [X] T008 [P] [US1] `backend/tests/apps/ledgers/test_async_jobs.py` 파일에 영수증 업로드 시 즉시 202 Accepted 및 작업 ID가 반환되며, 해당 ID로 작업 조회가 성공하는지 검증하는 API 통합 테스트 코드 작성 및 실패(Red) 확인
+- [X] T009 [P] [US1] `backend/tests/apps/tasks/test_celery_tasks.py` 파일에 `extract_receipt_text_task`가 동작할 때 작업 상태가 PENDING -> PROCESSING -> SUCCESS로 전이되며 Ledger/LedgerItem 트랜잭션이 성공 완수되는지 확인하는 Celery 가상 워커 유닛 테스트 코드 작성 및 실패(Red) 확인
 
 ### US1 Implementation
 
-- [ ] T010 [US1] `backend/src/apps/tasks/tasks.py` 파일 내에 비동기 OCR 및 LLM 텍스트 분석 처리를 수행하는 `extract_receipt_text_task` Celery 태스크 구현 (작업 완료 후 단일 DB 트랜잭션 `transaction.atomic()` 보장)
-- [ ] T011 [US1] `backend/src/apps/ledgers/views.py` 파일 내에 업로드 요청 수신 즉시 디스크 임시 파일 작성 후 Celery 태스크를 디스패치하고 `LedgerJob`을 PENDING으로 저장해 202를 반환하는 `ReceiptUploadView` 구현
-- [ ] T012 [US1] `backend/src/apps/ledgers/views.py` 파일 내에 작업 ID 수신 즉시 현재 `LedgerJob`의 상태 및 성공 시 연계된 `ledger_id`를 리턴하는 `ReceiptJobStatusView` 구현
-- [ ] T013 [US1] `backend/src/apps/ledgers/urls.py` 파일 내에 위 뷰들을 호출할 수 있도록 API 라우팅 정보 추가 및 맵핑 완료
-- [ ] T014 [US1] `backend/tests/apps/ledgers/test_async_jobs.py` 및 `test_celery_tasks.py` 테스트 코드를 다시 가동하여 모든 테스트가 통과(Green)하는지 입증
+- [X] T010 [US1] `backend/src/apps/tasks/tasks.py` 파일 내에 비동기 OCR 및 LLM 텍스트 분석 처리를 수행하는 `extract_receipt_text_task` Celery 태스크 구현 (작업 완료 후 단일 DB 트랜잭션 `transaction.atomic()` 보장)
+- [X] T011 [US1] `backend/src/apps/ledgers/views.py` 파일 내에 업로드 요청 수신 즉시 디스크 임시 파일 작성 후 Celery 태스크를 디스패치하고 `LedgerJob`을 PENDING으로 저장해 202를 반환하는 `ReceiptUploadView` 구현
+- [X] T012 [US1] `backend/src/apps/ledgers/views.py` 파일 내에 작업 ID 수신 즉시 현재 `LedgerJob`의 상태 및 성공 시 연계된 `ledger_id`를 리턴하는 `ReceiptJobStatusView` 구현
+- [X] T013 [US1] `backend/src/apps/ledgers/urls.py` 파일 내에 위 뷰들을 호출할 수 있도록 API 라우팅 정보 추가 및 맵핑 완료
+- [X] T014 [US1] `backend/tests/apps/ledgers/test_async_jobs.py` 및 `test_celery_tasks.py` 테스트 코드를 다시 가동하여 모든 테스트가 통과(Green)하는지 입증
 
 **Checkpoint**: User Story 1의 모든 비동기 접수 및 조회 흐름이 독립적으로 동작하고 E2E 테스트를 통해 무결성이 기계적으로 보장됨을 확인.
 

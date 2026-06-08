@@ -140,3 +140,26 @@ GEMINI_MODEL = env("GEMINI_MODEL", default="gemini-2.5-flash")
 
 OLLAMA_MODEL = env("OLLAMA_MODEL", default="gemma4:e4b")
 OLLAMA_API_BASE = env("OLLAMA_API_BASE", default="http://localhost:11434")
+
+# =========================================================================
+# Celery & Redis Infrastructure Configuration (헌법 제II조 수호)
+# =========================================================================
+# - 메시지 브로커 및 결과 백엔드로 Redis 고속 메모리 스토어 연동.
+# - AWS/Supabase 무료 DB 커넥션 제한(최대 8개)을 준수하기 위해
+#   서버당 가용한 커넥션 풀을 api_server <= 5, Celery 워커 <= 3으로 격리 통제.
+# =========================================================================
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 태스크 타임아웃 30분 제한
+
+# Django/pytest 테스트 구동 시 Celery 태스크를 Eager(동기) 모드로 실행하여 테스트 격리 및 외부 Redis 의존성 차단
+import sys
+
+if "test" in sys.argv or "pytest" in sys.argv or any("pytest" in arg for arg in sys.argv):
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = False

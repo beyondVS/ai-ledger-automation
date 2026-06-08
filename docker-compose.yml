@@ -1,0 +1,66 @@
+version: '3.8'
+
+# =========================================================================
+# ai-ledger-automation 통합 개발 인프라 명세서 (docker-compose.yml)
+# =========================================================================
+# 이 명세서는 Redis 브로커, PostgreSQL RDBMS, 그리고 Flower 대시보드를
+# 로컬 개발 및 통합 환경에서 단일 가상 네트워크망으로 묶어 실행해줍니다.
+# 실행 방법: docker compose up -d
+# =========================================================================
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: ai-ledger-db
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-ai_ledger}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Secured_Password18!}
+      - TZ=Asia/Seoul
+    restart: unless-stopped
+    command: >
+      -c client_encoding=UTF8
+      -c timezone=Asia/Seoul
+    networks:
+      - ai_ledger_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ai-ledger-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    # 헌법의 메시지 영속성 요건(유실률 0% 보장) 충족을 위해 AOF 영속성 활성화
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - ai_ledger_network
+
+  flower:
+    image: mher/flower:latest
+    container_name: ai-ledger-flower
+    ports:
+      - "${FLOWER_PORT:-5555}:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - FLOWER_PORT=5555
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - ai_ledger_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  ai_ledger_network:
+    driver: bridge
