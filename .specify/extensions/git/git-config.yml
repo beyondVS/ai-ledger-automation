@@ -38,10 +38,10 @@ auto_commit:
     message: "[Spec Kit] Add project constitution"
   after_specify:
     enabled: true
-    message: "docs: 014 MVP 통합 테스트 기능 명세서(spec.md) 추가"
+    message: "docs: 015 비동기 처리(Redis/Celery) 인프라 격리 설계 기획 명세서 추가"
   after_clarify:
     enabled: true
-    message: "[Spec Kit] Clarify specification"
+    message: "docs: 015 비동기 처리(Redis/Celery) 격리 기획 명확화 반영 및 품질 체크 완료"
   after_plan:
     enabled: true
     message: "[Spec Kit] Add implementation plan"
