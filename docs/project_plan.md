@@ -263,7 +263,8 @@ graph TD
 
 * **BE-05-A (단일 데이터베이스 트랜잭션 수호):** 영수증 1장 파싱 데이터로부터 도출된 메인 가계부 레코드(ledgers)와 가계부 세부 품목 레코드 배열(ledger\_items)의 인서트 연산은 반드시 단 하나의 Django ORM 커넥션 트랜잭션 세션 블록(transaction.atomic()) 내에서 처리되어야 하며, 데이터베이스 연결 끊김을 포함한 일체의 구문 장해 발생 시 전격 전역 롤백(Rollback)되어 데이터 파편화(Dirty State)를 방지해야 합니다.  
 * **FE-02-A (소비 지출 대시보드 뷰 및 Polling 선대응):** 월별 총지출 한도 설정, 누적 실 소비 금액, 일자별 소비 흐름(리스트 레이아웃)을 REST API를 거쳐 PostgreSQL에서 쿼리 조회해 온 뒤 화면에 즉각 반응형 그리드로 렌더링해야 합니다. 2주차에 API 연동 시 백엔드의 응답 상태 구조(status 및 job\_id)를 판독하여 임시 폴링 대기 상태 레이아웃(Spinner 또는 Shimmer)을 처리하는 가상 클라이언트 모듈을 선배치합니다.  
-* **FE-05-A (가계부 CRUD 및 수동 정정 기능):** AI 분류의 예외 상황에 유저가 능동적으로 대처할 수 있도록, 대시보드 리스트의 특정 셀을 터치하여 가맹점 속성을 즉시 동기식으로 수동 변경/수정하거나 내역을 영구 삭제할 수 있는 관리 모달 인터페이스를 내장합니다.
+* **FE-05-A (가계부 CRUD 및 수동 정정 기능):** AI 분류의 예외 상황에 유저가 능동적으로 대처할 수 있도록, 대시보드 리스트의 특정 셀을 터치하여 가맹점 속성을 즉시 동기식으로 수동 변경/수정하거나 내역을 영구 삭제할 수 있는 관리 모달 인터페이스를 내장합니다.  
+* **FE-05-B (가계부 수정 내역 내 카테고리 매핑 보완):** 사용자가 대시보드에서 가계부 내역을 수정하고자 모달을 열었을 때, 기존 적재된 카테고리 정보가 프론트엔드 셀렉트박스의 옵션 리스트와 정확히 대조·바인딩되지 않고 누락되는 현상을 개선합니다. 백엔드의 카테고리 API 명세 스키마와 프론트엔드의 옵션 데이터 구조를 1:1로 매핑하는 변환 필터를 프론트엔드에 추가 적용합니다.
 
 ### **3.2. Phase 2: 비동기/보안/성능 고도화 요구사항 (3\~4주차 개발 범위)**
 
@@ -338,6 +339,12 @@ Phase 1에서 완벽하게 구동됨을 E2E 검증한 동기식 MVP 제품 위�
 * **부작용:** 일시적인 LLM 변환 왜곡에 의해 잘못 도출된 정규식 파싱 규칙이 템플릿 캐시에 자동 등록되어 영구 적재되어 버릴 경우, 해당 가맹점을 이용하는 후속 사용자 전체의 소비 데이터에 영구적인 연쇄 가해(Data Corruption)가 침습하게 됩니다.  
 * **대책:** 자가 추출 생성되어 적재되는 모든 정규식 캐시는 테이블 내에 is\_verified 필드값을 무조건 기본 false 상태로 차단하여 실동작 필터에서 격리시킵니다. 오직 관리자 어드민 화면에서 직접 실물 정밀 검증을 거쳐 '수동 승인(Confirm to true)' 처리 완료된 데이터만 Bypass 정적 파싱 루프에 반영되도록 신뢰 한계 경계선(Trust Boundary)을 수립합니다.
 
+### **4.9. 로컬 Docker 통합 환경 운영에 따른 개발 소스 핫 리로딩(Hot-Reloading) 지연 리스크**
+* **부작용:** Windows 호스트 환경에서 코드를 수정했으나 Docker 컨테이너 내부로 파일 변경 이벤트가 제대로 전파되지 않아 변경 사항이 실시간 반영되지 않는 문제.
+* **대책:**
+  1. **백엔드/워커**: 로컬 소스 디렉터리를 볼륨 마운트하고, Django의 `runserver` 핫 리로더를 활용합니다. Celery 워커의 경우 개발 시 변경 사항을 감지하여 자동 재시작하는 watch 유틸리티(예: watchfiles)를 활용합니다.
+  2. **프론트엔드**: 로컬 소스 마운트와 함께, `vite.config.js`의 `server.watch` 옵션에 `usePolling: true`를 강제 명시하여 폴링 방식으로 파일 변경을 확실히 감지하게 제어합니다.
+
 ---
 
 ## **5\. System Architecture Guidelines (보안 및 예외 처리 정책)**
@@ -401,13 +408,15 @@ services:
   # 3. 메인 백엔드 Django API Server  
   api_server:  
     build:  
-      context: .  
+      context: ./backend  
       dockerfile: Dockerfile  
     container_name: ledger_api  
     restart: always  
     ports:  
       - "8080:8080"  
     command: python manage.py runserver 0.0.0.0:8080  
+    volumes:
+      - ./backend:/app  # 로컬 소스 핫 리로딩 볼륨 바인드
     environment:  
       - DATABASE_URL=postgres://${DB_USER:-dbuser}:${DB_PASSWORD:-dbpassword_secure}@postgres_db:5432/${DB_NAME:-ledgerdb}  
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_password_secure}@redis_broker:6379/0  
@@ -425,11 +434,14 @@ services:
   # 4. CPU 집약 연산 및 AI 분석 태스크 담당 Celery 백그라운드 워커 컨테이너  
   async_worker:  
     build:  
-      context: .  
+      context: ./backend  
       dockerfile: Dockerfile  
     container_name: ledger_worker  
     restart: always  
+    # 윈도우 fork 제약이 없으므로 -P 옵션을 사용하지 않고 순정 prefork로 가동
     command: celery -A config worker -l info  
+    volumes:
+      - ./backend:/app  # 로컬 소스 핫 리로딩 볼륨 바인드
     environment:  
       - DATABASE_URL=postgres://${DB_USER:-dbuser}:${DB_PASSWORD:-dbpassword_secure}@postgres_db:5432/${DB_NAME:-ledgerdb}  
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_password_secure}@redis_broker:6379/0  
@@ -440,6 +452,21 @@ services:
       - postgres_db  
       - redis_broker  
     networks:  
+      - ledger_network
+
+  # 5. 로컬 개발 전용 프론트엔드 컨테이너
+  frontend_dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ledger_frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./frontend:/app  # 로컬 소스 핫 리로딩 볼륨 바인드
+    networks:
       - ledger_network
 
 volumes:  
@@ -480,8 +507,8 @@ networks:
 ### **6.3. 3주차: 비동기 분산 아키텍처 및 비용/보안 고도화 (15일차 \~ 21일차)**
 
 * [x] **15일차:** 비동기 처리를 위한 Redis 인메모리 스토어 인프라 구축 및 Docker Compose 환경 통합. 2주차까지 설계된 동기식 가동 서버를 Django 메인 서버와 Celery 백그라운드 워커 서버로 역할 분리 설계.  
-* [ ] **16일차:** Celery를 도입한 비동기 작업 큐 시스템 구축. 인프라 메모리 및 커넥션 부하 방지를 위해, Django settings.py 내 DB 커넥션 풀 크기를 최대 5개, Celery 워커의 풀 크기를 최대 3개로 엄격히 제한하는 풀 통제 알고리즘 구현. 메인 서버는 업로드 접수 즉시 대기(Pending, 202)를 반환하도록 비동기 리팩토링.  
-* [ ] **17일차:** 데이터베이스 무결성 보장을 위한 예외 처리 및 롤백 가이드라인 고도화. Django ORM 트랜잭션 블록(transaction.atomic())을 엄밀히 통제하여 마스터 적재 실패 시 품목 리스트까지 롤백하고, 중복 결제 인입 시 무시(Django ORM get_or_create 혹은 bulk_create ignore_conflicts 옵션 활용)하는 안정성 적용. **[추가 계획] 동일 상품 연속 결제 시 오탐지 방지를 위한 중복 체크 알고리즘 고도화 (결제 승인번호/거래 시간 연동 등).**
+* [ ] **16일차:** Celery를 도입한 비동기 작업 큐 시스템 구축. 인프라 메모리 및 커넥션 부하 방지를 위해, Django settings.py 내 DB 커넥션 풀 크기를 최대 5개, Celery 워커의 풀 크기를 최대 3개로 엄격히 제한하는 풀 통제 알고리즘 구현. 메인 서버는 업로드 접수 즉시 대기(Pending, 202)를 반환하도록 비동기 리팩토링. **[추가 계획] 백엔드, Celery, 프론트엔드를 전체 Dockerizing하고, 로컬 마운트 기반 핫 리로딩 인프라 통합 구축.**  
+* [ ] **17일차:** 데이터베이스 무결성 보장을 위한 예외 처리 및 롤백 가이드라인 고도화. Django ORM 트랜잭션 블록(transaction.atomic())을 엄밀히 통제하여 마스터 적재 실패 시 품목 리스트까지 롤백하고, 중복 결제 인입 시 무시(Django ORM get_or_create 혹은 bulk_create ignore_conflicts 옵션 활용)하는 안정성 적용. **[추가 계획] 동일 상품 연속 결제 시 오탐지 방지를 위한 중복 체크 알고리즘 고도화 (결제 승인번호/거래 시간 연동 등). 프론트엔드 수정 내역 모달(FE-05-B) 내 카테고리 셀렉트박스 데이터 매핑 누수 버그 해결.**
 * [ ] **18일차:** 비용 통제 엔진 구현. merchant_templates 모델 내에 검증 여부(is_verified) 불리언 컬럼을 추가 설계. LLM 파싱 성공 데이터를 기반으로 정규식 파서 규칙을 자율 산출하여 우선 is_verified = false 상태로 자동 적재 제안하는 자가 학습형 템플릿 적재 로직 및 Bypass 바이패스 파이프라인 개발.  
 * [ ] **19일차:** 외부 이메일 인바운드 수신용 웹훅(SendGrid Inbound Parse 등) 연동 라우터 개설 및 첨부파일 PDF를 수신하여 Celery 비동기 작업 큐로 즉시 넘기는 데이터 가교 모듈 작성.  
 * [ ] **20일차:** 이메일 전초 기지 보안 구현. 발신자 위변조 방지를 위한 SPF/DKIM 정합성 체크 유틸리티 구축 및 가입 사용자당 가계부에 메일을 보낼 수 있는 발신용 이메일 화이트리스트(최대 3개 매핑) 테이블 검증 적용.  
