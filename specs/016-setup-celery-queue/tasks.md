@@ -20,8 +20,8 @@
 
 **Purpose**: 프로젝트 비동기 연동을 위한 Celery 및 공유 설정 초기화
 
-- [ ] T001 backend/pyproject.toml 및 frontend/package.json 의존성 구성 확인 및 uv sync/npm install 수행
-- [ ] T002 backend/config/celery.py 및 backend/config/__init__.py 파일에 Celery 앱 기동 및 초기 바인딩 셋업
+- [X] T001 backend/pyproject.toml 및 frontend/package.json 의존성 구성 확인 및 uv sync/npm install 수행
+- [X] T002 backend/config/celery.py 및 backend/config/__init__.py 파일에 Celery 앱 기동 및 초기 바인딩 셋업
 
 ---
 
@@ -31,9 +31,9 @@
 
 **⚠️ CRITICAL**: 이 페이즈의 모든 태스크가 완료되기 전까지는 개별 사용자 스토리 구현을 진행할 수 없습니다.
 
-- [ ] T003 backend/api/models.py 경로에 AsyncTask 엔티티 정의 및 Django DB 마이그레이션 생성/적용
-- [ ] T004 backend/config/settings.py 경로에 PostgreSQL 커넥션 풀 크기 제약(최대 5개) 및 CONN_MAX_AGE 튜닝 적용
-- [ ] T005 backend/config/settings.py 경로에 Celery 브로커 URL 및 Redis 결과 백엔드 연동 환경변수 바인딩
+- [X] T003 backend/api/models.py 경로에 AsyncTask 엔티티 정의 및 Django DB 마이그레이션 생성/적용
+- [X] T004 backend/config/settings.py 경로에 PostgreSQL 커넥션 풀 크기 제약(최대 5개) 및 CONN_MAX_AGE 튜닝 적용
+- [X] T005 backend/config/settings.py 경로에 Celery 브로커 URL 및 Redis 결과 백엔드 연동 환경변수 바인딩
 
 **Checkpoint**: 비동기 데이터 기초 인프라 및 DB 풀 제약 완료 - 이 시점부터 각 사용자 스토리 태스크를 병렬로 진행할 수 있습니다.
 
@@ -49,16 +49,16 @@
 
 > **NOTE: 비즈니스 로직 구현 이전에 아래 테스트를 먼저 작성하고 실행하여 실패(Fail)하는 것을 확인해야 합니다.**
 
-- [ ] T006 [P] [US1] backend/api/tests/test_upload_contract.py 경로에 파일 업로드 API의 HTTP 202 Accepted 및 job_id 응답 계약 테스트 작성
-- [ ] T007 [P] [US1] backend/api/tests/test_task_status_contract.py 경로에 작업 상태 조회 API의 4가지 상태값 전이 계약 테스트 작성
+- [X] T006 [P] [US1] backend/api/tests/test_upload_contract.py 경로에 파일 업로드 API의 HTTP 202 Accepted 및 job_id 응답 계약 테스트 작성
+- [X] T007 [P] [US1] backend/api/tests/test_task_status_contract.py 경로에 작업 상태 조회 API의 4가지 상태값 전이 계약 테스트 작성
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] backend/api/tasks.py 경로에 Pillow 리사이징 및 LLM Structured Outputs 연동, transaction.atomic() DB 적재 및 최대 3회 지수 백오프 자동 재시도 Celery 비동기 태스크 로직 구현
-- [ ] T009 [US1] backend/api/views.py 경로에 영수증 파일 업로드 수신 즉시 AsyncTask PENDING 기록 후 Celery 태스크를 발행하고 HTTP 202를 응답하는 API View 구현 (T006 테스트 성공 통과 타겟)
-- [ ] T010 [US1] backend/api/views.py 경로에 job_id 기준 AsyncTask의 상태 및 최종 생성된 ledger_id 데이터를 리턴하는 작업 조회 API View 구현 (T007 테스트 성공 통과 타겟)
-- [ ] T011 [US1] frontend/src/services/taskService.js 경로에 2초 간격 숏 폴링 및 최대 30초 대기 후 타임아웃 예외를 트리거하는 프론트엔드 API 클라이언트 모듈 구현
-- [ ] T012 [US1] frontend/src/components/UploadModal.vue 및 frontend/src/views/Dashboard.vue 경로에 업로드 시 대기 스피너 화면 렌더링 및 완료 감지 시 가계부 대시보드 리스트 자동 갱신 트리거 연동
+- [X] T008 [US1] backend/api/tasks.py 경로에 Pillow 리사이징 및 LLM Structured Outputs 연동, transaction.atomic() DB 적재 및 최대 3회 지수 백오프 자동 재시도 Celery 비동기 태스크 로직 구현
+- [X] T009 [US1] backend/api/views.py 경로에 영수증 파일 업로드 수신 즉시 AsyncTask PENDING 기록 후 Celery 태스크를 발행하고 HTTP 202를 응답하는 API View 구현 (T006 테스트 성공 통과 타겟)
+- [X] T010 [US1] backend/api/views.py 경로에 job_id 기준 AsyncTask의 상태 및 최종 생성된 ledger_id 데이터를 리턴하는 작업 조회 API View 구현 (T007 테스트 성공 통과 타겟)
+- [X] T011 [US1] frontend/src/services/taskService.js 경로에 2초 간격 숏 폴링 및 최대 30초 대기 후 타임아웃 예외를 트리거하는 프론트엔드 API 클라이언트 모듈 구현
+- [X] T012 [US1] frontend/src/components/UploadModal.vue 및 frontend/src/views/Dashboard.vue 경로에 업로드 시 대기 스피너 화면 렌더링 및 완료 감지 시 가계부 대시보드 리스트 자동 갱신 트리거 연동
 
 **Checkpoint**: 이 시점에서 이메일/푸시 알림 없이도 웹 업로드 비동기 및 폴링 E2E 흐름(US1)이 독립적으로 완전 기능 작동 및 검증 완료됩니다.
 
@@ -72,14 +72,14 @@
 
 ### Tests for User Story 2 (TDD) ⚠️
 
-- [ ] T013 [P] [US2] scripts/test_hot_reload.ps1 및 scripts/test_hot_reload.sh 경로에 로컬 소스 파일 수정 시 컨테이너 내부 핫 리로딩 및 개발서버 재시동 이벤트를 감지·검증하는 테스트 자동화 스크립트 작성
+- [X] T013 [P] [US2] scripts/test_hot_reload.ps1 및 scripts/test_hot_reload.sh 경로에 로컬 소스 파일 수정 시 컨테이너 내부 핫 리로딩 및 개발서버 재시동 이벤트를 감지·검증하는 테스트 자동화 스크립트 작성
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] backend/Dockerfile.dev 경로에 Django 및 Celery 비동기 워커가 공용할 개발용 파이썬 가상환경 격리 Dockerfile 작성
-- [ ] T015 [US2] frontend/Dockerfile.dev 경로에 Vue/Vite dev server 구동용 프론트엔드 개발용 Dockerfile 작성
-- [ ] T016 [US2] frontend/vite.config.js 경로에 Windows-Docker 마운트 파일 변경 유실 방지를 위한 server.watch usePolling 설정 바인딩
-- [ ] T017 [US2] docker-compose.yml 경로에 Postgres, Redis, api_server, async_worker, frontend_dev를 바인딩하고 로컬 소스 볼륨 마운트(`volumes`)와 Celery 순정 prefork 가동 커맨드를 설정하여 핫 리로딩 개발 스택을 통합 구축 (T013 테스트 성공 통과 타겟)
+- [X] T014 [US2] backend/Dockerfile.dev 경로에 Django 및 Celery 비동기 워커가 공용할 개발용 파이썬 가상환경 격리 Dockerfile 작성
+- [X] T015 [US2] frontend/Dockerfile.dev 경로에 Vue/Vite dev server 구동용 프론트엔드 개발용 Dockerfile 작성
+- [X] T016 [US2] frontend/vite.config.js 경로에 Windows-Docker 마운트 파일 변경 유실 방지를 위한 server.watch usePolling 설정 바인딩
+- [X] T017 [US2] docker-compose.yml 경로에 Postgres, Redis, api_server, async_worker, frontend_dev를 바인딩하고 로컬 소스 볼륨 마운트(`volumes`)와 Celery 순정 prefork 가동 커맨드를 설정하여 핫 리로딩 개발 스택을 통합 구축 (T013 테스트 성공 통과 타겟)
 
 **Checkpoint**: 이 시점에서 전체 로컬 개발 스택이 볼륨 바인드 핫 리로딩 구조로 단일 docker-compose up 명령어를 통해 무결하게 작동 및 검증 완료됩니다.
 
@@ -89,9 +89,9 @@
 
 **Purpose**: 전체적인 마무리 조율 및 횡단 관심사 테스트 완수
 
-- [ ] T018 specs/016-setup-celery-queue/quickstart.md 가이드라인에 명시된 통합 빌드 기동 명령 및 핫 리로딩 작동성 E2E 수동 검증
-- [ ] T019 [P] uv run ruff check 및 uv run ruff format 도구를 실행하여 백엔드 파이썬 코드 전체의 린팅/포매팅 정합성 체크
-- [ ] T020 [P] uv run pytest 실행을 통해 신규 구현된 계약 및 비동기 작업 유틸리티 전체 백엔드 테스트 스위트 통과 여부 최종 검증
+- [X] T018 specs/016-setup-celery-queue/quickstart.md 가이드라인에 명시된 통합 빌드 기동 명령 및 핫 리로딩 작동성 E2E 수동 검증
+- [X] T019 [P] uv run ruff check 및 uv run ruff format 도구를 실행하여 백엔드 파이썬 코드 전체의 린팅/포매팅 정합성 체크
+- [X] T020 [P] uv run pytest 실행을 통해 신규 구현된 계약 및 비동기 작업 유틸리티 전체 백엔드 테스트 스위트 통과 여부 최종 검증
 
 ---
 
