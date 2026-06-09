@@ -33,7 +33,7 @@
 - **Install**: `uv sync`
 - **Lint / Format**: `uv run ruff check` 및 `uv run ruff format` (커밋 전 `uv run pre-commit run --all-files` 강제 통과 보장)
 - **Test**: `uv run pytest` (백엔드 디렉토리 내 가동)
-- **Build**: `docker compose -f docker-compose.db.yml up -d` (로컬 DB 컨테이너 기동)
+- **Build**: `docker compose -f docker-compose.db.yml up -d` (로컬 DB 단독 기동) 또는 `docker compose up -d` (전체 서비스 컨테이너 기동)
 
 ### 2.3 디렉토리 지도 (Directory Map)
 - `.specify/`: Spec-Kit 프레임워크 설정, 템플릿 및 프로젝트 헌법 메모리 (순수 Spec-Kit 코어 도구 및 자산만 정결하게 보존)
@@ -78,6 +78,8 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
   - 금융 가계부 데이터의 강력한 일관성을 지키며 중복 입력을 인덱스 상에서 사전에 효율적으로 방지하고 월별 지출 애그리게이션 성능을 최적화하기 위해 NoSQL 대신 **관계형 PostgreSQL(최신 v18+)**을 주 데이터베이스로 선정하고, 미정형 파서 백업을 위해 JSONB 필드 결합. (v18의 Native UUIDv7 시계열 인덱스 및 AIO 비동기 I/O 성능 혜택 적극 활용)
   - 유료 멀티모달 LLM API 연동에 수반되는 예산 비용 소비를 0원에 수렴하도록 완벽히 차단하고 정적 파싱하기 위해 가맹점 사업자등록번호 기반 레이아웃 캐시 테이블(`merchant_templates`) 및 우회 바이패스(Bypass) 파서 적용.
   - 구글 공식 지원이 종료된 `google-generativeai`를 완전히 배제하고 `litellm.Router`를 활용하여 로컬 개발 환경(DEBUG=True)에서는 로컬 Ollama 모델(`gemma4:e4b`)을 최우선 및 폴백 모델로 단독 기동하고, 프로덕션 환경(DEBUG=False)에서만 외부 `gemini-2.5-flash` 모델을 우선적으로 호출하도록 동적 라우팅을 통제함.
+  - 도커 볼륨 마운트 (`./backend:/app`) 가동 시 컨테이너 빌드 시점에 설치된 외부 패키지가 호스트 환경의 내용으로 덮어써져 Celery 등이 누락되는 현상을 완벽히 방어하고자, 컨테이너 내부 가상환경의 설치 타겟을 WORKDIR 외부인 `/venv` 절대 경로로 완전히 분리 격리하여 실시간 핫 리로딩 개발 편의성을 보장함.
+  - 도커 서비스 호스트명에 언더스코어(`_`)가 혼입되면 RFC 1034/1035 도메인 규격 미준수로 Django 호스트 검증기(Allowed Hosts)에서 HTTP 400 에러를 반환하는 문제를 방지하기 위해, compose 서비스명을 `api_server`가 아닌 대시가 포함된 `api-server`로 전격 변경하고 `extra_hosts`를 통한 게이트웨이 포워딩 지정.
 - **엄격한 접근 제약**:
   - 영수증 1장 적재 시 `ledgers` 마스터 레코드와 `ledger_items` 상세품목 데이터 생성/수정 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리되어야 하며 장애 시 전격 롤백 보장 필수.
 - **비직관적 비즈니스 로직**:
