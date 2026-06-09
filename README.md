@@ -237,12 +237,16 @@ chmod +x scripts/local-db-controller.sh
   uv run pre-commit run --all-files
   ```
 
-### 4. 전체 Docker Compose 백그라운드 서비스 기동 (향후 3~4주차 범위)
-Celery 워커, Redis 브로커 등 전체 비동기 인프라 기동 시에는 아래 명령을 통해 일괄 백그라운드 구동합니다.
+### 4. 전체 Docker Compose 로컬 통합 개발 환경 기동 (3주차 완료)
+
+Celery 워커, Redis 브로커, 프론트엔드, 백엔드 API 서버 등 전체 비동기 통합 인프라를 로컬 Docker Compose 환경에서 기동하기 위해서는 아래 명령을 통해 일괄 백그라운드 구동합니다.
 
 ```bash
+# Docker 개발 환경용 .env.docker가 셋업된 상태에서 빌드 및 기동
 docker compose up -d --build
 ```
+
+도커 환경 실행 시 호스트의 소스 변경 감지를 보장하기 위해 프론트엔드 폴링 핫 리로더 및 백엔드 볼륨 오버레이 충돌 방지용 `/venv` 격리 절대경로 가상환경이 기계적으로 구동됩니다.
 
 ---
 

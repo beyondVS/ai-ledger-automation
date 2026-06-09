@@ -55,6 +55,65 @@ services:
     networks:
       - ai_ledger_network
 
+  api-server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: ai-ledger-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env.docker
+    environment:
+      - PYTHONPATH=/app/src
+    depends_on:
+      - db
+      - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - ai_ledger_network
+
+  async_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: ai-ledger-worker
+    command: /venv/bin/celery -A config worker --loglevel=info
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env.docker
+    environment:
+      - PYTHONPATH=/app/src
+    depends_on:
+      - db
+      - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - ai_ledger_network
+
+  frontend_dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: ai-ledger-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_BACKEND_TARGET=http://api-server:8000
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - api-server
+    networks:
+      - ai_ledger_network
+
 volumes:
   postgres_data:
     driver: local

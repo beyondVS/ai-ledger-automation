@@ -67,12 +67,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# DB Connection Pooling Constraints & Supabase Free Plan Optimization
+# DB Connection Pooling Constraints & Supabase Free Plan Optimization (Django 5.1+ Native Pool)
+import sys
+
+IS_CELERY_WORKER = "celery" in sys.argv[0] or any("celery" in arg for arg in sys.argv)
+
 DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
-DATABASES["default"]["CONN_MAX_AGE"] = env.int("DATABASE_CONN_MAX_AGE", default=60)
+DATABASES["default"]["CONN_MAX_AGE"] = 0  # Native pooling requires CONN_MAX_AGE=0
 DATABASES["default"]["OPTIONS"] = {
     "connect_timeout": 5,
+    "pool": {
+        "min_size": 1,
+        "max_size": 3 if IS_CELERY_WORKER else 5,  # api_server <= 5, celery_worker <= 3
+        "timeout": 10,
+    },
 }
 
 # Password validation

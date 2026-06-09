@@ -32,3 +32,38 @@ class FailedTask(models.Model):
 
     def __str__(self):
         return f"FailedTask [{self.task_type}] ({self.created_at.strftime('%Y-%m-%d %H:%M:%S')}) - {self.error_message[:30]}"
+
+
+class AsyncTask(models.Model):
+    """
+    AsyncTask 데이터 모델
+    - 비동기 Celery 태스크의 라이프사이클(PENDING, PROCESSING, COMPLETED, FAILED) 및
+      최종 가계부 생성 결과 또는 실패 사유를 관리합니다.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        PROCESSING = "PROCESSING", "Processing"
+        COMPLETED = "COMPLETED", "Completed"
+        FAILED = "FAILED", "Failed"
+
+    job_id = models.UUIDField(primary_key=True, default=generate_uuidv7, editable=False, db_index=True)
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="async_tasks")
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+    error_message = models.TextField(null=True, blank=True)
+    result_metadata = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "async_tasks"
+        verbose_name = "async_task"
+        verbose_name_plural = "async_tasks"
+
+    def __str__(self):
+        return f"AsyncTask [{self.job_id}] - {self.status}"

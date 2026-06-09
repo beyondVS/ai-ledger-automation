@@ -1,7 +1,7 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.7.0 -> v1.8.0
-- Ratified: 2026-05-29 | Last Amended: 2026-06-08
+- Version Change: v1.8.0 -> v1.9.0
+- Ratified: 2026-05-29 | Last Amended: 2026-06-09
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
   2. II. 비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Processing & Scale Isolation)
@@ -12,7 +12,7 @@
   7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
   8. VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
   9. IX. ruff 및 pre-commit 자동화 품질 가드 수호 (Ruff Linter & pre-commit Quality Guard)
-- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트로 직접 전달하여 분석하는 네이티브 PDF 파이프라인을 구축(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0).
+- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트로 직접 전달하여 분석하는 네이티브 PDF 파이프라인을 구축(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0). (4) 백엔드, Celery, 프론트엔드 전체 Dockerizing 완료 및 호스트와의 볼륨 마운트 충돌 방지를 위해 컨테이너 내부 가상환경을 `/venv` 절대 경로로 격리 배치하는 핫 리로딩 인프라 통합 구축(v1.9.0).
 - Added Sections: 없음
 - Deleted Sections: 없음
 - Synchronized Templates:
@@ -52,7 +52,7 @@
 
 ### VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
 
-모든 애플리케이션의 패키지 의존성은 ad-hoc 방식의 임의 `pip install` 또는 시스템 전역 패키지 오염을 원천 차단하기 위해, 반드시 `pyproject.toml`과 `uv.lock`을 통한 선언적 명세 하에 엄격하게 통제되어야 합니다. 로컬 개발, 테스트 실행, 가상 환경 구축 시에는 오직 `uv` 도구를 사용하여 프로젝트 수준의 격리된 가상 환경(`.venv`) 내에서 의존성 동기화(`uv sync`) 및 잠금(`uv lock`) 처리를 완료해야 합니다. 임의의 패키지 무단 설치를 금지하며, 이를 위반하여 선언적 락 파일의 무결성을 깨뜨리는 행위는 헌법에 위배되는 중대 과실로 간주합니다.
+모든 애플리케이션의 패키지 의존성은 ad-hoc 방식의 임의 `pip install` 또는 시스템 전역 패키지 오염을 원천 차단하기 위해, 반드시 `pyproject.toml`과 `uv.lock`을 통한 선언적 명세 하에 엄격하게 통제되어야 합니다. 로컬 개발, 테스트 실행, 가상 환경 구축 시에는 오직 `uv` 도구를 사용하여 프로젝트 수준의 격리된 가상 환경(`.venv`) 내에서 의존성 동기화(`uv sync`) 및 잠금(`uv lock`) 처리를 완료해야 합니다. 도커(Docker) 가동 시에는 호스트 디렉터리 볼륨 마운트와의 충돌로 컨테이너 내부의 패키지가 덮어씌워지는 부작용을 원천 예방하기 위해, 컨테이너 내부 가상환경을 `/venv` 절대 경로로 격리 생성하여 소스 코드 핫 리로드를 보장해야 합니다. 임의의 패키지 무단 설치를 금지하며, 이를 위반하여 선언적 락 파일의 무결성을 깨뜨리는 행위는 헌법에 위배되는 중대 과실로 간주합니다.
 
 ### VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
 
@@ -104,4 +104,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.8.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-08
+**Version**: v1.9.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-09
