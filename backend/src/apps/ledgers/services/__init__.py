@@ -7,6 +7,8 @@ from apps.ledgers.models import Ledger, LedgerItem
 from apps.tasks.models import FailedTask
 from django.db import IntegrityError, transaction
 
+from .payment import ingest_payment_data as ingest_payment_data
+
 logger = logging.getLogger(__name__)
 
 

@@ -4,6 +4,7 @@ from apps.ledgers.models import Ledger, LedgerItem
 from apps.ledgers.serializers import LedgerListSerializer
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -24,7 +25,7 @@ class LedgerListSerializerTest(TestCase):
             user=cls.user,
             vendor_name="스타벅스 역삼역점",
             vendor_registration_number="1208112345",
-            transaction_date=datetime.date(2026, 6, 7),
+            transaction_date=timezone.make_aware(datetime.datetime(2026, 6, 7)),
             total_amount=13500.00,
             supply_value=12272.73,
             vat_amount=1227.27,

@@ -19,6 +19,8 @@ dependencies = [
     "celery>=5.3.6",
     "redis>=5.0.1",
     "psycopg-pool>=3.2.4",
+    "pytest>=8.0.0",
+    "pytest-django>=4.8.0",
 ]
 
 [tool.pytest.ini_options]
