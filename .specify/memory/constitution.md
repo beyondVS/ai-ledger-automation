@@ -1,7 +1,7 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.8.0 -> v1.9.0
-- Ratified: 2026-05-29 | Last Amended: 2026-06-09
+- Version Change: v1.9.0 -> v1.10.0
+- Ratified: 2026-05-29 | Last Amended: 2026-06-11
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
   2. II. 비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Processing & Scale Isolation)
@@ -12,7 +12,7 @@
   7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
   8. VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
   9. IX. ruff 및 pre-commit 자동화 품질 가드 수호 (Ruff Linter & pre-commit Quality Guard)
-- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트로 직접 전달하여 분석하는 네이티브 PDF 파이프라인을 구축(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0). (4) 백엔드, Celery, 프론트엔드 전체 Dockerizing 완료 및 호스트와의 볼륨 마운트 충돌 방지를 위해 컨테이너 내부 가상환경을 `/venv` 절대 경로로 격리 배치하는 핫 리로딩 인프라 통합 구축(v1.9.0).
+- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트로 직접 전달하여 분석하는 네이티브 PDF 파이프라인을 구축(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0). (4) 백엔드, Celery, 프론트엔드 전체 Dockerizing 완료 및 핫 리로딩 인프라 통합 구축(v1.9.0). (5) 동일 상품 연속 결제 오탐지 방지를 위해 approval_number 필드를 신설하고, 승인번호 고유성 대조 및 1분(60초) 임계 시각 대조 하이브리드 중복 방어 알고리즘을 도입. 프론트엔드 수정 내역 모달(FE-05-B) 내 유실되거나 유효하지 않은 카테고리 데이터 바인딩 유입 시 '미분류'로 자동 폴백하는 안전 바인딩 정책을 적용하여 누수를 제거함(v1.10.0).
 - Added Sections: 없음
 - Deleted Sections: 없음
 - Synchronized Templates:
@@ -28,7 +28,7 @@
 
 ### I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
 
-가계부 데이터는 사용자의 금융 자산 정보와 직접적으로 연계되므로 강력한 트랜잭션 ACID 정합성이 완벽히 보장되어야 합니다. 영수증 1장의 분석 데이터로부터 도출된 메인 가계부 레코드(ledgers)와 상세 품목 레코드 배열(ledger_items)의 생성 및 수정 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리되어야 합니다. 네트워크 단절이나 데이터베이스 장해 등 일체의 예외 발생 시에는 전격 전역 롤백(Rollback)하여 데이터 파편화(Dirty State)를 방지해야 합니다. 또한, 중복 결제 영수증의 무차별적인 복사 적재를 방지하기 위해 `UNIQUE (user_id, vendor_registration_number, transaction_date, total_amount)` 복합 고유 제약조건을 데이터베이스 테이블 레이어에 강력히 적용함으로써 중복 입력을 원천 차단하는 것을 필수 원칙으로 선언합니다.
+가계부 데이터는 사용자의 금융 자산 정보와 직접적으로 연계되므로 강력한 트랜잭션 ACID 정합성이 완벽히 보장되어야 합니다. 영수증 1장의 분석 데이터로부터 도출된 메인 가계부 레코드(ledgers)와 상세 품목 레코드 배열(ledger_items)의 생성 및 수정 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리되어야 합니다. 네트워크 단절이나 데이터베이스 장해 등 일체의 예외 발생 시에는 전격 전역 롤백(Rollback)하여 데이터 파편화(Dirty State)를 방지해야 합니다. 또한, 중복 결제 영수증의 무차별적인 복사 적재를 방지하기 위해 `UNIQUE (user_id, vendor_registration_number, transaction_date, total_amount)` 복합 고유 제약조건을 데이터베이스 테이블 레이어에 강력히 적용하여 동일 순간의 중복 입력을 차단하고, 동일 상품 연속 결제 시의 오탐지를 완벽히 배제하기 위해 카드 승인번호 유효성 대조 및 60초(1분) 임계 시간 차이를 대조 판별하는 지능형 시간 윈도우 중복 방어 알고리즘을 애플리케이션 레이어에 탑재하는 것을 핵심 원칙으로 선언합니다.
 
 ### II. 비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Processing & Scale Isolation)
 
@@ -70,7 +70,7 @@
 
 * **백엔드 코어 (Backend Core)**: Python 3.11 + Django Web Framework & Django REST Framework (DRF) (패키지 관리: **uv**)
 * **비동기 처리 엔진 (Task Queue)**: Celery Worker + Redis Broker (JWT 세션 블랙리스트 및 캐시 통합 병용)
-* **데이터 보존 레이어 (Storage Layer)**: PostgreSQL v18+ (주요 ACID 데이터, Native UUIDv7 & AIO) + JSONB 지원 (비정형 원시 LLM 백업용)
+* **데이터 보존 레이어 (Storage Layer)**: PostgreSQL v18+ (주요 ACID 데이터, Native UUIDv7 & AIO) + JSONB 지원 (비정형 원시 LLM 백업용) + approval_number (결제 승인번호 백업 보존)
 * **인공지능 연동 모듈 (AI Core)**: LiteLLM Router 기반 다이내믹 라우터 (로컬 환경: Ollama gemma4:e4b 우선 및 동일 모델 폴백 / 프로덕션 환경: Gemini-2.5-Flash 우선 및 Ollama 폴백. ReceiptLLMClient를 통한 단일 base64 image_url 통합 및 Pydantic Structured Outputs 규격 강제 바인딩)
 * **수집 파이프라인 (Email Ingestion)**: SendGrid / Mailgun Inbound Parser Webhook + SPF/DKIM 및 사용자 이메일 화이트리스트 이중 매핑 필터
 * **프론트엔드 플랫폼 (PWA Client)**: Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS
@@ -93,6 +93,8 @@
   - 10만 건 이상의 더미 데이터를 적재한 스트레스 테스트 환경에서 `EXPLAIN ANALYZE` 쿼리 분석기를 통한 인덱싱 튜닝 및 최적화를 달성하여, 실시간 지출 대시보드 API 쿼리 응답 시간을 상시 **100ms 이내**로 방어.
   - PWA standalone 설치 유도 및 VAPID 암호화 키 바인딩을 적용하여 앱을 닫고 있는 오프라인 기기 상단에 Web Push 알림이 정상 도달함을 증명.
   - 자가 제안(Auto-Generation)되는 사업자번호 기반 정규식 템플릿은 무조건 `is_verified: false`로 신규 적재되어 실제 bypass 파서에 유입되지 못하게 격리 차단하고, 오직 어드민 수동 검토 완료 후 `is_verified: true` 승인 시에만 LLM 호출 우회 바이패스에 반영되도록 신뢰 한계선 준수.
+  - 승인번호가 다른 연속 결제를 허용하고, 승인번호가 동일하거나 없을 경우 60초(1분) 이내의 인입 건에 대해서만 중복으로 간주하고 초과 건은 정상 적재 처리하는 60초 임계창 시간-윈도우 중복 방어 알고리즘 E2E 정합성 검증.
+  - 프론트엔드 가계부 내역 수정 모달 상에서 기존 지정 카테고리가 누락되거나 유효하지 않을 때 UI 상에서 '미분류'로 자동 대치 바인딩 및 전송 정합성 검증.
 
 ## Governance
 
@@ -104,4 +106,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.9.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-09
+**Version**: v1.10.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-11
