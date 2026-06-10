@@ -4,6 +4,7 @@ from apps.ledgers.models import Ledger, LedgerItem
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.test import TestCase
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -26,7 +27,7 @@ class LedgerModelTest(TestCase):
             user=self.user,
             vendor_name="스타벅스",
             vendor_registration_number="1208612345",
-            transaction_date=datetime.date(2026, 6, 7),
+            transaction_date=timezone.make_aware(datetime.datetime(2026, 6, 7)),
             total_amount=15000.00,
             supply_value=13636.36,
             vat_amount=1363.64,
@@ -38,7 +39,7 @@ class LedgerModelTest(TestCase):
                 user=self.user,
                 vendor_name="스타벅스 리저브",
                 vendor_registration_number="1208612345",
-                transaction_date=datetime.date(2026, 6, 7),
+                transaction_date=timezone.make_aware(datetime.datetime(2026, 6, 7)),
                 total_amount=15000.00,
                 supply_value=13636.36,
                 vat_amount=1363.64,
@@ -57,7 +58,7 @@ class LedgerModelTest(TestCase):
                     user=self.user,
                     vendor_name="투썸플레이스",
                     vendor_registration_number="1208699999",
-                    transaction_date=datetime.date(2026, 6, 7),
+                    transaction_date=timezone.make_aware(datetime.datetime(2026, 6, 7)),
                     total_amount=10000.00,
                     supply_value=9090.91,
                     vat_amount=909.09,

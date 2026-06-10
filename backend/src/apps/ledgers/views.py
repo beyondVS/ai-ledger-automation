@@ -156,11 +156,18 @@ class LedgerListView(APIView):
             year = today.year
             month = today.month
 
-        start_of_month = datetime.date(year, month, 1)
-        if month == 12:
-            end_of_month = datetime.date(year + 1, 1, 1)
+        if settings.USE_TZ:
+            start_of_month = timezone.make_aware(datetime.datetime(year, month, 1))
+            if month == 12:
+                end_of_month = timezone.make_aware(datetime.datetime(year + 1, 1, 1))
+            else:
+                end_of_month = timezone.make_aware(datetime.datetime(year, month + 1, 1))
         else:
-            end_of_month = datetime.date(year, month + 1, 1)
+            start_of_month = datetime.datetime(year, month, 1)
+            if month == 12:
+                end_of_month = datetime.datetime(year + 1, 1, 1)
+            else:
+                end_of_month = datetime.datetime(year, month + 1, 1)
 
         ledgers = Ledger.objects.filter(
             user=request.user,
