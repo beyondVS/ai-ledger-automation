@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import traceback
@@ -5,7 +6,12 @@ import traceback
 from apps.accounts.models import User
 from apps.ledgers.models import Ledger, LedgerItem
 from apps.tasks.models import FailedTask
+from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.utils import timezone
+from django.utils.dateparse import parse_date, parse_datetime
+
+from .payment import ingest_payment_data as ingest_payment_data
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +29,36 @@ def create_ledger_transactional(user_id: str, ledger_data: dict, items_data: lis
             # 1. 연관 사용자(User) 존재 여부 확보
             user = User.objects.get(id=user_id)
 
+            # 날짜 파싱 및 타임존 맞추기 보강
+            tx_date_raw = ledger_data["transaction_date"]
+            tx_datetime = None
+            if isinstance(tx_date_raw, str):
+                tx_datetime = parse_datetime(tx_date_raw)
+                if not tx_datetime:
+                    tx_date_parsed = parse_date(tx_date_raw)
+                    if tx_date_parsed:
+                        tx_datetime = datetime.datetime.combine(tx_date_parsed, datetime.time.min)
+            elif isinstance(tx_date_raw, datetime.date | datetime.datetime):
+                if isinstance(tx_date_raw, datetime.datetime):
+                    tx_datetime = tx_date_raw
+                else:
+                    tx_datetime = datetime.datetime.combine(tx_date_raw, datetime.time.min)
+
+            if tx_datetime:
+                if settings.USE_TZ and timezone.is_naive(tx_datetime):
+                    tx_datetime = timezone.make_aware(tx_datetime)
+                elif not settings.USE_TZ and timezone.is_aware(tx_datetime):
+                    tx_datetime = timezone.make_naive(tx_datetime)
+            else:
+                tx_datetime = tx_date_raw
+
             # 2. Ledger 마스터 레코드 삽입
             # (vendor_registration_number가 공백이거나 누락된 상태일 경우, 모델 내 save() 필터에 의해 '0000000000' 자동 치환 적재)
             ledger = Ledger.objects.create(
                 user=user,
                 vendor_registration_number=ledger_data.get("vendor_registration_number", "0000000000"),
                 vendor_name=ledger_data["vendor_name"],
-                transaction_date=ledger_data["transaction_date"],
+                transaction_date=tx_datetime,
                 total_amount=ledger_data["total_amount"],
                 supply_value=ledger_data["supply_value"],
                 vat_amount=ledger_data["vat_amount"],

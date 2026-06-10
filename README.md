@@ -89,13 +89,13 @@ graph TD
 
 ---
 
-## 🏛️ 프로젝트 헌법 8대 핵심 원칙 (Core Principles)
+## 🏛️ 프로젝트 헌법 9대 핵심 원칙 (Core Principles)
 
 본 프로젝트는 수립된 프로젝트 헌법(`.specify/memory/constitution.md`) 규격에 따라 철저하게 통제 및 개발됩니다.
 
 1. **데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)**
    - 영수증 1장에 대한 가계부 레코드(ledgers)와 품목 배열(ledger_items)의 생성/수정 연산은 반드시 단 하나의 Django ORM 트랜잭션 블록(`transaction.atomic()`) 내에서 원자적으로 처리되어야 하며, 장해 발생 시 전격 전역 롤백됩니다.
-   - 중복 결제 적재 방지를 위해 `UNIQUE (user_id, vendor_registration_number, transaction_date, total_amount)` 복합 고유 제약조건을 DB 단에 강력하게 강제합니다.
+   - 중복 결제 적재 방지를 위해 `UNIQUE (user_id, vendor_registration_number, transaction_date, total_amount)` 복합 고유 제약조건을 DB 단에 강력하게 강제하고, 동일 가맹점/금액 연속 결제 시 오탐지를 방어하기 위해 카드 승인번호 및 60초 임계 시각 대조 하이브리드 중복 방어 알고리즘을 도입합니다.
 2. **비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Scale Isolation)**
    - 이미지 처리(Pillow) 및 외부 AI API 호출 등 CPU/네트워크 대기 시간이 긴 연산은 격리된 Celery 비동기 독립 워커 내부에서만 비동기 처리되며, API 서버는 즉시 202 Accepted 및 작업 식별자를 반환합니다.
    - DB 인프라 고갈 방지를 위해 최대 가용 커넥션 수를 api_server 5개, async_worker 3개, 전체 합산 최대 8개 커넥션으로 하드 제한합니다.
@@ -123,7 +123,7 @@ graph TD
 |------|-----------|
 | **Backend Core** | Python 3.11 + Django Framework & Django REST Framework (DRF) (패키지 관리: **uv**) |
 | **Task Queue** | Celery + Redis Broker & Celery Worker Process |
-| **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) + **psycopg3** (psycopg[binary] C 가속 적용) |
+| **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) + **psycopg3** (psycopg[binary] C 가속 적용) + approval_number (결제 승인번호 백업 보존) |
 | **AI Engine** | LiteLLM Router (로컬: Ollama gemma4:e4b 최우선 및 폴백 / 프로덕션: Gemini-2.5-Flash 우선 및 Ollama 폴백) |
 | **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router |
 | **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS |
@@ -148,7 +148,8 @@ graph TD
 
 ### 3주차: 비동기 분산 아키텍처 및 비용/보안 고도화 (15일차 ~ 21일차)
 - 15~16일차: Redis Broker 도입 및 Django settings.py 내 DB 커넥션 풀 엄격 크기 제한 튜닝.
-- 17~18일차: ORM `transaction.atomic()` 수호 로직 적용 및 `is_verified` 사업자번호 bypass 파서 캐시 엔진 개발.
+- 17일차: ORM `transaction.atomic()` 수호 로직 적용, 승인번호/60초 임계값 연속 결제 중복 방어 알고리즘 적용 및 수정 모달 카테고리 매핑 버그 해결 완료.
+- 18일차: `is_verified` 사업자번호 bypass 파서 캐시 엔진 개발.
 - 19~20일차: SendGrid 인바운드 메일 웹훅 연동 모듈 신설 및 SPF/DKIM 이중 보안 화이트리스트 필터 구축.
 - 21일차: 대량 유입 50종 부하 테스트 가동 및 3주차 비동기 파이프라인 튜닝 성공.
 

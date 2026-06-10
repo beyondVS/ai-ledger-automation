@@ -156,11 +156,18 @@ class LedgerListView(APIView):
             year = today.year
             month = today.month
 
-        start_of_month = datetime.date(year, month, 1)
-        if month == 12:
-            end_of_month = datetime.date(year + 1, 1, 1)
+        if settings.USE_TZ:
+            start_of_month = timezone.make_aware(datetime.datetime(year, month, 1))
+            if month == 12:
+                end_of_month = timezone.make_aware(datetime.datetime(year + 1, 1, 1))
+            else:
+                end_of_month = timezone.make_aware(datetime.datetime(year, month + 1, 1))
         else:
-            end_of_month = datetime.date(year, month + 1, 1)
+            start_of_month = datetime.datetime(year, month, 1)
+            if month == 12:
+                end_of_month = datetime.datetime(year + 1, 1, 1)
+            else:
+                end_of_month = datetime.datetime(year, month + 1, 1)
 
         ledgers = Ledger.objects.filter(
             user=request.user,
@@ -268,5 +275,57 @@ class ReceiptDetailView(APIView):
             logger.error(f"ReceiptDetailView DELETE Exception: {str(e)}", exc_info=True)
             return Response(
                 {"error": "SYSTEM_ERROR", "message": "삭제 처리 중 서버 에러가 발생했습니다."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class LedgerIngestView(APIView):
+    """
+    [T008] [US1] LedgerIngestView
+    - 결제 데이터를 직접 수집하여 적재하기 위한 API 엔드포인트 뷰입니다.
+    - 중복 유입 시 200 OK와 함께 기존 데이터의 ID를 반환하며, 에러 없이 바이패스합니다.
+    - 품목 적재 실패 등으로 인한 롤백 시 400 Bad Request 에러를 반환합니다.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            from apps.ledgers.exceptions import DuplicatePaymentError, PaymentIngestError
+            from apps.ledgers.services import ingest_payment_data
+
+            ledger = ingest_payment_data(request.user, request.data)
+            return Response(
+                {
+                    "status": "COMPLETED",
+                    "message": "Payment record ingested successfully.",
+                    "ledger_id": str(ledger.id),
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except DuplicatePaymentError as e:
+            import re
+
+            ledger_id = None
+            uuid_match = re.search(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", str(e.detail))
+            if uuid_match:
+                ledger_id = uuid_match.group(0)
+
+            return Response(
+                {
+                    "status": "COMPLETED",
+                    "message": "Duplicate payment detected; bypassed without creating redundant records.",
+                    "ledger_id": ledger_id,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except PaymentIngestError as e:
+            return Response(
+                {"status": "FAILED", "error_code": e.default_code, "message": str(e.detail)}, status=e.status_code
+            )
+        except Exception as e:
+            logger.error(f"LedgerIngestView Server Error: {str(e)}", exc_info=True)
+            return Response(
+                {"status": "FAILED", "error_code": "SERVER_ERROR", "message": "Internal server error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

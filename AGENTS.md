@@ -86,6 +86,8 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
   - 자가 제안(Auto-Generation)되는 사업자번호 기반 정규식 캐싱 규칙은 무조건 `is_verified: false` 격리 통제 필터로 차단 적재하며, 오직 관리자 수동 승인(`is_verified: true`) 시에만 우회 파서 가동.
   - 이메일 유입 시 SPF 및 DKIM 전자서명 대조 정합성을 검증하고, 사용자당 사전에 등록된 최대 3개의 화이트리스트 메일 발송인 정보와 100% 일치할 경우에만 비동기 Celery 태스크 적재를 허용.
   - PDF 파일 인입 시 Pillow 이미지 변환기(`ImageProcessor`)에서 발생하는 식별 장애를 회피하기 위해, 전처리를 전면 우회하고 PDF 바이트 데이터를 그대로 Gemini API의 `application/pdf` 파트를 통해 네이티브하게 멀티모달 분석을 태움. (기계적 텍스트 추출에 의한 파싱 오류를 원천 차단함)
+  - 결제 데이터 적재 시, 동일한 가맹점, 결제 금액, 그리고 60초 임계 시각 윈도우 내에 존재하는 승인번호(approval_number)가 동일하거나 비어있는(Null/Blank) 결제 내역의 중복 생성을 강력히 방지하기 위해 60초 임계창 기반 연속 결제 방어 및 승인번호 매칭 고유 필터링 알고리즘을 적용함.
+  - 가맹점 카테고리 정보가 제공되지 않거나 데이터베이스에 존재하지 않는 유효하지 않은 카테고리 값이 유입되는 경우, 기본 카테고리를 '미분류'로 자동 강제 매핑 및 영속화하는 폴백 정책을 적용함.
 - **해결되지 않은 기술 부채**:
   - AWS Free tier, Supabase Free plan 등 제한된 DBMS의 최대 가용 커넥션 풀 크기 병목 고갈을 예방하기 위해, 풀 제한 크기를 api_server 컨테이너 최대 5개, Celery async_worker 최대 3개, 전체 합산 8개 이하로 엄격하게 제약 통제 필수.
 
@@ -126,5 +128,5 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/016-setup-celery-queue/plan.md)
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/017-db-integrity-payment-fix/plan.md)
 <!-- SPECKIT END -->

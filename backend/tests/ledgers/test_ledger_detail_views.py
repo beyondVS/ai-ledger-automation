@@ -4,6 +4,7 @@ from apps.ledgers.models import Ledger, LedgerItem
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -26,7 +27,7 @@ class ReceiptDetailViewTest(TestCase):
             user=cls.user_a,
             vendor_name="원래 가맹점 A",
             vendor_registration_number="1234567890",
-            transaction_date=datetime.date(2026, 6, 1),
+            transaction_date=timezone.make_aware(datetime.datetime(2026, 6, 1)),
             total_amount=15000.00,
             supply_value=13636.36,
             vat_amount=1363.64,
@@ -45,7 +46,7 @@ class ReceiptDetailViewTest(TestCase):
             user=cls.user_b,
             vendor_name="가맹점 B",
             vendor_registration_number="0987654321",
-            transaction_date=datetime.date(2026, 6, 2),
+            transaction_date=timezone.make_aware(datetime.datetime(2026, 6, 2)),
             total_amount=22000.00,
             supply_value=20000.00,
             vat_amount=2000.00,
@@ -75,7 +76,7 @@ class ReceiptDetailViewTest(TestCase):
         # DB 갱신 확인
         self.ledger_a.refresh_from_db()
         self.assertEqual(self.ledger_a.vendor_name, "수정된 가맹점")
-        self.assertEqual(str(self.ledger_a.transaction_date), "2026-06-05")
+        self.assertEqual(timezone.localtime(self.ledger_a.transaction_date).date(), datetime.date(2026, 6, 5))
         self.assertEqual(self.ledger_a.total_amount, 20000.00)
         self.assertEqual(self.ledger_a.category, "식비")
 

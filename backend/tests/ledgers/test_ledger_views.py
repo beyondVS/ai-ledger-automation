@@ -4,6 +4,7 @@ from apps.ledgers.models import Ledger
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -26,7 +27,7 @@ class LedgerListViewTest(TestCase):
             user=cls.user_a,
             vendor_name="유저 A의 상점",
             vendor_registration_number="1234567890",
-            transaction_date=datetime.date(2026, 6, 1),
+            transaction_date=timezone.make_aware(datetime.datetime(2026, 6, 1)),
             total_amount=15000.00,
             supply_value=13636.36,
             vat_amount=1363.64,
@@ -37,7 +38,7 @@ class LedgerListViewTest(TestCase):
             user=cls.user_b,
             vendor_name="유저 B의 상점",
             vendor_registration_number="0987654321",
-            transaction_date=datetime.date(2026, 6, 2),
+            transaction_date=timezone.make_aware(datetime.datetime(2026, 6, 2)),
             total_amount=22000.00,
             supply_value=20000.00,
             vat_amount=2000.00,
@@ -67,7 +68,7 @@ class LedgerListViewTest(TestCase):
             user=self.user_a,
             vendor_name="이전 달 상점",
             vendor_registration_number="1111111111",
-            transaction_date=datetime.date(2026, 5, 15),  # 5월
+            transaction_date=timezone.make_aware(datetime.datetime(2026, 5, 15)),  # 5월
             total_amount=5000.00,
             supply_value=4545.45,
             vat_amount=454.55,
@@ -91,7 +92,7 @@ class LedgerListViewTest(TestCase):
             user=self.user_a,
             vendor_name="이전 달 상점",
             vendor_registration_number="1111111111",
-            transaction_date=datetime.date(2026, 5, 15),  # 5월
+            transaction_date=timezone.make_aware(datetime.datetime(2026, 5, 15)),  # 5월
             total_amount=5000.00,
             supply_value=4545.45,
             vat_amount=454.55,

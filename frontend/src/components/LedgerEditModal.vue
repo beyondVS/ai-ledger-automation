@@ -165,7 +165,11 @@ watch(
       form.vendor_name = props.ledger.vendor_name || '';
       form.transaction_date = props.ledger.transaction_date || '';
       form.total_amount = props.ledger.total_amount || 0;
-      form.category = props.ledger.category || '미분류';
+      
+      // 카테고리 바인딩 누수 방지 방어 코드 (T013)
+      const allowedCategories = ['미분류', '식비', '생활용품', '쇼핑', '교통', '문화/여가', '주거/통신', '의료/건강', '교육', '기타'];
+      const currentCategory = props.ledger.category;
+      form.category = allowedCategories.includes(currentCategory) ? currentCategory : '미분류';
       
       errorMessage.value = '';
       validationErrors.vendor_name = '';
@@ -208,11 +212,15 @@ async function handleSubmit() {
   errorMessage.value = '';
 
   try {
+    // 카테고리 전송 누수 방지 (T014)
+    const allowedCategories = ['미분류', '식비', '생활용품', '쇼핑', '교통', '문화/여가', '주거/통신', '의료/건강', '교육', '기타'];
+    const finalCategory = allowedCategories.includes(form.category) ? form.category : '미분류';
+
     const payload = {
       vendor_name: form.vendor_name,
       transaction_date: form.transaction_date,
       total_amount: String(form.total_amount),
-      category: form.category
+      category: finalCategory
     };
 
     const updated = await updateLedgerEntry(props.ledger.id, payload);

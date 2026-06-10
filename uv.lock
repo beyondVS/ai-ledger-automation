@@ -15,7 +15,7 @@ members = [
 
 [[package]]
 name = "ai-ledger-automation-monorepo"
-version = "1.6.0"
+version = "1.10.0"
 source = { virtual = "." }
 dependencies = [
     { name = "ai-ledger-backend" },
@@ -44,7 +44,7 @@ dev = [
 
 [[package]]
 name = "ai-ledger-backend"
-version = "1.6.0"
+version = "1.10.0"
 source = { editable = "backend" }
 dependencies = [
     { name = "celery" },
@@ -60,6 +60,8 @@ dependencies = [
     { name = "psycopg", extra = ["binary"] },
     { name = "psycopg-pool" },
     { name = "pymupdf" },
+    { name = "pytest" },
+    { name = "pytest-django" },
     { name = "redis" },
 ]
 
@@ -78,6 +80,8 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
     { name = "psycopg-pool", specifier = ">=3.2.4" },
     { name = "pymupdf", specifier = ">=1.23.0" },
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest-django", specifier = ">=4.8.0" },
     { name = "redis", specifier = ">=5.0.1" },
 ]
 

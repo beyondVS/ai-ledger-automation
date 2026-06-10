@@ -15,7 +15,8 @@ class Ledger(models.Model):
     # 10자리 사업자번호가 부재할 시 COALESCE 기본값 '0000000000' 적용
     vendor_registration_number = models.CharField(max_length=10, default="0000000000")
     vendor_name = models.CharField(max_length=255)
-    transaction_date = models.DateField()
+    transaction_date = models.DateTimeField()
+    approval_number = models.CharField(max_length=50, null=True, blank=True, db_index=True)
 
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     supply_value = models.DecimalField(max_digits=12, decimal_places=2)
