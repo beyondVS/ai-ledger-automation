@@ -116,4 +116,12 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
             except OSError:
                 pass
 
+        # 중복 영수증 업로드 등으로 인한 IntegrityError는 시스템 비정상 크래시가 아닌
+        # 비즈니스 기대 방어 동작이므로, 예외를 전파하지 않고 로깅 후 정상 종료합니다.
+        if isinstance(exc, IntegrityError):
+            logger.info(
+                f"[Celery] Task resolved expected IntegrityError (Duplicate check). Job {job_id} marked as FAILED."
+            )
+            return {"status": "FAILED", "reason": "Duplicate transaction detected"}
+
         raise exc
