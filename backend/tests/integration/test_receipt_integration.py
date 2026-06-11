@@ -46,6 +46,25 @@ class TestReceiptIntegration(TestCase):
             is_verified=False,
         )
 
+    def tearDown(self):
+        # [T011] [US1] 테스트 수행 중 생성된 temp_receipts 디렉토리 하위의 임시 파일을 안전하게 청소
+        import os
+        import shutil
+
+        from django.conf import settings
+
+        temp_dir = os.path.join(settings.BASE_DIR, "temp_receipts")
+        if os.path.exists(temp_dir):
+            for filename in os.listdir(temp_dir):
+                file_path = os.path.join(temp_dir, filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception:
+                    pass
+
     @patch("fitz.open")
     def test_bypass_parsing_with_verified_template(self, mock_fitz_open):
         # Given: fitz.open().page.get_text()가 정상 바이패스용 텍스트를 뱉도록 모킹
