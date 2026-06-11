@@ -1,6 +1,6 @@
 [project]
 name = "ai-ledger-automation-monorepo"
-version = "1.10.0"
+version = "1.11.0"
 description = "AI-powered ledger automation monorepo workspace"
 requires-python = ">=3.12"
 dependencies = [

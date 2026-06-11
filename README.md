@@ -121,7 +121,7 @@ graph TD
 
 | 구분 | 기술 사양 |
 |------|-----------|
-| **Backend Core** | Python 3.11 + Django Framework & Django REST Framework (DRF) (패키지 관리: **uv**) |
+| **Backend Core** | Python 3.13 + Django Framework & Django REST Framework (DRF) (패키지 관리: **uv**) |
 | **Task Queue** | Celery + Redis Broker & Celery Worker Process |
 | **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) + **psycopg3** (psycopg[binary] C 가속 적용) + approval_number (결제 승인번호 백업 보존) |
 | **AI Engine** | LiteLLM Router (로컬: Ollama gemma4:e4b 최우선 및 폴백 / 프로덕션: Gemini-2.5-Flash 우선 및 Ollama 폴백) |
