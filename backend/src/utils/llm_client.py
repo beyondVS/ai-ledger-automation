@@ -155,14 +155,39 @@ class ReceiptLLMClient:
                 "   - 각 품목별 item_name(상세 품목명), unit_price(단가), quantity(수량, 1 이상의 정수), total_price(합계 금액, 단가 * 수량과 일치해야 함)를 정확히 누락 없이 매핑하세요."
             )
 
-            # 2. 백엔드 성격에 따른 base64 접두사 동적 조율
             base64_data = base64.b64encode(file_bytes).decode("utf-8")
-            if is_ollama_target:
-                # 로컬 Ollama는 data url prefix가 있으면 illegal base64 데이터로 판단해 400 에러를 냅니다.
-                image_url_value = base64_data
-            else:
-                image_url_value = f"data:{mime_type};base64,{base64_data}"
 
+            # 2. Gemini가 활성화된 경우 우선 시도
+            if not is_ollama_target:
+                image_url_value = f"data:{mime_type};base64,{base64_data}"
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": image_url_value}},
+                        ],
+                    }
+                ]
+                try:
+                    logger.info("Gemini API를 통해 영수증 분석 시도 중...")
+                    response = self.router.completion(
+                        model="receipt-analyzer",
+                        messages=messages,
+                        response_format=ReceiptSchema,
+                        temperature=0.1,
+                    )
+                    response_text = response.choices[0].message.content
+                    if response_text:
+                        parsed_data = json.loads(response_text)
+                        logger.info(f"Gemini 영수증 파싱 성공: {parsed_data.get('vendor_name')}")
+                        return parsed_data
+                except Exception as gemini_err:
+                    logger.warning(f"Gemini API 분석 실패로 로컬 Ollama 폴백을 기동합니다. 사유: {str(gemini_err)}")
+
+            # 3. 로컬 Ollama 단독 기동 혹은 Gemini 실패 시의 폴백 기동
+            # Ollama는 접두사(prefix)가 없어야 디코딩 오류가 발생하지 않습니다.
+            image_url_value = base64_data
             messages = [
                 {
                     "role": "user",
@@ -173,9 +198,11 @@ class ReceiptLLMClient:
                 }
             ]
 
-            # Router.completion 단일 호출을 통해 분기 및 폴백을 라우터에 전면 위임
+            target_model = "ollama-fallback" if not is_ollama_target else "receipt-analyzer"
+            logger.info(f"Ollama API ({target_model})를 통해 영수증 분석 시도 중...")
+
             response = self.router.completion(
-                model="receipt-analyzer",
+                model=target_model,
                 messages=messages,
                 response_format=ReceiptSchema,
                 temperature=0.1,
@@ -187,7 +214,7 @@ class ReceiptLLMClient:
                 return None
 
             parsed_data = json.loads(response_text)
-            logger.info(f"영수증 파싱 성공: {parsed_data.get('vendor_name')}")
+            logger.info(f"Ollama 영수증 파싱 성공: {parsed_data.get('vendor_name')}")
             return parsed_data
 
         except Exception as e:
