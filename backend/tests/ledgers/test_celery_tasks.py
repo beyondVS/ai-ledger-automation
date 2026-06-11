@@ -71,7 +71,7 @@ class CeleryTasksTests(TestCase):
 
         # 실제 tasks.py 내의 LLM 클라이언트 모듈(예: ReceiptLLMClient 또는 litellm 연동 부)을 모킹하여
         # 고정된 mock_parsed_data를 던지게끔 패치합니다.
-        with patch("apps.tasks.tasks.analyze_receipt_image_with_llm", return_value=mock_parsed_data):
+        with patch("utils.llm_client.ReceiptLLMClient.parse_receipt", return_value=mock_parsed_data):
             # 태스크 직접 호출 (eager 모드이므로 동기 실행됨)
             extract_receipt_text_task(str(job.id), fake_file_path)
 

@@ -6,17 +6,8 @@ from apps.ledgers.services import LedgerService
 from celery import shared_task
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
-from utils.llm_client import ReceiptLLMClient
 
 logger = logging.getLogger(__name__)
-
-
-def analyze_receipt_image_with_llm(llm_client, file_buffer, mime_type):
-    """
-    [T009] 테스트 코드의 Mock 패치 타겟 함수입니다.
-    실제 운영 시에는 ReceiptLLMClient의 parse_receipt를 직접 호출해 영수증을 파싱합니다.
-    """
-    return llm_client.parse_receipt(file_buffer, mime_type=mime_type)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=2)
@@ -54,15 +45,7 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
         image_file = SimpleUploadedFile(orig_name, file_content, content_type=content_type)
 
         # 3. 비동기 분석 및 적재 서비스 실행
-        # (analyze_receipt_image_with_llm 모킹 지원을 위해,
-        #  LedgerService 내부 parse_receipt 부분을 태스크의 래퍼 메서드를 통하도록 모킹 분기 적용)
         service = LedgerService()
-
-        # ReceiptLLMClient를 mock 함수를 거치도록 교체 패치하여 ingest_receipt를 호출합니다.
-        service.llm_client.parse_receipt = lambda buf, mime_type: analyze_receipt_image_with_llm(
-            ReceiptLLMClient(), buf, mime_type
-        )
-
         res = service.ingest_receipt(user=user, image_file=image_file, existing_job=job)
 
         # 성공/실패 여부와 무관하게 임시 파일 정리

@@ -97,7 +97,7 @@ class CeleryTaskRetryAndFailureTests(TransactionTestCase):
 
         # LLM 클라이언트가 예외를 강제 발생시키도록 모킹
         with patch(
-            "apps.tasks.tasks.analyze_receipt_image_with_llm", side_effect=ValueError("Gemini API Connection Refused")
+            "utils.llm_client.ReceiptLLMClient.parse_receipt", side_effect=ValueError("Gemini API Connection Refused")
         ):
             # extract_receipt_text_task.retry가 실제 Celery 런타임이 아닌 테스트 환경에서
             # 무한 대기나 예외로 끊기도록 retry 자체를 모킹하여 재시도 흐름만 포착합니다.
@@ -124,7 +124,7 @@ class CeleryTaskRetryAndFailureTests(TransactionTestCase):
         # self.request.retries를 3으로 모킹하여 재시도 조건(retries < max_retries)을 우회하고 최종 실패 분기로 보냅니다.
         from unittest.mock import PropertyMock
 
-        with patch("apps.tasks.tasks.analyze_receipt_image_with_llm", side_effect=ValueError("Gemini API Down")):
+        with patch("utils.llm_client.ReceiptLLMClient.parse_receipt", side_effect=ValueError("Gemini API Down")):
             with patch("celery.app.task.Context.retries", new_callable=PropertyMock, return_value=3):
                 try:
                     extract_receipt_text_task(str(job.id), fake_file_path)
