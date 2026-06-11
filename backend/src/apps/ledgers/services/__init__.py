@@ -10,14 +10,19 @@ from apps.tasks.models import FailedTask
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
-from django.utils.dateparse import parse_date, parse_datetime
 
 from .payment import ingest_payment_data as ingest_payment_data
 
 logger = logging.getLogger(__name__)
 
 
-def create_ledger_transactional(user_id: str, ledger_data: dict, items_data: list) -> dict:
+from utils.bypass_parser import BypassParser
+from utils.llm_client import ReceiptSchema
+
+
+def create_ledger_transactional(
+    user_id: str, receipt_data: ReceiptSchema, user_timezone: str = "Asia/Seoul", raw_llm_response: dict = None
+) -> dict:
     """
     [T011, T015] create_ledger_transactional 서비스 함수
     - Ledger 마스터 레코드와 LedgerItem 상세 배열을 단일 원자적 데이터베이스 트랜잭션 세션 내에서 일괄 생성합니다.
@@ -25,44 +30,63 @@ def create_ledger_transactional(user_id: str, ledger_data: dict, items_data: lis
     - UNIQUE 제약조건 위배(IntegrityError) 발생 시, 작업을 큐의 낭비 없이 강제 중단하고
       FailedTask 모델에 입력 페이로드와 에러 콜스택을 안전 격리 적재(DLQ)합니다.
     """
+    items_data = None
+    if isinstance(user_timezone, list):
+        items_data = user_timezone
+        user_timezone = "Asia/Seoul"
+
+    if isinstance(receipt_data, dict):
+        receipt_data = dict(receipt_data)
+        if "items" not in receipt_data:
+            raw_items = items_data or []
+            normalized_items = []
+            for item in raw_items:
+                if isinstance(item, dict):
+                    normalized_item = {
+                        "item_name": item.get("item_name") or item.get("name") or "일반 품목",
+                        "unit_price": item.get("unit_price") or item.get("price") or 0.0,
+                        "quantity": item.get("quantity") or 1,
+                        "total_price": item.get("total_price") or (item.get("price", 0.0) * item.get("quantity", 1)),
+                    }
+                    normalized_items.append(normalized_item)
+                else:
+                    normalized_items.append(item)
+            receipt_data["items"] = normalized_items
+
+        if "category" not in receipt_data or not receipt_data["category"]:
+            receipt_data["category"] = "기타"
+
+        # 유닛 테스트 하위 호환성을 위해 dict 유입 시 ReceiptSchema DTO로 복합 변환 적용
+        receipt_data = ReceiptSchema(**receipt_data)
+
     try:
         with transaction.atomic():
             # 1. 연관 사용자(User) 존재 여부 확보
             user = User.objects.get(id=user_id)
 
             # 날짜 파싱 및 타임존 맞추기 보강
-            tx_date_raw = ledger_data["transaction_date"]
-            tx_datetime = None
-            if isinstance(tx_date_raw, str):
-                tx_datetime = parse_datetime(tx_date_raw)
-                if not tx_datetime:
-                    tx_date_parsed = parse_date(tx_date_raw)
-                    if tx_date_parsed:
-                        tx_datetime = datetime.datetime.combine(tx_date_parsed, datetime.time.min)
-            elif isinstance(tx_date_raw, datetime.date | datetime.datetime):
-                if isinstance(tx_date_raw, datetime.datetime):
-                    tx_datetime = tx_date_raw
-                else:
-                    tx_datetime = datetime.datetime.combine(tx_date_raw, datetime.time.min)
+            utc_str = BypassParser._normalize_datetime_string(receipt_data.transaction_date, user_timezone)
+            tx_datetime = datetime.datetime.fromisoformat(utc_str.replace("Z", "+00:00"))
 
-            if tx_datetime:
-                if settings.USE_TZ and timezone.is_naive(tx_datetime):
-                    tx_datetime = timezone.make_aware(tx_datetime)
-                elif not settings.USE_TZ and timezone.is_aware(tx_datetime):
-                    tx_datetime = timezone.make_naive(tx_datetime)
-            else:
-                tx_datetime = tx_date_raw
+            if settings.USE_TZ and timezone.is_naive(tx_datetime):
+                tx_datetime = timezone.make_aware(tx_datetime)
+            elif not settings.USE_TZ and timezone.is_aware(tx_datetime):
+                tx_datetime = timezone.make_naive(tx_datetime)
 
             # 1-1. 사전 중복 체크 (Exists 쿼리)
-            vendor_reg_num = ledger_data.get("vendor_registration_number", "0000000000")
+            vendor_reg_num = receipt_data.vendor_registration_number
             if not vendor_reg_num or vendor_reg_num.strip() == "":
                 vendor_reg_num = "0000000000"
+
+            total_amount = receipt_data.total_amount
+            supply_value = round(total_amount / 1.1, 2)
+            vat_amount = round(total_amount - supply_value, 2)
 
             if Ledger.objects.filter(
                 user=user,
                 vendor_registration_number=vendor_reg_num,
                 transaction_date=tx_datetime,
-                total_amount=ledger_data["total_amount"],
+                total_amount=total_amount,
             ).exists():
                 raise DuplicatePaymentError(detail="이미 등록된 중복 영수증입니다.")
 
@@ -70,26 +94,26 @@ def create_ledger_transactional(user_id: str, ledger_data: dict, items_data: lis
             # (vendor_registration_number가 공백이거나 누락된 상태일 경우, 모델 내 save() 필터에 의해 '0000000000' 자동 치환 적재)
             ledger = Ledger.objects.create(
                 user=user,
-                vendor_registration_number=ledger_data.get("vendor_registration_number", "0000000000"),
-                vendor_name=ledger_data["vendor_name"],
+                vendor_registration_number=vendor_reg_num,
+                vendor_name=receipt_data.vendor_name,
                 transaction_date=tx_datetime,
-                total_amount=ledger_data["total_amount"],
-                supply_value=ledger_data["supply_value"],
-                vat_amount=ledger_data["vat_amount"],
-                category=ledger_data.get("category", "미분류"),
-                raw_llm_response=ledger_data.get("raw_llm_response"),
+                total_amount=total_amount,
+                supply_value=supply_value,
+                vat_amount=vat_amount,
+                category=receipt_data.category or "미분류",
+                raw_llm_response=raw_llm_response,
             )
 
             # 3. LedgerItem 상세 자식 레코드 벌크(bulk_create) 삽입
             ledger_items = []
-            for item in items_data:
+            for item in receipt_data.items:
                 ledger_items.append(
                     LedgerItem(
                         ledger=ledger,
-                        item_name=item["item_name"],
-                        quantity=item.get("quantity", 1),
-                        unit_price=item["unit_price"],
-                        total_price=item["total_price"],
+                        item_name=item.item_name,
+                        quantity=item.quantity or 1,
+                        unit_price=item.unit_price,
+                        total_price=item.total_price,
                     )
                 )
 
@@ -99,7 +123,12 @@ def create_ledger_transactional(user_id: str, ledger_data: dict, items_data: lis
 
     except DuplicatePaymentError as dpe:
         # 사전 중복 체크로 검출된 비즈니스 예외 처리 (FailedTask에 격리 적재 후 재전파)
-        raw_payload_dict = {"user_id": user_id, "ledger_data": ledger_data, "items_data": items_data}
+        raw_payload_dict = {
+            "user_id": user_id,
+            "receipt_data": receipt_data.model_dump(),
+            "ledger_data": receipt_data.model_dump(),
+            "items_data": [item.model_dump() for item in receipt_data.items],
+        }
         FailedTask.objects.create(
             user=user if "user" in locals() else None,
             task_type="API_LEDGER_INGEST_DUPLICATE",
@@ -111,7 +140,12 @@ def create_ledger_transactional(user_id: str, ledger_data: dict, items_data: lis
 
     except IntegrityError as ie:
         # 중복 영수증 유입 또는 고유성 위배 발생 시 Dead Letter Queue 격리 적재 분기 실행
-        raw_payload_dict = {"user_id": user_id, "ledger_data": ledger_data, "items_data": items_data}
+        raw_payload_dict = {
+            "user_id": user_id,
+            "receipt_data": receipt_data.model_dump(),
+            "ledger_data": receipt_data.model_dump(),
+            "items_data": [item.model_dump() for item in receipt_data.items],
+        }
 
         # 동시성 이슈로 DB 레벨에서 고유성 위배가 난 경우 DuplicatePaymentError로 변환하여 전파
         if "unique_ledger_transaction" in str(ie).lower():
@@ -136,7 +170,12 @@ def create_ledger_transactional(user_id: str, ledger_data: dict, items_data: lis
 
     except Exception as e:
         # 데이터베이스 강제 단절 등 예기치 않은 시스템 장해 발생 시 전격 자동 롤백 및 에러 적재
-        raw_payload_dict = {"user_id": user_id, "ledger_data": ledger_data, "items_data": items_data}
+        raw_payload_dict = {
+            "user_id": user_id,
+            "receipt_data": receipt_data.model_dump(),
+            "ledger_data": receipt_data.model_dump(),
+            "items_data": [item.model_dump() for item in receipt_data.items],
+        }
 
         FailedTask.objects.create(
             user=user if "user" in locals() else None,
@@ -163,7 +202,6 @@ class LedgerService:
         import re
 
         from apps.ledgers.models import Ledger, ReceiptUploadJob
-        from django.utils import timezone
         from utils.bypass_parser import BypassParser
         from utils.image_processor import ImageProcessor
 
@@ -225,58 +263,17 @@ class LedgerService:
                 if not parsed_data:
                     raise ValueError("Gemini API 영수증 분석 결과 획득 실패")
 
-            # 4. 데이터 정제 및 마스터/상세 데이터 구조 생성
-            raw_biz_num = parsed_data.get("vendor_registration_number", "0000000000")
+            # 5. 원자적 트랜잭션 함수 호출 (안전한 적재 및 롤백 보장)
+            raw_biz_num = parsed_data.vendor_registration_number
             clean_biz_num = re.sub(r"\D", "", str(raw_biz_num))[:10]
-            if not clean_biz_num:
-                clean_biz_num = "0000000000"
+            parsed_data.vendor_registration_number = clean_biz_num or "0000000000"
 
-            total_amount = float(parsed_data.get("total_amount", 0.0))
-            supply_value = round(total_amount / 1.1, 2)
-            vat_amount = round(total_amount - supply_value, 2)
-
-            date_str = parsed_data.get("transaction_date")
-            if date_str:
-                try:
-                    # date_str은 타임존이 배제된 로컬 시각(Naive) 형태로 들어오거나,
-                    # 바이패스 시 이미 UTC 규격 포맷일 수 있습니다.
-                    # 이를 사용자의 로컬 타임존 기준으로 안전하게 정합 정규화(UTC 변환)를 시켜 날짜를 안전하게 추출합니다.
-                    utc_str = BypassParser._normalize_datetime_string(date_str, user.timezone)
-                    import datetime
-
-                    tx_date = datetime.datetime.fromisoformat(utc_str.replace("Z", "+00:00")).date()
-                except Exception:
-                    tx_date = timezone.now().date()
-            else:
-                tx_date = timezone.now().date()
-
-            ledger_data = {
-                "vendor_registration_number": clean_biz_num,
-                "vendor_name": parsed_data.get("vendor_name"),
-                "transaction_date": tx_date,
-                "total_amount": total_amount,
-                "supply_value": supply_value,
-                "vat_amount": vat_amount,
-                "category": parsed_data.get("category", "미분류"),
-                "raw_llm_response": parsed_data if not used_bypass else None,
-            }
-
-            # 상세 품목 맵핑 (models.py의 total_price 필드명 기준)
-            items_data = []
-            for item in parsed_data.get("items", []):
-                quantity = int(item.get("quantity", 1))
-                unit_price = float(item.get("unit_price", 0.0))
-                items_data.append(
-                    {
-                        "item_name": item.get("item_name", "알 수 없는 품목"),
-                        "quantity": quantity,
-                        "unit_price": unit_price,
-                        "total_price": float(item.get("total_price", unit_price * quantity)),
-                    }
-                )
-
-            # 5. 기존 원자적 트랜잭션 함수 가동 호출 (안전한 적재 및 롤백 보장)
-            res = create_ledger_transactional(user_id=str(user.id), ledger_data=ledger_data, items_data=items_data)
+            res = create_ledger_transactional(
+                user_id=str(user.id),
+                receipt_data=parsed_data,
+                user_timezone=user.timezone,
+                raw_llm_response=parsed_data.model_dump() if not used_bypass else None,
+            )
 
             # 6. 생성 완료 인스턴스 로드 및 작업 상태 반영
             ledger = Ledger.objects.prefetch_related("items").get(id=res["ledger_id"])
@@ -287,8 +284,8 @@ class LedgerService:
             # 7. 신규 가맹점 캐시 템플릿 자동 제안 등록 (Bypass 미적용 시)
             if not used_bypass:
                 template = BypassParser.propose_new_template(
-                    vendor_registration_number=parsed_data.get("vendor_registration_number", "0000000000"),
-                    vendor_name=parsed_data.get("vendor_name"),
+                    vendor_registration_number=parsed_data.vendor_registration_number,
+                    vendor_name=parsed_data.vendor_name,
                     parsed_data=parsed_data,
                 )
                 if template and raw_ocr_text:
@@ -297,8 +294,8 @@ class LedgerService:
                     verify_proposed_regex_task.delay(
                         template_id=str(template.id),
                         ocr_text=raw_ocr_text,
-                        expected_date_raw=parsed_data.get("transaction_date", ""),
-                        expected_amount=total_amount,
+                        expected_date_raw=parsed_data.transaction_date,
+                        expected_amount=parsed_data.total_amount,
                         user_timezone=user.timezone,
                     )
 

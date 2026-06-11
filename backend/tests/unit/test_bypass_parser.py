@@ -43,10 +43,10 @@ class BypassParserTestCase(TestCase):
 
         # 검증: 캐시된 정적 규칙을 우회 활용하여 0원에 수렴하는 비용 처리
         self.assertIsNotNone(result)
-        self.assertEqual(result["vendor_name"], "스타벅스 역삼역점")
-        self.assertEqual(result["vendor_registration_number"], "1208612345")
-        self.assertEqual(result["total_amount"], 15000.00)
-        self.assertEqual(len(result["items"]), 2)
+        self.assertEqual(result.vendor_name, "스타벅스 역삼역점")
+        self.assertEqual(result.vendor_registration_number, "1208612345")
+        self.assertEqual(result.total_amount, 15000.00)
+        self.assertEqual(len(result.items), 2)
 
     def test_parser_fallback_with_unverified_template(self):
         # 미검증(is_verified=False) 템플릿 매칭 시, 로컬 우회 파서를 적용하지 않고 None 반환하여 Gemini 폴백 유도
@@ -99,22 +99,22 @@ class BypassParserTestCase(TestCase):
         result_1 = BypassParser.try_bypass_parsing(ocr_text_1, "1234567890")
         self.assertIsNotNone(result_1)
         # 오후 3:45 -> KST 오후 3:45 -> UTC 06:45:00Z
-        self.assertEqual(result_1["transaction_date"], "2026-06-11T06:45:00Z")
+        self.assertEqual(result_1.transaction_date, "2026-06-11T06:45:00Z")
 
         # 2. 날짜만 존재하는 케이스 폴백
         ocr_text_2 = "결합시간 상점 / 사업자번호: 1234567890 / 주문일자: 2026-06-11 / 합계 15,000"
         result_2 = BypassParser.try_bypass_parsing(ocr_text_2, "1234567890")
         self.assertIsNotNone(result_2)
         # KST 00:00:00 -> UTC 전날 15:00:00Z
-        self.assertEqual(result_2["transaction_date"], "2026-06-10T15:00:00Z")
+        self.assertEqual(result_2.transaction_date, "2026-06-10T15:00:00Z")
 
         # 3. 슬래시(/) 및 온점(.) 날짜 파싱 케이스 검증
         ocr_text_3 = "결합시간 상점 / 사업자번호: 1234567890 / 주문일자: 2026/06/11 / 합계 15,000"
         result_3 = BypassParser.try_bypass_parsing(ocr_text_3, "1234567890")
         self.assertIsNotNone(result_3)
-        self.assertEqual(result_3["transaction_date"], "2026-06-10T15:00:00Z")
+        self.assertEqual(result_3.transaction_date, "2026-06-10T15:00:00Z")
 
         ocr_text_4 = "결합시간 상점 / 사업자번호: 1234567890 / 주문일자: 2026.06.11 / 합계 15,000"
         result_4 = BypassParser.try_bypass_parsing(ocr_text_4, "1234567890")
         self.assertIsNotNone(result_4)
-        self.assertEqual(result_4["transaction_date"], "2026-06-10T15:00:00Z")
+        self.assertEqual(result_4.transaction_date, "2026-06-10T15:00:00Z")

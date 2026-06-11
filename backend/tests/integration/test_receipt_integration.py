@@ -90,14 +90,16 @@ class TestReceiptIntegration(TestCase):
         service = LedgerService()
 
         # Mock LLM Client 응답 주입
-        service.llm_client.parse_receipt = lambda buf, mime_type: {
-            "vendor_registration_number": "2208112345",
-            "vendor_name": "이마트 역삼점",
-            "transaction_date": "2026-06-11",
-            "total_amount": 4000.0,
-            "category": "생활용품",
-            "items": [{"item_name": "일반 건전지", "quantity": 2, "unit_price": 2000.0}],
-        }
+        from utils.llm_client import ReceiptItemSchema, ReceiptSchema
+
+        service.llm_client.parse_receipt = lambda buf, mime_type: ReceiptSchema(
+            vendor_registration_number="2208112345",
+            vendor_name="이마트 역삼점",
+            transaction_date="2026-06-11",
+            total_amount=4000.0,
+            category="생활용품",
+            items=[ReceiptItemSchema(item_name="일반 건전지", quantity=2, unit_price=2000.0, total_price=4000.0)],
+        )
 
         result = service.ingest_receipt(user=self.user, image_file=dummy_file)
 
@@ -181,14 +183,16 @@ class TestReceiptIntegration(TestCase):
         service = LedgerService()
 
         # Mock LLM Client 응답 주입
-        service.llm_client.parse_receipt = lambda buf, mime_type: {
-            "vendor_registration_number": "9998877766",
-            "vendor_name": "새로운마트 역삼점",
-            "transaction_date": "2026-06-11",
-            "total_amount": 20000.0,
-            "category": "기타",
-            "items": [],
-        }
+        from utils.llm_client import ReceiptSchema
+
+        service.llm_client.parse_receipt = lambda buf, mime_type: ReceiptSchema(
+            vendor_registration_number="9998877766",
+            vendor_name="새로운마트 역삼점",
+            transaction_date="2026-06-11",
+            total_amount=20000.0,
+            category="기타",
+            items=[],
+        )
 
         # When: 이미지 인입 서비스 구동
         service.ingest_receipt(user=self.user, image_file=dummy_file)

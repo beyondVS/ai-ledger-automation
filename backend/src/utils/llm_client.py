@@ -1,6 +1,5 @@
 import base64
 import io
-import json
 import logging
 import os
 
@@ -26,10 +25,12 @@ class ReceiptSchema(BaseModel):
     category: str = Field(description="지출 카테고리 (예: 식비, 생활용품, 쇼핑, 문화/여가, 교통, 기타 등)")
     items: list[ReceiptItemSchema] = Field(description="상세 품목 리스트")
     proposed_date_pattern: str = Field(
-        description="제공된 영수증 원본 텍스트 내에서 본 결제 일시(이메일 시각 등 상세 시간 포함 구절 최우선 매칭)를 가장 정확히 캡처할 수 있는 정적 정규식 패턴"
+        default="",
+        description="제공된 영수증 원본 텍스트 내에서 본 결제 일시(이메일 시각 등 상세 시간 포함 구절 최우선 매칭)를 가장 정확히 캡처할 수 있는 정적 정규식 패턴",
     )
     proposed_amount_pattern: str = Field(
-        description="제공된 영수증 원본 텍스트 내에서 총 결제 금액을 가장 정확히 캡처할 수 있는 정적 정규식 패턴"
+        default="",
+        description="제공된 영수증 원본 텍스트 내에서 총 결제 금액을 가장 정확히 캡처할 수 있는 정적 정규식 패턴",
     )
 
 
@@ -104,7 +105,7 @@ class ReceiptLLMClient:
             allowed_fails=1,
         )
 
-    def parse_receipt(self, file_buffer: io.BytesIO, mime_type: str = "image/webp") -> dict | None:
+    def parse_receipt(self, file_buffer: io.BytesIO, mime_type: str = "image/webp") -> ReceiptSchema | None:
         """
         LiteLLM Router를 통해 통일된 규격(base64 image_url)으로 영수증 구조화 데이터를 추출합니다.
         """
@@ -191,8 +192,8 @@ class ReceiptLLMClient:
                     )
                     response_text = response.choices[0].message.content
                     if response_text:
-                        parsed_data = json.loads(response_text)
-                        logger.info(f"Gemini 영수증 파싱 성공: {parsed_data.get('vendor_name')}")
+                        parsed_data = ReceiptSchema.model_validate_json(response_text)
+                        logger.info(f"Gemini 영수증 파싱 성공: {parsed_data.vendor_name}")
                         return parsed_data
                 except Exception as gemini_err:
                     logger.warning(f"Gemini API 분석 실패로 로컬 Ollama 폴백을 기동합니다. 사유: {str(gemini_err)}")
@@ -225,8 +226,8 @@ class ReceiptLLMClient:
                 logger.error("API가 빈 응답을 반환했습니다.")
                 return None
 
-            parsed_data = json.loads(response_text)
-            logger.info(f"Ollama 영수증 파싱 성공: {parsed_data.get('vendor_name')}")
+            parsed_data = ReceiptSchema.model_validate_json(response_text)
+            logger.info(f"Ollama 영수증 파싱 성공: {parsed_data.vendor_name}")
             return parsed_data
 
         except Exception as e:

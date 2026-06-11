@@ -1,8 +1,9 @@
 import logging
 import re
-from typing import Any
 
 from apps.ledgers.models import MerchantTemplate
+
+from utils.llm_client import ReceiptItemSchema, ReceiptSchema
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ class BypassParser:
     @staticmethod
     def try_bypass_parsing(
         raw_text: str, vendor_registration_number: str, user_timezone: str = "Asia/Seoul"
-    ) -> dict[str, Any] | None:
+    ) -> ReceiptSchema | None:
         """
         가맹점 사업자등록번호 기반으로 수동 검증 완료(is_verified: True)된 템플릿이 존재하면,
         정적 정규식 규칙을 적용해 유료 LLM API 호출 없이 즉시 로컬 파싱을 완수합니다.
@@ -97,14 +98,10 @@ class BypassParser:
             return None
 
         try:
-            parsed_data = {
-                "vendor_name": template.vendor_name,
-                "vendor_registration_number": vendor_registration_number,
-                "transaction_date": None,
-                "total_amount": 0.0,
-                "category": rules.get("default_category", "미분류"),
-                "items": [],
-            }
+            transaction_date = ""
+            total_amount = 0.0
+            category = rules.get("default_category", "미분류")
+            items = []
 
             # 2. 결제일시 파싱 (단일 매칭 성공구간 0번 인덱스 채택 후 정규화)
             date_pattern = rules.get("date_pattern") or rules.get("date_regex")
@@ -112,9 +109,7 @@ class BypassParser:
                 match = re.search(date_pattern, raw_text)
                 if match:
                     matched_str = match.group(0)
-                    parsed_data["transaction_date"] = BypassParser._normalize_datetime_string(
-                        matched_str, user_timezone
-                    )
+                    transaction_date = BypassParser._normalize_datetime_string(matched_str, user_timezone)
 
             # 총 결제금액 파싱 (그룹 1 채택 또는 0번 전체 채택 폴백)
             amount_pattern = rules.get("amount_pattern") or rules.get("total_amount_regex")
@@ -125,7 +120,7 @@ class BypassParser:
                     raw_amount = match.group(1) if len(match.groups()) >= 1 else match.group(0)
                     # 쉼표 및 화폐 기호 정제
                     cleaned_amount = re.sub(r"[^\d.]", "", raw_amount.replace(",", "").strip())
-                    parsed_data["total_amount"] = float(cleaned_amount)
+                    total_amount = float(cleaned_amount)
 
             # 세부 품목 파싱
             if "item_pattern" in rules:
@@ -137,31 +132,38 @@ class BypassParser:
                         unit_price = float(m.group(3).replace(",", "").strip()) if len(m.groups()) >= 3 else 0.0
                         total_price = unit_price * quantity
 
-                        parsed_data["items"].append(
-                            {
-                                "item_name": item_name,
-                                "unit_price": unit_price,
-                                "quantity": quantity,
-                                "total_price": total_price,
-                            }
+                        items.append(
+                            ReceiptItemSchema(
+                                item_name=item_name,
+                                unit_price=unit_price,
+                                quantity=quantity,
+                                total_price=total_price,
+                            )
                         )
                     except Exception:
                         continue
 
             # 레거시 default_items 지원 폴백
-            if not parsed_data["items"] and "default_items" in rules:
+            if not items and "default_items" in rules:
                 for item in rules["default_items"]:
-                    parsed_data["items"].append(
-                        {
-                            "item_name": item.get("name", "알 수 없는 품목"),
-                            "quantity": item.get("quantity", 1),
-                            "unit_price": float(item.get("price", 0.0)),
-                            "total_price": float(item.get("price", 0.0)) * item.get("quantity", 1),
-                        }
+                    items.append(
+                        ReceiptItemSchema(
+                            item_name=item.get("name", "알 수 없는 품목"),
+                            quantity=item.get("quantity", 1),
+                            unit_price=float(item.get("price", 0.0)),
+                            total_price=float(item.get("price", 0.0)) * item.get("quantity", 1),
+                        )
                     )
 
             logger.info(f"로컬 템플릿 바이패스 파싱 성공: {template.vendor_name}")
-            return parsed_data
+            return ReceiptSchema(
+                vendor_name=template.vendor_name,
+                vendor_registration_number=vendor_registration_number,
+                transaction_date=transaction_date,
+                total_amount=total_amount,
+                category=category,
+                items=items,
+            )
 
         except Exception as e:
             logger.error(f"로컬 템플릿 파싱 중 오류 발생 (Gemini 폴백): {str(e)}")
@@ -169,12 +171,14 @@ class BypassParser:
 
     @staticmethod
     def propose_new_template(
-        vendor_registration_number: str, vendor_name: str, parsed_data: dict[str, Any]
+        vendor_registration_number: str, vendor_name: str, parsed_data: ReceiptSchema
     ) -> MerchantTemplate | None:
         """
         LLM 파싱 성공 결과 기반으로 신규 템플릿 후보군을 데이터베이스에 자동 제안 적재합니다.
         헌법 제III조 수호: 제안되는 템플릿은 반드시 'is_verified: False' 격리 상태로 보존됩니다.
         """
+        if isinstance(parsed_data, dict):
+            parsed_data = ReceiptSchema(**parsed_data)
         try:
             # 이미 등록된 템플릿이 존재하면 제안 생략
             if MerchantTemplate.objects.filter(vendor_registration_number=vendor_registration_number).exists():
@@ -182,12 +186,12 @@ class BypassParser:
 
             # LLM이 직접 텍스트 레이아웃을 보고 도출해준 정규식 패턴을 최우선 적재
             proposed_rules = {
-                "date_pattern": parsed_data.get("proposed_date_pattern"),
-                "amount_pattern": parsed_data.get("proposed_amount_pattern"),
-                "default_category": parsed_data.get("category", "미분류"),
+                "date_pattern": parsed_data.proposed_date_pattern,
+                "amount_pattern": parsed_data.proposed_amount_pattern,
+                "default_category": parsed_data.category,
                 "default_items": [
-                    {"name": item["item_name"], "quantity": item["quantity"], "price": item["unit_price"]}
-                    for item in parsed_data.get("items", [])
+                    {"name": item.item_name, "quantity": item.quantity, "price": item.unit_price}
+                    for item in parsed_data.items
                 ],
             }
 
