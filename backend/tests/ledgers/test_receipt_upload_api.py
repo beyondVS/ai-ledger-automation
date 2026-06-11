@@ -44,7 +44,7 @@ class ReceiptUploadAPITestCase(TestCase):
 
     def test_receipt_upload_success_and_db_persistence(self):
         # 1. 가상 영수증 이미지 데이터 생성 (파서의 금액 파싱 정합성을 위해 텍스트 포함 파일명 지정)
-        dummy_image_bytes = b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00\,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"
+        dummy_image_bytes = b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"
         receipt_image = SimpleUploadedFile(
             name="1208612345 합계 15000.jpg", content=dummy_image_bytes, content_type="image/jpeg"
         )

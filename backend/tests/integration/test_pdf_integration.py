@@ -2,10 +2,10 @@ import json
 import os
 
 from apps.accounts.models import User
+from apps.ledgers.exceptions import DuplicatePaymentError
 from apps.ledgers.models import Ledger, LedgerItem
 from apps.ledgers.services import create_ledger_transactional
 from apps.tasks.models import FailedTask
-from django.db import IntegrityError
 from django.test import TestCase
 from utils.pdf_extractor import PDFTextExtractor
 
@@ -96,8 +96,8 @@ class TestPDFIntegrationSuite(TestCase):
         res1 = create_ledger_transactional(self.user_id_str, ledger_data, items_data)
         self.assertEqual(res1["status"], "SUCCESS")
 
-        # 2. 2차 인서트 시도: UNIQUE 복합 고유 키 충돌로 IntegrityError 발생 보장
-        with self.assertRaises(IntegrityError):
+        # 2. 2차 인서트 시도: UNIQUE 복합 고유 키 충돌로 DuplicatePaymentError 발생 보장
+        with self.assertRaises(DuplicatePaymentError):
             create_ledger_transactional(self.user_id_str, ledger_data, items_data)
 
         # 3. 2차 중복은 롤백되어 DB에 2번째 마스터 행이 증식되지 않았음을 입증 (여전히 1개)

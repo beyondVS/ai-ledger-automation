@@ -1,10 +1,10 @@
 import json
 
 from apps.accounts.models import User
+from apps.ledgers.exceptions import DuplicatePaymentError
 from apps.ledgers.models import Ledger
 from apps.ledgers.services import create_ledger_transactional
 from apps.tasks.models import FailedTask
-from django.db import IntegrityError
 from django.test import TestCase
 
 
@@ -42,8 +42,8 @@ class TestLedgerDuplicateIngestion(TestCase):
         self.assertEqual(result1["status"], "SUCCESS")
         self.assertEqual(Ledger.objects.filter(vendor_registration_number="1208147528").count(), 1)
 
-        # 2. 2차 인서트 시도: 동일 페이로드 적재 시 DB 고유 키 위배 발생
-        with self.assertRaises(IntegrityError):
+        # 2. 2차 인서트 시도: 동일 페이로드 적재 시 중복 예외 발생 보장
+        with self.assertRaises(DuplicatePaymentError):
             create_ledger_transactional(self.user_id_str, ledger_data, items_data)
 
         # 3. [UNIQUE 차단 수호]: 데이터베이스에 2번째 영수증 행이 적재되지 않았음을 증명 (개수 여전히 1개)
