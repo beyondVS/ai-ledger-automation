@@ -20,8 +20,8 @@
 
 **Purpose**: 프로젝트 구조 파악 및 기본 작업 환경 준비
 
-- [ ] T001 backend/src/ledgers/ 및 backend/tests/ 경로의 기본 디렉토리 구조 및 파일 배치 여부 확인
-- [ ] T002 [P] 프로젝트 루트의 pyproject.toml 및 uv.lock 설정을 확인하고 uv sync를 통해 의존성 동기화 상태 확인
+- [X] T001 backend/src/ledgers/ 및 backend/tests/ 경로의 기본 디렉토리 구조 및 파일 배치 여부 확인
+- [X] T002 [P] 프로젝트 루트의 pyproject.toml 및 uv.lock 설정을 확인하고 uv sync를 통해 의존성 동기화 상태 확인
 
 ---
 
@@ -31,8 +31,8 @@
 
 **⚠️ CRITICAL**: 본 단계가 완료되지 않으면 하위의 어떤 사용자 스토리 작업도 시작할 수 없습니다.
 
-- [ ] T003 backend/src/ledgers/models.py 경로의 MerchantTemplate 모델에 is_verified 컬럼(Boolean, 기본값 False)을 추가 설계
-- [ ] T004 backend/src/ledgers/migrations/ 디렉토리 하위에 DB 스키마 갱신 마이그레이션 파일을 자동 생성하고 로컬 PostgreSQL에 적용
+- [X] T003 backend/src/ledgers/models.py 경로의 MerchantTemplate 모델에 is_verified 컬럼(Boolean, 기본값 False)을 추가 설계
+- [X] T004 backend/src/ledgers/migrations/ 디렉토리 하위에 DB 스키마 갱신 마이그레이션 파일을 자동 생성하고 로컬 PostgreSQL에 적용
 
 **Checkpoint**: Foundation ready - 이제 사용자 스토리 구현 및 TDD 테스트 코딩을 병렬로 착수할 수 있습니다.
 
@@ -48,14 +48,14 @@
 
 > **NOTE: 구현 전에 아래 테스트 코드를 먼저 작성하여 실행 시 실패(Red)함을 반드시 확인하십시오.**
 
-- [ ] T005 [P] [US1] backend/tests/integration/test_cost_control_parser.py 경로에 is_verified: true 시 LLM API 호출 횟수 0회 검증 및 가계부 동기 적재 성공을 확인하는 통합 테스트 구현
-- [ ] T006 [P] [US1] backend/tests/unit/test_regex_parser.py 경로에 정적 정규식 규칙으로 결제 텍스트에서 금액/날짜/품목을 추출하는 순수 유틸리티 단위 테스트 구현
+- [X] T005 [P] [US1] backend/tests/integration/test_cost_control_parser.py 경로에 is_verified: true 시 LLM API 호출 횟수 0회 검증 및 가계부 동기 적재 성공을 확인하는 통합 테스트 구현
+- [X] T006 [P] [US1] backend/tests/unit/test_regex_parser.py 경로에 정적 정규식 규칙으로 결제 텍스트에서 금액/날짜/품목을 추출하는 순수 유틸리티 단위 테스트 구현
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] backend/src/ledgers/services.py 경로에 정적 정규식 매칭을 통해 필드 정보를 추출하는 RegexParser 파서 클래스 구현
-- [ ] T008 [US1] backend/src/ledgers/services.py 경로에 사업자번호 정규화, MerchantTemplate 조회, is_verified 판단 및 우회 파싱 로직을 통제하는 CostControlParser 코어 구현 (T007에 의존)
-- [ ] T009 [US1] backend/src/ledgers/views.py 경로에 업로드 시 우회 파싱 성공 여부에 따라 즉시 가계부 완성 레코드를 동기 응답(201) 처리하는 뷰 API 로직 연동
+- [X] T007 [P] [US1] backend/src/ledgers/services.py 경로에 정적 정규식 매칭을 통해 필드 정보를 추출하는 RegexParser 파서 클래스 구현
+- [X] T008 [US1] backend/src/ledgers/services.py 경로에 사업자번호 정규화, MerchantTemplate 조회, is_verified 판단 및 우회 파싱 로직을 통제하는 CostControlParser 코어 구현 (T007에 의존)
+- [X] T009 [US1] backend/src/ledgers/views.py 경로에 업로드 시 우회 파싱 성공 여부에 따라 즉시 가계부 완성 레코드를 동기 응답(201) 처리하는 뷰 API 로직 연동
 
 **Checkpoint**: 본 단계 완료 시, 이미 등록된 가맹점에 대해서는 유료 LLM 호출 없이 무비용 정적 파싱이 즉시 독립적으로 구동 가능합니다.
 
@@ -71,14 +71,14 @@
 
 > **NOTE: 구현 전에 아래 테스트 코드를 먼저 작성하여 실행 시 실패(Red)함을 반드시 확인하십시오.**
 
-- [ ] T010 [P] [US2] backend/tests/integration/test_cost_control_parser.py 경로에 정적 파싱 에러 발생 시 즉각 LLM API 파서로의 비동기 폴백 및 작업 상태 변화를 조회하는 통합 테스트 구현
-- [ ] T011 [P] [US2] backend/tests/integration/test_cost_control_parser.py 경로에 LLM 폴백 파싱마저 최종 실패 시 transaction.atomic 트랜잭션 전체가 안전하게 롤백되는지 검증하는 트랜잭션 정합성 테스트 구현
+- [X] T010 [P] [US2] backend/tests/integration/test_cost_control_parser.py 경로에 정적 파싱 에러 발생 시 즉각 LLM API 파서로의 비동기 폴백 및 작업 상태 변화를 조회하는 통합 테스트 구현
+- [X] T011 [P] [US2] backend/tests/integration/test_cost_control_parser.py 경로에 LLM 폴백 파싱마저 최종 실패 시 transaction.atomic 트랜잭션 전체가 안전하게 롤백되는지 검증하는 트랜잭션 정합성 테스트 구현
 
 ### Implementation for User Story 2
 
-- [ ] T012 [US2] backend/src/ledgers/tasks.py 경로에 비동기로 LLM API를 호출하여 영수증 파싱 및 atomic 트랜잭션 적재를 보장하는 process_llm_fallback_task Celery 비동기 태스크 구현
-- [ ] T013 [US2] backend/src/ledgers/services.py 경로에 CostControlParser 내에서 정적 파싱 예외 포착 시 즉시 Celery 태스크를 발행하고 작업 ID(job_id)를 반환하는 예외 처리 연동 구현 (T012에 의존)
-- [ ] T014 [US2] backend/src/ledgers/views.py 경로에 202 Accepted 작업 예약 응답 처리 및 작업 상태 조회를 수행하는 API 뷰 엔드포인트 구현 (T013에 의존)
+- [X] T012 [US2] backend/src/ledgers/tasks.py 경로에 비동기로 LLM API를 호출하여 영수증 파싱 및 atomic 트랜잭션 적재를 보장하는 process_llm_fallback_task Celery 비동기 태스크 구현
+- [X] T013 [US2] backend/src/ledgers/services.py 경로에 CostControlParser 내에서 정적 파싱 예외 포착 시 즉시 Celery 태스크를 발행하고 작업 ID(job_id)를 반환하는 예외 처리 연동 구현 (T012에 의존)
+- [X] T014 [US2] backend/src/ledgers/views.py 경로에 202 Accepted 작업 예약 응답 처리 및 작업 상태 조회를 수행하는 API 뷰 엔드포인트 구현 (T013에 의존)
 
 **Checkpoint**: 본 단계 완료 시, 정규식의 취약점을 LLM 비동기 폴백으로 메꿔주는 견고한 하이브리드 비용 통제 파이프라인 안전망이 완벽히 기동됩니다.
 
@@ -94,14 +94,14 @@
 
 > **NOTE: 구현 전에 아래 테스트 코드를 먼저 작성하여 실행 시 실패(Red)함을 반드시 확인하십시오.**
 
-- [ ] T015 [P] [US3] backend/tests/integration/test_cost_control_parser.py 경로에 신규 가맹점의 LLM 분석 성공 시 정규식 규칙이 자동 도출되고 is_verified: false 상태의 캐시 템플릿이 신규 생성되는지 검증하는 자가 학습 검증 통합 테스트 구현
-- [ ] T016 [P] [US3] backend/tests/integration/test_cost_control_parser.py 경로에 자동 생성된 정규식이 영수증 원본 매칭 테스트에서 불일치하거나 매칭 실패 시, 해당 템플릿이 영속화되지 않고 정상 자동 폐기 처리되는지 검증하는 예외 케이스 테스트 구현
+- [X] T015 [P] [US3] backend/tests/integration/test_cost_control_parser.py 경로에 신규 가맹점의 LLM 분석 성공 시 정규식 규칙이 자동 도출되고 is_verified: false 상태의 캐시 템플릿이 신규 생성되는지 검증하는 자가 학습 검증 통합 테스트 구현
+- [X] T016 [P] [US3] backend/tests/integration/test_cost_control_parser.py 경로에 자동 생성된 정규식이 영수증 원본 매칭 테스트에서 불일치하거나 매칭 실패 시, 해당 템플릿이 영속화되지 않고 정상 자동 폐기 처리되는지 검증하는 예외 케이스 테스트 구현
 
 ### Implementation for User Story 3
 
-- [ ] T017 [P] [US3] backend/src/ledgers/services.py 경로에 LLM 파싱 텍스트 키-값 구조와 영수증 원본 텍스트의 레이아웃 패턴을 결합 분석하여 최적의 정규식을 도출하는 RegexGenerator 자율 규칙 생성기 클래스 구현
-- [ ] T018 [US3] backend/src/ledgers/tasks.py 경로에 Celery 태스크 분석 완료 시점에 RegexGenerator를 호출하여 정합성 테스트 통과 시 is_verified: false 상태로 템플릿 제안서를 데이터베이스에 적재하는 자가 학습 파이프라인 연동 구현 (T017에 의존)
-- [ ] T019 [US3] backend/src/admin/views.py 경로에 관리자가 제안된 정규식 규칙을 검증 및 승인하여 is_verified: true로 갱신하는 어드민 전용 API 엔드포인트 구현
+- [X] T017 [P] [US3] backend/src/ledgers/services.py 경로에 LLM 파싱 텍스트 키-값 구조와 영수증 원본 텍스트의 레이아웃 패턴을 결합 분석하여 최적의 정규식을 도출하는 RegexGenerator 자율 규칙 생성기 클래스 구현
+- [X] T018 [US3] backend/src/ledgers/tasks.py 경로에 Celery 태스크 분석 완료 시점에 RegexGenerator를 호출하여 정합성 테스트 통과 시 is_verified: false 상태로 템플릿 제안서를 데이터베이스에 적재하는 자가 학습 파이프라인 연동 구현 (T017에 의존)
+- [X] T019 [US3] backend/src/admin/views.py 경로에 관리자가 제안된 정규식 규칙을 검증 및 승인하여 is_verified: true로 갱신하는 어드민 전용 API 엔드포인트 구현
 
 **Checkpoint**: 본 단계 완료 시, 수동 등록 없이도 실제 가계부 유입 건을 기반으로 스스로 템플릿 정규식을 진화시키고 제안하는 진화형 루프가 활성화됩니다.
 
@@ -111,9 +111,9 @@
 
 **Purpose**: 성능 병목 튜닝, 설명서 보완 및 E2E 최종 조율
 
-- [ ] T020 [P] backend/ 디렉토리 내 추가되거나 갱신된 백엔드 로직에 대한 최종 ruff 린팅 및 포매팅 준수 여부 확인
-- [ ] T021 10만 건 이상의 가상 더미 데이터 적재 환경에서 EXPLAIN ANALYZE 쿼리 실행을 통해 가맹점 템플릿(BRN 검색 및 Unique Constraint) 데이터베이스 인덱스 튜닝 성능 확인
-- [ ] T022 [P] specs/018-cost-control-engine/quickstart.md 가이드 문서에 따라 로컬 Docker RDBMS 및 Celery 환경에서 최종 E2E 시나리오 테스트 기계적 통과 확인
+- [X] T020 [P] backend/ 디렉토리 내 추가되거나 갱신된 백엔드 로직에 대한 최종 ruff 린팅 및 포매팅 준수 여부 확인
+- [X] T021 10만 건 이상의 가상 더미 데이터 적재 환경에서 EXPLAIN ANALYZE 쿼리 실행을 통해 가맹점 템플릿(BRN 검색 및 Unique Constraint) 데이터베이스 인덱스 튜닝 성능 확인
+- [X] T022 [P] specs/018-cost-control-engine/quickstart.md 가이드 문서에 따라 로컬 Docker RDBMS 및 Celery 환경에서 최종 E2E 시나리오 테스트 기계적 통과 확인
 
 ---
 

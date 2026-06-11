@@ -46,30 +46,71 @@ class ReceiptUploadView(APIView):
 
             import os
 
+            from apps.ledgers.services.parser import CostControlParser
             from apps.tasks.tasks import extract_receipt_text_task
             from django.core.files.storage import FileSystemStorage
+            from utils.pdf_extractor import PDFTextExtractor
 
             temp_dir = os.path.join(settings.BASE_DIR, "temp_receipts")
             os.makedirs(temp_dir, exist_ok=True)
             fs = FileSystemStorage(location=temp_dir)
 
             jobs_payload = []
+            has_async_jobs = False
 
             for image_file in image_files:
-                # 1. 3주차 호환 작업 추적 Job 생성 (PENDING 상태)
+                ext = os.path.splitext(image_file.name)[1]
+
+                # [T009] [US1] 10자리 사업자등록번호 기반 동기식 Bypass 파싱 선제 시도 (PDF 파일 우선 대응)
+                if ext.lower() == ".pdf":
+                    try:
+                        # 파일 스트림에서 텍스트 추출 시도
+                        image_file.seek(0)
+                        pdf_data = image_file.read()
+                        image_file.seek(0)  # 스트림 포인터 리셋
+
+                        extractor = PDFTextExtractor(pdf_data)
+                        extraction_res = extractor.extract_text()
+
+                        if extraction_res.success and extraction_res.raw_text:
+                            parser = CostControlParser(user=current_user)
+                            result = parser.parse_and_save(ocr_text=extraction_res.raw_text)
+
+                            # 우회 파싱 성공 시 즉시 동기 완료(201) 페이로드 구성
+                            if result.get("bypass_used", False):
+                                ledger_instance = (
+                                    Ledger.objects.prefetch_related("items")
+                                    .filter(
+                                        vendor_registration_number=result["vendor_registration_number"],
+                                        transaction_date=result["transaction_date"],
+                                        total_amount=result["total_amount"],
+                                    )
+                                    .first()
+                                )
+
+                                jobs_payload.append({"job_id": None, "status": "COMPLETED", "ledger": ledger_instance})
+                                logger.info(
+                                    f"Bypass parsing successfully completed synchronously for {image_file.name}"
+                                )
+                                continue
+                    except Exception as bypass_err:
+                        logger.warning(f"Bypass sync parsing attempt failed, falling back to Celery: {str(bypass_err)}")
+                        image_file.seek(0)  # 스트림 복원
+
+                # 3주차 호환 작업 추적 Job 생성 (PENDING 상태)
                 job = ReceiptUploadJob.objects.create(
                     user=current_user, status="PENDING", raw_file_name=image_file.name
                 )
 
-                # 2. 임시 디렉토리에 파일 업로드 저장
-                ext = os.path.splitext(image_file.name)[1]
+                # 임시 디렉토리에 파일 업로드 저장
                 temp_filename = f"{job.id}{ext}"
                 saved_filename = fs.save(temp_filename, image_file)
                 file_path = fs.path(saved_filename)
 
-                # 3. Celery 백그라운드 태스크 기동 및 장애 격리
+                # Celery 백그라운드 태스크 기동 및 장애 격리
                 try:
                     extract_receipt_text_task.delay(str(job.id), file_path)
+                    has_async_jobs = True
                 except Exception as queue_err:
                     if os.path.exists(file_path):
                         try:
@@ -81,16 +122,18 @@ class ReceiptUploadView(APIView):
                     job.save()
                     raise queue_err
 
-                # 4. 응답 페이로드 누적
+                # 응답 페이로드 누적
                 jobs_payload.append({"job_id": job.id, "status": "PENDING", "ledger": None})
 
-            # 5. API 계약 응답 구조 직렬화 (단일 파일인 경우 단일 객체, 다중 파일인 경우 리스트 반환)
+            # API 계약 응답 구조 직렬화 (단일 파일인 경우 단일 객체, 다중 파일인 경우 리스트 반환)
             if len(image_files) == 1:
                 serializer = ReceiptUploadResponseSerializer(jobs_payload[0])
             else:
                 serializer = ReceiptUploadResponseSerializer(jobs_payload, many=True)
 
-            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+            # 비동기 작업이 단 하나라도 섞여 있다면 202 Accepted, 모두 우회 완료되었다면 201 Created 반환
+            response_status = status.HTTP_202_ACCEPTED if has_async_jobs else status.HTTP_201_CREATED
+            return Response(serializer.data, status=response_status)
 
         except Exception as e:
             logger.error(f"ReceiptUploadView Server Error: {str(e)}", exc_info=True)
