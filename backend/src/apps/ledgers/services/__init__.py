@@ -195,6 +195,18 @@ class LedgerService:
                         raw_ocr_text = extracted_text
                 except Exception as pdf_err:
                     logger.warning(f"PDF 텍스트 추출 중 에러 발생: {str(pdf_err)}")
+            else:
+                try:
+                    import pytesseract
+                    from PIL import Image
+
+                    image_file.seek(0)
+                    img = Image.open(image_file)
+                    extracted_text = pytesseract.image_to_string(img, lang="kor+eng")
+                    if extracted_text and extracted_text.strip():
+                        raw_ocr_text = extracted_text
+                except Exception as img_err:
+                    logger.warning(f"이미지 OCR 텍스트 추출 중 에러 발생 (Tesseract 미설치 시 무시됨): {str(img_err)}")
 
             # 2. 1차 로컬 바이패스 파싱 시도 (OCR 텍스트 및 10자리 사업자등록번호 감지 시)
             if raw_ocr_text:
