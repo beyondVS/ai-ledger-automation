@@ -104,11 +104,14 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
 
 
 @shared_task
-def verify_proposed_regex_task(template_id: str, ocr_text: str, expected_date_raw: str, expected_amount: float):
+def verify_proposed_regex_task(
+    template_id: str, ocr_text: str, expected_date_raw: str, expected_amount: float, user_timezone: str = "Asia/Seoul"
+):
     """
     [US1] verify_proposed_regex_task
     - LLM이 생성 제안한 정규식(date_pattern, amount_pattern)이 실제 영수증 원시 텍스트와 대조 시
       동일한 결과값(expected_date, expected_amount)을 캡처해내는지 비동기 정합성 검증을 수행합니다.
+      대조 시 사용자의 고유 타임존 기준으로 안전하게 동일 정합 정규화를 수행합니다.
     - 검증 성공 시 is_auto_verified = True로 마킹하며, 실패 시 에러 사유를 남깁니다.
     """
     import re
@@ -135,8 +138,8 @@ def verify_proposed_regex_task(template_id: str, ocr_text: str, expected_date_ra
         if not date_match:
             raise ValueError(f"Date pattern failed to match raw text. Pattern: {date_pattern}")
 
-        normalized_matched_date = BypassParser._normalize_datetime_string(date_match.group(0))
-        expected_normalized = BypassParser._normalize_datetime_string(expected_date_raw)
+        normalized_matched_date = BypassParser._normalize_datetime_string(date_match.group(0), user_timezone)
+        expected_normalized = BypassParser._normalize_datetime_string(expected_date_raw, user_timezone)
 
         if normalized_matched_date != expected_normalized:
             raise ValueError(

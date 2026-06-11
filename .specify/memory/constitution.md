@@ -1,6 +1,6 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.11.0 -> v1.12.0
+- Version Change: v1.12.0 -> v1.13.0
 - Ratified: 2026-05-29 | Last Amended: 2026-06-11
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
@@ -12,7 +12,7 @@
   7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
   8. VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
   9. IX. ruff 및 pre-commit 자동화 품질 가드 수호 (Ruff Linter & pre-commit Quality Guard)
-- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트를 통해 네이티브하게 멀티모달 분석을 태움(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0). (4) 백엔드, Celery, 프론트엔드 전체 Dockerizing 완료 및 핫 리로딩 인프라 통합 구축(v1.9.0). (5) 동일 상품 연속 결제 오탐지 방지를 위해 approval_number 필드를 신설하고, 승인번호 고유성 대조 및 1분(60초) 임계 시각 대조 하이브리드 중복 방어 알고리즘을 도입. 프론트엔드 수정 내역 모달(FE-05-B) 내 유실되거나 유효하지 않은 카테고리 데이터 바인딩 유입 시 '미분류'로 자동 폴백하는 안전 바인딩 정책을 적용하여 누수를 제거함(v1.10.0). (6) 이메일 포워딩 수집 및 SPF/DKIM 보안 필터링의 구현 일정을 4주 개발 로드맵에서 제외하고 차후 확장 계획 백로그로 안전하게 이관 보존함(v1.10.1). (7) 동기식 레거시 파서(CostControlParser) 및 관련 태스크(process_llm_fallback_task)를 영구 제거하고 Celery 기반 비동기 파이프라인으로 일원화. 중복 결제 발생 시 재전파(re-raise) 처리 대신 안전한 FAILED 실패 상태 반환 구조로 전환(v1.11.0). (8) 백엔드 컨테이너의 파이썬 실행 환경을 3.13-slim으로 업그레이드하고, pyproject.toml 설정 파일을 프로젝트 루트에 단일화(Single Source of Truth)하여 Ruff 린트/포맷 룰을 워크스페이스 전역으로 일치시킴(v1.11.0). (9) Gemini API 호출 장애 시 로컬 Ollama 폴백 가동 대역에서 base64 데이터 디코딩 규격 충돌(prefix 유무) 문제를 방지하기 위해, parse_receipt 메서드 단에서 try-except 블록으로 에러를 캐치하고 Ollama에 맞는 무접두사 base64 스트링으로 페이로드를 동적 가공 재인서트하는 방어벽을 구축함(v1.11.0). (10) 이메일 상세 결제 시각(오전/오후 시:분) 결합 파싱 정규화 구현 및 LLM 제안 정규식을 원시 텍스트와 대조 검증하는 Celery 비동기 검증 태스크(verify_proposed_regex_task)를 추가하고, 검증 성공 시 템플릿의 자동 검증 플래그(is_auto_verified)를 True로 마킹하도록 전용 파이프라인 고도화(v1.12.0).
+- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트를 통해 네이티브하게 멀티모달 분석을 태움(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0). (4) 백엔드, Celery, 프론트엔드 전체 Dockerizing 완료 및 핫 리로딩 인프라 통합 구축(v1.9.0). (5) 동일 상품 연속 결제 오탐지 방지를 위해 approval_number 필드를 신설하고, 승인번호 고유성 대조 및 1분(60초) 임계 시각 대조 하이브리드 중복 방어 알고리즘을 도입. 프론트엔드 수정 내역 모달(FE-05-B) 내 유실되거나 유효하지 않은 카테고리 데이터 바인딩 유입 시 '미분류'로 자동 폴백하는 안전 바인딩 정책을 적용하여 누수를 제거함(v1.10.0). (6) 이메일 포워딩 수집 및 SPF/DKIM 보안 필터링의 구현 일정을 4주 개발 로드맵에서 제외하고 차후 확장 계획 백로그로 안전하게 이관 보존함(v1.10.1). (7) 동기식 레거시 파서(CostControlParser) 및 관련 태스크(process_llm_fallback_task)를 영구 제거하고 Celery 기반 비동기 파이프라인으로 일원화. 중복 결제 발생 시 재전파(re-raise) 처리 대신 안전한 FAILED 실패 상태 반환 구조로 전환(v1.11.0). (8) 백엔드 컨테이너의 파이썬 실행 환경을 3.13-slim으로 업그레이드하고, pyproject.toml 설정 파일을 프로젝트 루트에 단일화(Single Source of Truth)하여 Ruff 린트/포맷 룰을 워크스페이스 전역으로 일치시킴(v1.11.0). (9) Gemini API 호출 장애 시 로컬 Ollama 폴백 가동 대역에서 base64 데이터 디코딩 규격 충돌(prefix 유무) 문제를 방지하기 위해, parse_receipt 메서드 단에서 try-except 블록으로 에러를 캐치하고 Ollama에 맞는 무접두사 base64 스트링으로 페이로드를 동적 가공 재인서트하는 방어벽을 구축함(v1.11.0). (10) 이메일 상세 결제 시각(오전/오후 시:분) 결합 파싱 정규화 구현 및 LLM 제안 정규식을 원시 텍스트와 대조 검증하는 Celery 비동기 검증 태스크(verify_proposed_regex_task)를 추가하고, 검증 성공 시 템플릿의 자동 검증 플래그(is_auto_verified)를 True로 마킹하도록 전용 파이프라인 고도화(v1.12.0). (11) 사용자의 고유 타임존 설정을 보존하기 위해 User 모델에 timezone 필드를 추가하고, 영수증 결제일시 파싱 시 외부 의존성(dateparser) 추가 없이 파이썬 내장 표준 라이브러리(datetime, zoneinfo) 및 User.timezone을 기반으로 로컬 시간대를 UTC 기준 Timezone-aware 시간대로 정밀 정규화하는 파이프라인 및 중복 검증 태스크를 구축함. LLM API 스키마/프롬프트를 개정하여 Naive 일시만 추출하도록 통제함(v1.13.0).
 - Added Sections: 없음
 - Deleted Sections: 없음
 - Synchronized Templates:
@@ -106,4 +106,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.12.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-11
+**Version**: v1.13.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-11

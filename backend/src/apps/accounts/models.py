@@ -46,6 +46,8 @@ class User(AbstractUser):
     registered_forward_email_2 = models.EmailField(null=True, blank=True, max_length=254)
     registered_forward_email_3 = models.EmailField(null=True, blank=True, max_length=254)
 
+    timezone = models.CharField(max_length=50, default="Asia/Seoul")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

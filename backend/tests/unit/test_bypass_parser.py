@@ -98,23 +98,23 @@ class BypassParserTestCase(TestCase):
         ocr_text_1 = "결합시간 상점 / 사업자번호: 1234567890 / 날짜: 2026년 6월 11일 오후 3:45 / 합계 15,000"
         result_1 = BypassParser.try_bypass_parsing(ocr_text_1, "1234567890")
         self.assertIsNotNone(result_1)
-        # 오후 3:45 -> 15:45:00
-        self.assertEqual(result_1["transaction_date"], "2026-06-11T15:45:00Z")
+        # 오후 3:45 -> KST 오후 3:45 -> UTC 06:45:00Z
+        self.assertEqual(result_1["transaction_date"], "2026-06-11T06:45:00Z")
 
         # 2. 날짜만 존재하는 케이스 폴백
         ocr_text_2 = "결합시간 상점 / 사업자번호: 1234567890 / 주문일자: 2026-06-11 / 합계 15,000"
         result_2 = BypassParser.try_bypass_parsing(ocr_text_2, "1234567890")
         self.assertIsNotNone(result_2)
-        # 시간은 00:00:00Z으로 채워짐
-        self.assertEqual(result_2["transaction_date"], "2026-06-11T00:00:00Z")
+        # KST 00:00:00 -> UTC 전날 15:00:00Z
+        self.assertEqual(result_2["transaction_date"], "2026-06-10T15:00:00Z")
 
         # 3. 슬래시(/) 및 온점(.) 날짜 파싱 케이스 검증
         ocr_text_3 = "결합시간 상점 / 사업자번호: 1234567890 / 주문일자: 2026/06/11 / 합계 15,000"
         result_3 = BypassParser.try_bypass_parsing(ocr_text_3, "1234567890")
         self.assertIsNotNone(result_3)
-        self.assertEqual(result_3["transaction_date"], "2026-06-11T00:00:00Z")
+        self.assertEqual(result_3["transaction_date"], "2026-06-10T15:00:00Z")
 
         ocr_text_4 = "결합시간 상점 / 사업자번호: 1234567890 / 주문일자: 2026.06.11 / 합계 15,000"
         result_4 = BypassParser.try_bypass_parsing(ocr_text_4, "1234567890")
         self.assertIsNotNone(result_4)
-        self.assertEqual(result_4["transaction_date"], "2026-06-11T00:00:00Z")
+        self.assertEqual(result_4["transaction_date"], "2026-06-10T15:00:00Z")

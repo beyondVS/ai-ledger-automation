@@ -193,7 +193,7 @@ class LedgerService:
                 biz_num_match = re.search(r"\d{10}", raw_ocr_text.replace("-", ""))
                 if biz_num_match:
                     biz_num = biz_num_match.group(0)
-                    parsed_data = BypassParser.try_bypass_parsing(raw_ocr_text, biz_num)
+                    parsed_data = BypassParser.try_bypass_parsing(raw_ocr_text, biz_num, user_timezone=user.timezone)
                     if parsed_data:
                         used_bypass = True
 
@@ -241,9 +241,13 @@ class LedgerService:
             date_str = parsed_data.get("transaction_date")
             if date_str:
                 try:
+                    # date_str은 타임존이 배제된 로컬 시각(Naive) 형태로 들어오거나,
+                    # 바이패스 시 이미 UTC 규격 포맷일 수 있습니다.
+                    # 이를 사용자의 로컬 타임존 기준으로 안전하게 정합 정규화(UTC 변환)를 시켜 날짜를 안전하게 추출합니다.
+                    utc_str = BypassParser._normalize_datetime_string(date_str, user.timezone)
                     import datetime
 
-                    tx_date = datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00")).date()
+                    tx_date = datetime.datetime.fromisoformat(utc_str.replace("Z", "+00:00")).date()
                 except Exception:
                     tx_date = timezone.now().date()
             else:
@@ -298,6 +302,7 @@ class LedgerService:
                         ocr_text=raw_ocr_text,
                         expected_date_raw=parsed_data.get("transaction_date", ""),
                         expected_amount=total_amount,
+                        user_timezone=user.timezone,
                     )
 
             return {"status": "COMPLETED", "job_id": None, "ledger": ledger}

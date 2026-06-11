@@ -21,7 +21,7 @@ class ReceiptItemSchema(BaseModel):
 class ReceiptSchema(BaseModel):
     vendor_name: str = Field(description="가맹점명 (상호명)")
     vendor_registration_number: str = Field(description="10자리 사업자등록번호 (하이픈 제외 숫자만)")
-    transaction_date: str = Field(description="결제 일시 (ISO 8601 형식: YYYY-MM-DDTHH:MM:SSZ)")
+    transaction_date: str = Field(description="결제 일시 (타임존 제외 영수증 상의 로컬 일시: YYYY-MM-DDTHH:MM:SS)")
     total_amount: float = Field(description="총 결제 금액")
     category: str = Field(description="지출 카테고리 (예: 식비, 생활용품, 쇼핑, 문화/여가, 교통, 기타 등)")
     items: list[ReceiptItemSchema] = Field(description="상세 품목 리스트")
@@ -146,9 +146,9 @@ class ReceiptLLMClient:
                 "   - **중요**: 영수증 내에 'VAT Registration Number', 'VAT Reg No', 'VAT No' 등으로 표기된 10자리 형식의 등록번호(예: 502-80-25057) 역시 사업자등록번호로 정확히 매핑하여 추출해야 합니다.\n"
                 "   - 사업자등록번호가 보이지 않거나 식별 불가능할 경우 반드시 '0000000000'으로 채우세요.\n"
                 "2. **결제 일시 (transaction_date)**:\n"
-                "   - 반드시 날짜와 시간 정보가 모두 포함된 ISO 8601 형식 문자열로 출력하세요. (예: 'YYYY-MM-DDTHH:MM:SSZ' 또는 'YYYY-MM-DDTHH:MM:SS+09:00')\n"
+                "   - 타임존 정보가 배제된 영수증 상의 결제 로컬 시각을 YYYY-MM-DDTHH:MM:SS 형식 문자열로 출력하세요. (예: 'YYYY-MM-DDTHH:MM:SS')\n"
                 "   - **중요**: 만약 영수증 본문에는 날짜(예: '2026-06-11' 또는 '06/11/2026')만 적혀 있고 구체적인 결제 시간 정보가 없으나, 이메일 헤더 영역에 구체적인 수신 시각(예: '날짜: 2026년 6월 11일 오후 3:45')이 명시되어 있는 경우, 영수증의 날짜와 메일 헤더의 시간 정보(오전/오후 시:분을 24시간 형식 HH:MM:SS로 변환)를 지능적으로 병합하여 최종 결제 일시를 완성하세요.\n"
-                "   - 텍스트 전체에서 상세 결제/수신 시각 정보를 전혀 식별할 수 없는 경우에만 시간대를 '00:00:00Z'로 채우세요.\n"
+                "   - 텍스트 전체에서 상세 결제/수신 시각 정보를 전혀 식별할 수 없는 경우에만 시간 부분을 '00:00:00'으로 채우세요. 시간대(Z 또는 +09:00 등)는 절대 문자열 끝에 추가하지 마십시오.\n"
                 "3. **지출 카테고리 (category)**:\n"
                 "   - 가맹점명과 상세 품목 목록을 분석하여 한국 가계부에서 널리 쓰이는 대분류 카테고리 중 가장 적합한 하나를 매핑하십시오.\n"
                 "   - 카테고리 목록 기준: **'식비'**, **'생활용품'**, **'쇼핑'**, **'교통'**, **'문화/여가'**, **'주거/통신'**, **'의료/건강'**, **'교육'**, **'기타'** 중 정확히 하나만 반환하세요.\n"
