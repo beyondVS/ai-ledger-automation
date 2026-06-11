@@ -3,7 +3,7 @@ name = "ai-ledger-backend"
 version = "1.11.0"
 description = "AI-powered ledger automation backend"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "django>=6.0.6,<6.1",
     "django-environ>=0.13.0",

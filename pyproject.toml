@@ -2,7 +2,7 @@
 name = "ai-ledger-automation-monorepo"
 version = "1.11.0"
 description = "AI-powered ledger automation monorepo workspace"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "ai-ledger-backend",
 ]
@@ -23,7 +23,7 @@ workspace = { members = ["backend"] }
 ai-ledger-backend = { workspace = true }
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 line-length = 120
 exclude = [
     "**/migrations/*",
