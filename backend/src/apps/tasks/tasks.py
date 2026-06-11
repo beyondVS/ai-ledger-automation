@@ -63,26 +63,26 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
             ReceiptLLMClient(), buf, mime_type
         )
 
-        service.ingest_receipt(user=user, image_file=image_file, existing_job=job)
+        res = service.ingest_receipt(user=user, image_file=image_file, existing_job=job)
 
-        # 성공 시 임시 파일 정리
+        # 성공/실패 여부와 무관하게 임시 파일 정리
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
             except OSError:
                 pass
+
+        if res and res.get("status") == "FAILED":
+            logger.info(f"[Celery] Task completed with normal failure (e.g. duplicate) for Job: {job_id}")
+            return res
+
         logger.info(f"[Celery] Task completed successfully for Job: {job_id}")
 
     except Exception as exc:
         logger.warning(f"[Celery] Task failed for Job: {job_id}. Reason: {str(exc)}")
 
         # 복구 가능한 임시 장애 상황 시 지수 백오프 재시도 적용 (최대 3회)
-        from django.db import IntegrityError
-
-        # 중복 제약조건 위반 여부 판단
-        is_dup = isinstance(exc, IntegrityError) or "unique constraint" in str(exc).lower()
-
-        if not is_dup and self.request.retries < self.max_retries:
+        if self.request.retries < self.max_retries:
             # 지수 백오프 시간 계산: 2^retries * 2 초 (2초, 4초, 8초)
             countdown = (2**self.request.retries) * 2
             logger.info(
@@ -104,15 +104,9 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
             with transaction.atomic():
                 job = ReceiptUploadJob.objects.select_for_update().get(id=job_id)
                 job.status = "FAILED"
+                import traceback
 
-                # 중복일 경우 프론트엔드가 감지할 수 있도록 명확한 한글 메시지를 기록
-                if is_dup:
-                    job.failure_reason = "이미 등록된 중복 영수증입니다."
-                else:
-                    import traceback
-
-                    job.failure_reason = f"{str(exc)}\n{traceback.format_exc()[:500]}"
-
+                job.failure_reason = f"{str(exc)}\n{traceback.format_exc()[:500]}"
                 job.save()
         except Exception as db_err:
             logger.error(f"[Celery] Failed to update job status to FAILED: {str(db_err)}")
@@ -122,12 +116,5 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
                 os.remove(file_path)
             except OSError:
                 pass
-
-        # 중복 예외 시 정상 리턴하여 Celery 크래시 노이즈 예방
-        if is_dup:
-            logger.info(
-                f"[Celery] Task resolved expected IntegrityError (Duplicate check). Job {job_id} marked as FAILED."
-            )
-            return {"status": "FAILED", "reason": "Duplicate transaction detected"}
 
         raise exc

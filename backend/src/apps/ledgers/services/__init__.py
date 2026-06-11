@@ -4,6 +4,7 @@ import logging
 import traceback
 
 from apps.accounts.models import User
+from apps.ledgers.exceptions import DuplicatePaymentError
 from apps.ledgers.models import Ledger, LedgerItem
 from apps.tasks.models import FailedTask
 from django.conf import settings
@@ -52,6 +53,19 @@ def create_ledger_transactional(user_id: str, ledger_data: dict, items_data: lis
             else:
                 tx_datetime = tx_date_raw
 
+            # 1-1. 사전 중복 체크 (Exists 쿼리)
+            vendor_reg_num = ledger_data.get("vendor_registration_number", "0000000000")
+            if not vendor_reg_num or vendor_reg_num.strip() == "":
+                vendor_reg_num = "0000000000"
+
+            if Ledger.objects.filter(
+                user=user,
+                vendor_registration_number=vendor_reg_num,
+                transaction_date=tx_datetime,
+                total_amount=ledger_data["total_amount"],
+            ).exists():
+                raise DuplicatePaymentError(detail="이미 등록된 중복 영수증입니다.")
+
             # 2. Ledger 마스터 레코드 삽입
             # (vendor_registration_number가 공백이거나 누락된 상태일 경우, 모델 내 save() 필터에 의해 '0000000000' 자동 치환 적재)
             ledger = Ledger.objects.create(
@@ -83,18 +97,41 @@ def create_ledger_transactional(user_id: str, ledger_data: dict, items_data: lis
 
             return {"status": "SUCCESS", "ledger_id": str(ledger.id), "items_count": len(ledger_items)}
 
-    except IntegrityError as ie:
-        # 중복 영수증 유입 또는 고유성 위배 발생 시 Dead Letter Queue 격리 적재 분기 실행
+    except DuplicatePaymentError as dpe:
+        # 사전 중복 체크로 검출된 비즈니스 예외 처리 (FailedTask에 격리 적재 후 재전파)
         raw_payload_dict = {"user_id": user_id, "ledger_data": ledger_data, "items_data": items_data}
-
         FailedTask.objects.create(
             user=user if "user" in locals() else None,
             task_type="API_LEDGER_INGEST_DUPLICATE",
             raw_payload=json.dumps(raw_payload_dict, default=str, ensure_ascii=False),
+            error_message=str(dpe),
+            error_stacktrace=traceback.format_exc(),
+        )
+        raise dpe
+
+    except IntegrityError as ie:
+        # 중복 영수증 유입 또는 고유성 위배 발생 시 Dead Letter Queue 격리 적재 분기 실행
+        raw_payload_dict = {"user_id": user_id, "ledger_data": ledger_data, "items_data": items_data}
+
+        # 동시성 이슈로 DB 레벨에서 고유성 위배가 난 경우 DuplicatePaymentError로 변환하여 전파
+        if "unique_ledger_transaction" in str(ie).lower():
+            FailedTask.objects.create(
+                user=user if "user" in locals() else None,
+                task_type="API_LEDGER_INGEST_DUPLICATE",
+                raw_payload=json.dumps(raw_payload_dict, default=str, ensure_ascii=False),
+                error_message=str(ie),
+                error_stacktrace=traceback.format_exc(),
+            )
+            raise DuplicatePaymentError(detail="이미 등록된 중복 영수증입니다.") from ie
+
+        FailedTask.objects.create(
+            user=user if "user" in locals() else None,
+            task_type="API_LEDGER_INGEST_SYSTEM_ERROR",
+            raw_payload=json.dumps(raw_payload_dict, default=str, ensure_ascii=False),
             error_message=str(ie),
             error_stacktrace=traceback.format_exc(),
         )
-        # 상위 라우터나 Celery 태스크에서 409 Conflict 등의 응답을 할 수 있도록 예외 재전파
+        # 상위 라우터나 Celery 태스크에서 처리할 수 있도록 예외 재전파
         raise ie
 
     except Exception as e:
@@ -240,15 +277,22 @@ class LedgerService:
 
             return {"status": "COMPLETED", "job_id": None, "ledger": ledger}
 
+        except DuplicatePaymentError as dpe:
+            logger.info(f"ingest_receipt duplicate error (bypassed without raise): {str(dpe)}")
+            job.status = "FAILED"
+            job.failure_reason = "이미 등록된 중복 영수증입니다."
+            job.save()
+            return {"status": "FAILED", "reason": "Duplicate transaction detected"}
+
         except IntegrityError as ie:
-            logger.warning(f"ingest_receipt duplicate error: {str(ie)}")
+            # 혹시 모를 기타 DB IntegrityError 발생 시
+            logger.warning(f"ingest_receipt integrity error: {str(ie)}")
             job.status = "FAILED"
             job.save()
-            # 뷰 단에서 409 Conflict 분기를 탈 수 있도록 예외 재전파
             raise ie
 
         except Exception as e:
-            logger.error(f"ingest_receipt system error: {str(e)}")
+            logger.error(f"ingest_receipt system error: {str(e)}", exc_info=True)
             job.status = "FAILED"
             job.save()
             # 뷰 단에서 422 또는 500 처리할 수 있도록 ValueError 전파
