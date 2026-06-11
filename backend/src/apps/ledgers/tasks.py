@@ -153,9 +153,27 @@ def process_llm_fallback_task(job_id: str, raw_text: str, force_ledger_data: dic
 
     except Exception as e:
         logger.error(f"process_llm_fallback_task failed for job {job_id}: {str(e)}", exc_info=True)
-        # 헌법 I조 수호: 에러 발생 시 Job 상태를 FAILED로 안전하게 갱신하고 예외를 다시 raise하여 트랜잭션 롤백 보장
+
+        # 중복 제약조건 예외 판단
+        from django.db import IntegrityError
+
+        is_dup = isinstance(e, IntegrityError) or "unique constraint" in str(e).lower()
+
+        # 헌법 I조 수호: 에러 발생 시 Job 상태를 FAILED로 안전하게 갱신
         job.refresh_from_db()
         job.status = "FAILED"
-        job.failure_reason = str(e)
+        if is_dup:
+            job.failure_reason = "이미 등록된 중복 영수증입니다."
+        else:
+            job.failure_reason = str(e)
         job.save()
+
+        # 중복일 경우 Celery 크래시 유발 방지 및 정상 반환
+        if is_dup:
+            logger.info(
+                f"[Celery] Fallback task resolved expected IntegrityError (Duplicate check). "
+                f"Job {job_id} marked as FAILED."
+            )
+            return {"status": "FAILED", "reason": "Duplicate transaction detected"}
+
         raise e
