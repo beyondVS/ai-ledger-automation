@@ -30,34 +30,6 @@ def create_ledger_transactional(
     - UNIQUE 제약조건 위배(IntegrityError) 발생 시, 작업을 큐의 낭비 없이 강제 중단하고
       FailedTask 모델에 입력 페이로드와 에러 콜스택을 안전 격리 적재(DLQ)합니다.
     """
-    items_data = None
-    if isinstance(user_timezone, list):
-        items_data = user_timezone
-        user_timezone = "Asia/Seoul"
-
-    if isinstance(receipt_data, dict):
-        receipt_data = dict(receipt_data)
-        if "items" not in receipt_data:
-            raw_items = items_data or []
-            normalized_items = []
-            for item in raw_items:
-                if isinstance(item, dict):
-                    normalized_item = {
-                        "item_name": item.get("item_name") or item.get("name") or "일반 품목",
-                        "unit_price": item.get("unit_price") or item.get("price") or 0.0,
-                        "quantity": item.get("quantity") or 1,
-                        "total_price": item.get("total_price") or (item.get("price", 0.0) * item.get("quantity", 1)),
-                    }
-                    normalized_items.append(normalized_item)
-                else:
-                    normalized_items.append(item)
-            receipt_data["items"] = normalized_items
-
-        if "category" not in receipt_data or not receipt_data["category"]:
-            receipt_data["category"] = "기타"
-
-        # 유닛 테스트 하위 호환성을 위해 dict 유입 시 ReceiptSchema DTO로 복합 변환 적용
-        receipt_data = ReceiptSchema(**receipt_data)
 
     try:
         with transaction.atomic():
@@ -123,12 +95,7 @@ def create_ledger_transactional(
 
     except DuplicatePaymentError as dpe:
         # 사전 중복 체크로 검출된 비즈니스 예외 처리 (FailedTask에 격리 적재 후 재전파)
-        raw_payload_dict = {
-            "user_id": user_id,
-            "receipt_data": receipt_data.model_dump(),
-            "ledger_data": receipt_data.model_dump(),
-            "items_data": [item.model_dump() for item in receipt_data.items],
-        }
+        raw_payload_dict = {"user_id": user_id, "receipt_data": receipt_data.model_dump()}
         FailedTask.objects.create(
             user=user if "user" in locals() else None,
             task_type="API_LEDGER_INGEST_DUPLICATE",
@@ -140,12 +107,7 @@ def create_ledger_transactional(
 
     except IntegrityError as ie:
         # 중복 영수증 유입 또는 고유성 위배 발생 시 Dead Letter Queue 격리 적재 분기 실행
-        raw_payload_dict = {
-            "user_id": user_id,
-            "receipt_data": receipt_data.model_dump(),
-            "ledger_data": receipt_data.model_dump(),
-            "items_data": [item.model_dump() for item in receipt_data.items],
-        }
+        raw_payload_dict = {"user_id": user_id, "receipt_data": receipt_data.model_dump()}
 
         # 동시성 이슈로 DB 레벨에서 고유성 위배가 난 경우 DuplicatePaymentError로 변환하여 전파
         if "unique_ledger_transaction" in str(ie).lower():
@@ -170,12 +132,7 @@ def create_ledger_transactional(
 
     except Exception as e:
         # 데이터베이스 강제 단절 등 예기치 않은 시스템 장해 발생 시 전격 자동 롤백 및 에러 적재
-        raw_payload_dict = {
-            "user_id": user_id,
-            "receipt_data": receipt_data.model_dump(),
-            "ledger_data": receipt_data.model_dump(),
-            "items_data": [item.model_dump() for item in receipt_data.items],
-        }
+        raw_payload_dict = {"user_id": user_id, "receipt_data": receipt_data.model_dump()}
 
         FailedTask.objects.create(
             user=user if "user" in locals() else None,
