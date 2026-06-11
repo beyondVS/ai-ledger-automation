@@ -2,7 +2,7 @@
 
 **AI-Powered Tax/Receipt PDF Analyzer & Automated Ledger with Vision-First PWA**
 
-본 프로젝트는 귀찮은 영수증 수동 기입 과정을 전격 자동화하는 서비스입니다. 사용자가 웹 UI 또는 전용 이메일 주소로 영수증 파일(PDF, 이미지)을 포워딩하는 것만으로 **Gemini-2.5-Flash** 멀티모달 AI가 사업자 정보, 결제 금액, 세부 품목 스키마를 판독하여 정밀한 PostgreSQL 가계부 원장 데이터베이스에 적재합니다.
+본 프로젝트는 귀찮은 영수증 수동 기입 과정을 전격 자동화하는 서비스입니다. 사용자가 웹 UI를 통해 영수증 파일(PDF, 이미지)을 업로드하는 것만으로 (차후 이메일 포워딩 연동 확장 예정) **Gemini-2.5-Flash** 멀티모달 AI가 사업자 정보, 결제 금액, 세부 품목 스키마를 판독하여 정밀한 PostgreSQL 가계부 원장 데이터베이스에 적재합니다.
 
 모바일 웹 네이티브 바로가기(A2HS) 및 카메라 연동을 지원하는 PWA 하이브리드 앱 환경과 대량 처리를 위한 Celery/Redis 비동기 인프라, 그리고 API 비용을 0원으로 수렴하게 하는 하이브리드 바이패스 파서를 구축하여 프리미엄 사용자 경험과 뛰어난 엔지니어링 신뢰성을 완벽하게 제공합니다.
 
@@ -10,7 +10,7 @@
 
 ## 🌟 핵심 가치 (Value Proposition)
 
-- **제로 터치 수집 (Zero-touch Ingestion):** 파일 업로드 뿐만 아니라 SPF/DKIM 보안 필터가 장착된 전용 수신 주소로 메일을 포워딩하는 것만으로 가계부가 즉시 자동 갱신됩니다.
+- **제로 터치 수집 (Zero-touch Ingestion - 차후 확장 백로그):** 파일 업로드 뿐만 아니라 SPF/DKIM 보안 필터가 장착된 전용 수신 주소로 메일을 포워딩하는 것만으로 가계부가 즉시 자동 갱신되는 기능 (백로그 연기 보류).
 - **구조화된 AI 분석 (Vision-First Structured Outputs):** 발행처에 상관없이 멀티모달 LLM API가 레이아웃 이미지 및 텍스트를 판독해 완벽히 일관된 JSON 스키마로 강제 변환합니다.
 - **하이브리드 비용 최적화 (Bypass Parser Cache):** 사업자번호 기준 정규식 템플릿 캐싱과 자율 학습 파이프라인을 탑재하여, 반복 유입 가맹점은 LLM API 호출을 우회 처리함으로써 API 예산을 0원에 수렴하게 통제합니다.
 - **모바일 하이브리드 최적화 (Installable PWA):** 앱스토어 설치 없이 모바일 홈 화면 설치(A2HS), 네이티브 카메라 다이렉트 엑세스, HTML5 Canvas 1차 이미지 리사이징 압축 전송을 통해 트래픽 부담을 억제합니다.
@@ -27,13 +27,13 @@ graph TD
     subgraph External [PWA 하이브리드 클라이언트]
         UI[PWA Vue App: Manifest/SW 탑재]
         Camera[Mobile Native Camera: 촬영 가공]
-        Email[이메일 서버 SendGrid/Mailgun]
+        Email[이메일 서버 SendGrid/Mailgun (차후 확장 백로그)]
     end
 
     %% API 게이트웨이 및 인입 서버 영역
     subgraph API_Server [API 인입 서버]
         UploadRouter[업로드 라우터: 크기 제한]
-        EmailRouter[이메일 웹훅 라우터: SPF/DKIM 및 화이트리스트 필터]
+        EmailRouter[이메일 웹훅 라우터: SPF/DKIM 및 화이트리스트 필터 (차후 확장 백로그)]
         AuthRouter[인증 라우터: OAuth 2.0 & JWT 이중 발급 및 검증]
     end
 
@@ -102,8 +102,8 @@ graph TD
 3. **하이브리드 비용 최적화 파이프라인 (Hybrid Bypass for Cost Control)**
    - 사업자등록번호가 판별되면 캐시 테이블(`merchant_templates`)을 최우선 조회하여 검증 승인된 정규식 규칙(`is_verified: true`)에 적합할 시 유료 LLM 호출을 완전 바이패스(Bypass)하여 정적 파싱합니다.
    - 미검증 정규식 캐시는 어드민의 수동 검토 및 승인을 거쳐야만 바이패스 루프에 유입되도록 차단벽을 형성합니다.
-4. **SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion)**
-   - 이메일 수신 시 SPF 및 DKIM 전자서명 보안 인장을 정밀 대조하여 위변조 도메인을 필터링하고, 가입 사용자당 사전에 등록된 최대 3개의 화이트리스트 메일 발송인 정보와 100% 일치할 경우에만 비동기 큐 적재를 허용합니다.
+4. **SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion - 백로그 이관)**
+   - 이메일 수신 시 SPF 및 DKIM 전자서명 보안 인장을 정밀 대조하여 위변조 도메인을 필터링하고, 가입 사용자당 사전에 등록된 최대 3개의 화이트리스트 메일 발송인 정보와 100% 일치할 경우에만 비동기 큐 적재를 허용하는 기능으로, 4주차 개발 마일스톤에서는 보류되어 차후 확장 계획으로 이관되었습니다.
 5. **Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)**
    - PWA 접속 시 HTML5 Capture API와 Accept 속성을 바인딩해 카메라 촬영 즉시 Canvas API를 활용해 가로 최대 1000px 수준으로 1차 압축 전송합니다.
    - 서비스 워커 등록 및 VAPID 명세의 백그라운드 Web Push 알림 수신을 만족하기 위해 HTTPS SSL 적용을 의무화합니다.
@@ -125,7 +125,7 @@ graph TD
 | **Task Queue** | Celery + Redis Broker & Celery Worker Process |
 | **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) + **psycopg3** (psycopg[binary] C 가속 적용) + approval_number (결제 승인번호 백업 보존) |
 | **AI Engine** | LiteLLM Router (로컬: Ollama gemma4:e4b 최우선 및 폴백 / 프로덕션: Gemini-2.5-Flash 우선 및 Ollama 폴백) |
-| **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router |
+| **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router (차후 확장 백로그) |
 | **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS |
 | **Web Push** | VAPID v2 Web Push API (FCM / APNs 연동 백그라운드 알림) |
 | **Infrastructure** | Docker Compose 로컬 통합 인프라 및 HTTPS SSL 배포 규격 |
@@ -149,15 +149,15 @@ graph TD
 ### 3주차: 비동기 분산 아키텍처 및 비용/보안 고도화 (15일차 ~ 21일차)
 - 15~16일차: Redis Broker 도입 및 Django settings.py 내 DB 커넥션 풀 엄격 크기 제한 튜닝.
 - 17일차: ORM `transaction.atomic()` 수호 로직 적용, 승인번호/60초 임계값 연속 결제 중복 방어 알고리즘 적용 및 수정 모달 카테고리 매핑 버그 해결 완료.
-- 18일차: `is_verified` 사업자번호 bypass 파서 캐시 엔진 개발.
-- 19~20일차: SendGrid 인바운드 메일 웹훅 연동 모듈 신설 및 SPF/DKIM 이중 보안 화이트리스트 필터 구축.
-- 21일차: 대량 유입 50종 부하 테스트 가동 및 3주차 비동기 파이프라인 튜닝 성공.
+- 18일차: 비용 통제 엔진 핵심(뼈대) 구현 (`MerchantTemplate` 모델 설계, 10자리 사업자번호 선 추출, 바이패스 및 LLM 폴백).
+- 19일차: 자율 템플릿 승인 및 자가 치유(Self-Healing) 알고리즘 고도화 완료.
+- 20~21일차: 가계부 UI 고도화(소비 시각화 차트, 예산 게이지, 캘린더 뷰 및 다차원 필터링) 개발 완료.
 
 ### 4주차: PWA 플랫폼 최적화, Web Push 및 프로덕션 배포 (22일차 ~ 28일차)
-- 22~23일차: PWA Manifest/Service Worker 캐시 연동 및 HTML5 Capture API 모바일 기기 카메라 연동.
-- 24~25일차: iOS Safari용 A2HS 수동 유도 툴팁 배너 팝업 및 VAPID Web Push 백그라운드 발송 허브 구축.
-- 26~27일차: 실 배포 프로덕션 환경용 도커 컨테이너 격리 튜닝 및 SSL HTTPS 리버스 프록시 연동.
-- 28일차: 4주 E2E 분산 자동화 통합 운영 테스트 완수 및 프로덕션 정식 출시.
+- 22일차: 3주차 비동기 아키텍처 튜닝 및 웹 업로드 경로 영수증 50종 부하 테스트 검증.
+- 23~24일차: PWA Manifest/Service Worker 캐시 연동, HTML5 Capture API 모바일 카메라 연동 및 A2HS 설치 가이드 배너 구현.
+- 25~26일차: VAPID Web Push 백그라운드 발송 허브 및 오프라인 단말 알림 수신 정합성 검증 완료.
+- 27~28일차: 실 배포 프로덕션 환경용 docker-compose.prod.yml 튜닝, SSL HTTPS 리버스 프록시(Nginx) 연동 및 정식 출시 완료.
 
 ---
 

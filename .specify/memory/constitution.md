@@ -1,6 +1,6 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.9.0 -> v1.10.0
+- Version Change: v1.10.0 -> v1.10.1
 - Ratified: 2026-05-29 | Last Amended: 2026-06-11
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
@@ -12,7 +12,7 @@
   7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
   8. VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
   9. IX. ruff 및 pre-commit 자동화 품질 가드 수호 (Ruff Linter & pre-commit Quality Guard)
-- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트로 직접 전달하여 분석하는 네이티브 PDF 파이프라인을 구축(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0). (4) 백엔드, Celery, 프론트엔드 전체 Dockerizing 완료 및 핫 리로딩 인프라 통합 구축(v1.9.0). (5) 동일 상품 연속 결제 오탐지 방지를 위해 approval_number 필드를 신설하고, 승인번호 고유성 대조 및 1분(60초) 임계 시각 대조 하이브리드 중복 방어 알고리즘을 도입. 프론트엔드 수정 내역 모달(FE-05-B) 내 유실되거나 유효하지 않은 카테고리 데이터 바인딩 유입 시 '미분류'로 자동 폴백하는 안전 바인딩 정책을 적용하여 누수를 제거함(v1.10.0).
+- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트를 통해 네이티브하게 멀티모달 분석을 태움(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0). (4) 백엔드, Celery, 프론트엔드 전체 Dockerizing 완료 및 핫 리로딩 인프라 통합 구축(v1.9.0). (5) 동일 상품 연속 결제 오탐지 방지를 위해 approval_number 필드를 신설하고, 승인번호 고유성 대조 및 1분(60초) 임계 시각 대조 하이브리드 중복 방어 알고리즘을 도입. 프론트엔드 수정 내역 모달(FE-05-B) 내 유실되거나 유효하지 않은 카테고리 데이터 바인딩 유입 시 '미분류'로 자동 폴백하는 안전 바인딩 정책을 적용하여 누수를 제거함(v1.10.0). (6) 이메일 포워딩 수집 및 SPF/DKIM 보안 필터링의 구현 일정을 4주 개발 로드맵에서 제외하고 차후 확장 계획 백로그로 안전하게 이관 보존함(v1.10.1).
 - Added Sections: 없음
 - Deleted Sections: 없음
 - Synchronized Templates:
@@ -38,9 +38,9 @@
 
 유료 멀티모달 LLM API 연동에 수반되는 예산 소비를 차단하고 운영 효율을 극대화하기 위해 지능형 레이아웃 캐싱 및 바이패스(Bypass) 파이프라인을 작동합니다. 분석 대상 텍스트에서 가맹점의 10자리 사업자등록번호가 식별되면 가맹점 레이아웃 캐시 테이블(`merchant_templates`)을 최우선 인덱스 조회합니다. 해당 가맹점의 수동 검증 승인 마크(`is_verified: true`)가 지정된 정적 정규식 규칙이 캐시 데이터로 존재할 경우, 유료 LLM API의 호출을 전면 취소하고 로컬 정규식 파서 모듈을 통해 즉각 파싱을 마쳐 호출 비용을 0원에 수렴하도록 완벽히 통제합니다. 캐시 정보가 없거나 미검증 상태(`is_verified: false`)인 경우에 한해 LLM API를 폴백(Fallback) 가동하고, 성공 파싱 데이터 기반의 정규식 규칙 후보군을 자율 학습 알고리즘으로 자동 제안하여 캐시 DB에 격리 적재하는 자율 진화 파이프라인을 의무화합니다.
 
-### IV. SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion)
+### IV. SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion) (※ 차후 백로그 이관)
 
-사용자 가계부에 이메일 포워딩을 통한 영수증 무단 누적 수집 시도를 완벽히 방어하기 위해 이중 전초선 필터링 방어막을 엄격하게 구축합니다. SendGrid/Mailgun 등의 인바운드 메일 웹훅 유입 시, 메일 헤더 상에 기록된 SPF 및 DKIM 전자서명 보안 인장을 대조 검증하여 위변조 메일을 1차단합니다. 또한 마스터 DB에 사용자별로 사전에 매핑되어 등록된 화이트리스트 이메일 주소(사용자당 최대 3개)와 발송인 주소가 100% 일치할 경우에만 비동기 Celery 태스크 적재를 허용하여, 외부 악성 메일 폭탄 스팸 공격과 비동기 메시징 큐의 리소스 고갈 위협을 완벽히 격리 통제합니다.
+사용자 가계부에 이메일 포워딩을 통한 영수증 무단 누적 수집 시도를 완벽히 방어하기 위해 이중 전초선 필터링 방어막을 엄격하게 구축합니다. (※ 본 조항의 구체적인 구현 요건은 4주 개발 로드맵에서 보류되어 차후 확장 계획 백로그로 이관되었습니다.) SendGrid/Mailgun 등의 인바운드 메일 웹훅 유입 시, 메일 헤더 상에 기록된 SPF 및 DKIM 전자서명 보안 인장을 대조 검증하여 위변조 메일을 1차단합니다. 또한 마스터 DB에 사용자별로 사전에 매핑되어 등록된 화이트리스트 이메일 주소(사용자당 최대 3개)와 발송인 주소가 100% 일치할 경우에만 비동기 Celery 태스크 적재를 허용하여, 외부 악성 메일 폭탄 스팸 공격과 비동기 메시징 큐의 리소스 고갈 위협을 완벽히 격리 통제합니다.
 
 ### V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
 
@@ -106,4 +106,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.10.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-11
+**Version**: v1.10.1 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-11
