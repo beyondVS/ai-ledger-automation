@@ -159,13 +159,15 @@ class LedgerService:
 
         self.llm_client = ReceiptLLMClient()
 
-    def ingest_receipt(self, user, image_file, raw_ocr_text=None, existing_job=None):
+    def ingest_receipt(self, user, image_file, existing_job=None):
         import re
 
         from apps.ledgers.models import Ledger, ReceiptUploadJob
         from django.utils import timezone
         from utils.bypass_parser import BypassParser
         from utils.image_processor import ImageProcessor
+
+        raw_ocr_text = None
 
         # 1. 3주차 호환 작업 추적 Job 생성 또는 기존 Job 재사용
         if existing_job:
@@ -178,15 +180,26 @@ class LedgerService:
                 user=user, status="PENDING", raw_file_name=getattr(image_file, "name", "unknown_receipt.jpg")
             )
 
-        # 테스트용 시뮬레이션: raw_ocr_text가 제공되지 않은 경우 파일명을 OCR 텍스트로 보완 시도
-        if not raw_ocr_text and image_file:
-            file_name = getattr(image_file, "name", "")
-            if file_name and len(file_name.replace(".jpg", "").replace(".png", "")) > 10:
-                raw_ocr_text = file_name
-
         try:
             parsed_data = None
             used_bypass = False
+            file_name = getattr(image_file, "name", "").lower()
+
+            # 0. PDF인 경우 선행적으로 내부 텍스트 추출 수행 (바이패스용 raw_ocr_text 확보)
+            if file_name.endswith(".pdf"):
+                try:
+                    import fitz
+
+                    image_file.seek(0)
+                    pdf_bytes = image_file.read()
+                    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                    extracted_text = ""
+                    for page in doc:
+                        extracted_text += page.get_text()
+                    if extracted_text.strip():
+                        raw_ocr_text = extracted_text
+                except Exception as pdf_err:
+                    logger.warning(f"PDF 텍스트 추출 중 에러 발생: {str(pdf_err)}")
 
             # 2. 1차 로컬 바이패스 파싱 시도 (OCR 텍스트 및 10자리 사업자등록번호 감지 시)
             if raw_ocr_text:
@@ -199,24 +212,8 @@ class LedgerService:
 
             # 3. 로컬 바이패스 실패 시 2차 Pillow WebP 이미지 변환 및 Gemini API 폴백 가동
             if not parsed_data:
-                file_name = getattr(image_file, "name", "").lower()
                 if file_name.endswith(".pdf"):
                     import io
-
-                    # PDF 파일의 텍스트가 존재하는 경우, 동적 검증 태스크의 ocr_text로 대조할 수 있도록 선행 추출 수행
-                    try:
-                        import fitz
-
-                        image_file.seek(0)
-                        pdf_bytes = image_file.read()
-                        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-                        extracted_text = ""
-                        for page in doc:
-                            extracted_text += page.get_text()
-                        if extracted_text.strip():
-                            raw_ocr_text = extracted_text
-                    except Exception as pdf_err:
-                        logger.warning(f"PDF 텍스트 추출 중 에러 발생: {str(pdf_err)}")
 
                     image_file.seek(0)
                     pdf_buffer = io.BytesIO(image_file.read())

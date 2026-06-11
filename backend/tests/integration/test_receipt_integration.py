@@ -1,5 +1,6 @@
 import os
 import tempfile
+from unittest.mock import MagicMock, patch
 
 from apps.ledgers.models import Ledger, MerchantTemplate
 from apps.ledgers.services import LedgerService
@@ -45,17 +46,22 @@ class TestReceiptIntegration(TestCase):
             is_verified=False,
         )
 
-    def test_bypass_parsing_with_verified_template(self):
-        # Given: is_verified=True 템플릿에 매칭되는 OCR 텍스트
-        ocr_text = "스타벅스 강남역점\n사업자번호: 120-86-12345\n합계: 4,500\n날짜: 2026-06-11"
+    @patch("fitz.open")
+    def test_bypass_parsing_with_verified_template(self, mock_fitz_open):
+        # Given: fitz.open().page.get_text()가 정상 바이패스용 텍스트를 뱉도록 모킹
+        mock_doc = MagicMock()
+        mock_page = MagicMock()
+        mock_page.get_text.return_value = "스타벅스 강남역점\n사업자번호: 120-86-12345\n합계: 4,500\n날짜: 2026-06-11"
+        mock_doc.__iter__.return_value = [mock_page]
+        mock_fitz_open.return_value = mock_doc
 
         # When: 동기 바이패스 서비스 호출 시뮬레이션
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        dummy_file = SimpleUploadedFile("starbucks.jpg", self.dummy_img_bytes, content_type="image/jpeg")
+        dummy_file = SimpleUploadedFile("starbucks.pdf", self.dummy_img_bytes, content_type="application/pdf")
 
         service = LedgerService()
-        result = service.ingest_receipt(user=self.user, image_file=dummy_file, raw_ocr_text=ocr_text)
+        result = service.ingest_receipt(user=self.user, image_file=dummy_file)
 
         # Then: 우회 파싱 완료 검증
         self.assertEqual(result.get("status"), "COMPLETED")
@@ -67,14 +73,19 @@ class TestReceiptIntegration(TestCase):
         self.assertEqual(ledger.items.count(), 1)
         self.assertEqual(ledger.items.first().item_name, "아메리카노")
 
-    def test_fallback_parsing_with_unverified_template(self):
+    @patch("fitz.open")
+    def test_fallback_parsing_with_unverified_template(self, mock_fitz_open):
         # Given: is_verified=False 템플릿에 해당하는 OCR 텍스트
-        ocr_text = "이마트 역삼점\n사업자번호: 220-81-12345\n합계: 4,000\n날짜: 2026-06-11"
+        mock_doc = MagicMock()
+        mock_page = MagicMock()
+        mock_page.get_text.return_value = "이마트 역삼점\n사업자번호: 220-81-12345\n합계: 4,000\n날짜: 2026-06-11"
+        mock_doc.__iter__.return_value = [mock_page]
+        mock_fitz_open.return_value = mock_doc
 
         # When
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        dummy_file = SimpleUploadedFile("emart.jpg", self.dummy_img_bytes, content_type="image/jpeg")
+        dummy_file = SimpleUploadedFile("emart.pdf", self.dummy_img_bytes, content_type="application/pdf")
 
         service = LedgerService()
 
@@ -88,7 +99,7 @@ class TestReceiptIntegration(TestCase):
             "items": [{"item_name": "일반 건전지", "quantity": 2, "unit_price": 2000.0}],
         }
 
-        result = service.ingest_receipt(user=self.user, image_file=dummy_file, raw_ocr_text=ocr_text)
+        result = service.ingest_receipt(user=self.user, image_file=dummy_file)
 
         # Then: 우회되지 않고 비동기 태스크 완료 상태 확인
         self.assertEqual(result.get("status"), "COMPLETED")
@@ -126,7 +137,7 @@ class TestReceiptIntegration(TestCase):
 
         # Ingest가 강제로 시스템 에러를 뿜도록 모킹
         original_ingest = LedgerService.ingest_receipt
-        LedgerService.ingest_receipt = lambda self, user, image_file, raw_ocr_text=None, existing_job=None: ValueError(
+        LedgerService.ingest_receipt = lambda self, user, image_file, existing_job=None: ValueError(
             "Ingest System Error"
         )
 
@@ -154,13 +165,18 @@ class TestReceiptIntegration(TestCase):
                 except OSError:
                     pass
 
-    def test_auto_proposal_on_new_merchant_llm_success(self):
+    @patch("fitz.open")
+    def test_auto_proposal_on_new_merchant_llm_success(self, mock_fitz_open):
         # Given: 데이터베이스에 존재하지 않는 신규 가맹점 결제 데이터
-        ocr_text = "새로운마트 역삼점\n사업자번호: 999-88-77766\n합계: 20,000\n날짜: 2026-06-11"
+        mock_doc = MagicMock()
+        mock_page = MagicMock()
+        mock_page.get_text.return_value = "새로운마트 역삼점\n사업자번호: 999-88-77766\n합계: 20,000\n날짜: 2026-06-11"
+        mock_doc.__iter__.return_value = [mock_page]
+        mock_fitz_open.return_value = mock_doc
 
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        dummy_file = SimpleUploadedFile("new_merchant.jpg", self.dummy_img_bytes, content_type="image/jpeg")
+        dummy_file = SimpleUploadedFile("new_merchant.pdf", self.dummy_img_bytes, content_type="application/pdf")
 
         service = LedgerService()
 
@@ -175,7 +191,7 @@ class TestReceiptIntegration(TestCase):
         }
 
         # When: 이미지 인입 서비스 구동
-        service.ingest_receipt(user=self.user, image_file=dummy_file, raw_ocr_text=ocr_text)
+        service.ingest_receipt(user=self.user, image_file=dummy_file)
 
         # Then: MerchantTemplate 테이블에 is_verified=False 상태로 자동 생성(제안)되었는지 검증
         template = MerchantTemplate.objects.filter(vendor_registration_number="9998877766").first()
