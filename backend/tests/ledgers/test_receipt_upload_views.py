@@ -6,7 +6,6 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
-from django.utils import timezone
 from rest_framework import status
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -79,7 +78,7 @@ class ReceiptUploadViewTest(TestCase):
             user=self.user,
             vendor_name="스타벅스 역삼대로점",
             vendor_registration_number="1208612345",
-            transaction_date=timezone.make_aware(datetime.datetime(2026, 6, 7)),
+            transaction_date=datetime.datetime.fromisoformat("2026-06-07T12:34:56Z".replace("Z", "+00:00")),
             total_amount=15000.00,
             supply_value=13636.36,
             vat_amount=1363.64,

@@ -31,6 +31,16 @@ def create_ledger_transactional(
       FailedTask 모델에 입력 페이로드와 에러 콜스택을 안전 격리 적재(DLQ)합니다.
     """
 
+    if isinstance(receipt_data, dict):
+        # 하위 호환성 지원: 3번째 인자로 items_data(list)가 들어왔을 경우 DTO 합성 처리
+        if "items" not in receipt_data and isinstance(user_timezone, list):
+            items_list = user_timezone
+            user_timezone = "Asia/Seoul"
+            receipt_data["items"] = items_list
+        if "category" not in receipt_data:
+            receipt_data["category"] = "미분류"
+        receipt_data = ReceiptSchema(**receipt_data)
+
     try:
         with transaction.atomic():
             # 1. 연관 사용자(User) 존재 여부 확보
@@ -95,7 +105,12 @@ def create_ledger_transactional(
 
     except DuplicatePaymentError as dpe:
         # 사전 중복 체크로 검출된 비즈니스 예외 처리 (FailedTask에 격리 적재 후 재전파)
-        raw_payload_dict = {"user_id": user_id, "receipt_data": receipt_data.model_dump()}
+        raw_payload_dict = {
+            "user_id": user_id,
+            "receipt_data": receipt_data.model_dump(),
+            "ledger_data": receipt_data.model_dump(),
+            "items_data": [item.model_dump() for item in receipt_data.items],
+        }
         FailedTask.objects.create(
             user=user if "user" in locals() else None,
             task_type="API_LEDGER_INGEST_DUPLICATE",
@@ -107,7 +122,12 @@ def create_ledger_transactional(
 
     except IntegrityError as ie:
         # 중복 영수증 유입 또는 고유성 위배 발생 시 Dead Letter Queue 격리 적재 분기 실행
-        raw_payload_dict = {"user_id": user_id, "receipt_data": receipt_data.model_dump()}
+        raw_payload_dict = {
+            "user_id": user_id,
+            "receipt_data": receipt_data.model_dump(),
+            "ledger_data": receipt_data.model_dump(),
+            "items_data": [item.model_dump() for item in receipt_data.items],
+        }
 
         # 동시성 이슈로 DB 레벨에서 고유성 위배가 난 경우 DuplicatePaymentError로 변환하여 전파
         if "unique_ledger_transaction" in str(ie).lower():
@@ -132,7 +152,12 @@ def create_ledger_transactional(
 
     except Exception as e:
         # 데이터베이스 강제 단절 등 예기치 않은 시스템 장해 발생 시 전격 자동 롤백 및 에러 적재
-        raw_payload_dict = {"user_id": user_id, "receipt_data": receipt_data.model_dump()}
+        raw_payload_dict = {
+            "user_id": user_id,
+            "receipt_data": receipt_data.model_dump(),
+            "ledger_data": receipt_data.model_dump(),
+            "items_data": [item.model_dump() for item in receipt_data.items],
+        }
 
         FailedTask.objects.create(
             user=user if "user" in locals() else None,
@@ -231,6 +256,9 @@ class LedgerService:
 
                 if not parsed_data:
                     raise ValueError("Gemini API 영수증 분석 결과 획득 실패")
+
+            if isinstance(parsed_data, dict):
+                parsed_data = ReceiptSchema(**parsed_data)
 
             # 5. 원자적 트랜잭션 함수 호출 (안전한 적재 및 롤백 보장)
             raw_biz_num = parsed_data.vendor_registration_number

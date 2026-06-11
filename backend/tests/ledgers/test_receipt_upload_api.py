@@ -30,6 +30,7 @@ class ReceiptUploadAPITestCase(TestCase):
             parsing_rules={
                 "merchant_name_regex": "스타벅스\\s+\\S+",
                 "total_amount_regex": "합계\\s+(\\d+)",
+                "date_pattern": r"날짜:\s*([\d\-]+)",
                 "default_items": [
                     {"name": "아이스 아메리카노", "quantity": 2, "price": 5000.00},
                     {"name": "초콜릿 칩 스콘", "quantity": 1, "price": 5000.00},

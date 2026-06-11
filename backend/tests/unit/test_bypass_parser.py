@@ -36,7 +36,7 @@ class BypassParserTestCase(TestCase):
 
     def test_parser_bypass_with_verified_template(self):
         # 수동 승인된 템플릿 존재 시, 로컬 우회 파서가 작동하여 캐시된 데이터를 기반으로 파싱 결과를 즉시 리턴
-        ocr_text = "스타벅스 역삼역점 / 사업자번호: 1208612345 / 합계 15000"
+        ocr_text = "스타벅스 역삼역점 / 사업자번호: 1208612345 / 일시: 2026-06-11 15:00:00 / 합계 15000"
 
         # 파서 실행
         result = BypassParser.try_bypass_parsing(ocr_text, "1208612345")
@@ -118,3 +118,14 @@ class BypassParserTestCase(TestCase):
         result_4 = BypassParser.try_bypass_parsing(ocr_text_4, "1234567890")
         self.assertIsNotNone(result_4)
         self.assertEqual(result_4.transaction_date, "2026-06-10T15:00:00Z")
+
+    def test_parser_bypass_validation_failure(self):
+        # 1. 날짜 정보가 누락되어 검증에 실패하는 케이스
+        ocr_text_no_date = "스타벅스 역삼역점 / 사업자번호: 1208612345 / 합계 15000"  # '일시:'가 빠져서 날짜 파싱 실패
+        result_no_date = BypassParser.try_bypass_parsing(ocr_text_no_date, "1208612345")
+        self.assertIsNone(result_no_date)
+
+        # 2. 금액 정보가 0 이하로 파싱되어 검증에 실패하는 케이스
+        ocr_text_zero_amount = "스타벅스 역삼역점 / 사업자번호: 1208612345 / 일시: 2026-06-11 15:00:00 / 합계 0"
+        result_zero_amount = BypassParser.try_bypass_parsing(ocr_text_zero_amount, "1208612345")
+        self.assertIsNone(result_zero_amount)

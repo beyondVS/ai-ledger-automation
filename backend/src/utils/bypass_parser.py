@@ -155,6 +155,14 @@ class BypassParser:
                         )
                     )
 
+            # 데이터 정합성 검증 (날짜 누락 또는 0원 이하의 금액 방어)
+            if not transaction_date or total_amount <= 0:
+                logger.warning(
+                    f"로컬 템플릿 바이패스 결과의 정합성이 올바르지 않아 LLM 폴백 처리합니다. "
+                    f"(Date: '{transaction_date}', Amount: {total_amount})"
+                )
+                return None
+
             logger.info(f"로컬 템플릿 바이패스 파싱 성공: {template.vendor_name}")
             return ReceiptSchema(
                 vendor_name=template.vendor_name,
