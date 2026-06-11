@@ -120,23 +120,26 @@ class ReceiptLLMClient:
             gemini_api_key = getattr(settings, "GEMINI_API_KEY", None) or os.environ.get("GEMINI_API_KEY")
             is_ollama_target = not (gemini_enabled and gemini_api_key)
 
+            pdf_pages_base64 = []
             if is_ollama_target and mime_type == "application/pdf":
-                logger.info("로컬 Ollama 가동 감지: PDF 영수증을 PNG 이미지로 가상 렌더링합니다.")
+                logger.info("로컬 Ollama 가동 감지: PDF 영수증을 다중 페이지 PNG 이미지들로 가상 렌더링합니다.")
                 try:
                     import fitz  # PyMuPDF
 
                     doc = fitz.open(stream=file_bytes, filetype="pdf")
                     if doc.page_count > 0:
-                        page = doc[0]  # 첫 페이지만 추출
-                        pix = page.get_pixmap(dpi=150)
-                        file_bytes = pix.tobytes("png")
-                        mime_type = "image/png"
+                        for page in doc:
+                            pix = page.get_pixmap(dpi=150)
+                            png_bytes = pix.tobytes("png")
+                            pdf_pages_base64.append(base64.b64encode(png_bytes).decode("utf-8"))
                     else:
                         logger.error("PDF 파일에 페이지가 존재하지 않습니다.")
                         return None
                 except Exception as e:
                     logger.exception(f"PDF 로컬 이미지 변환 중 오류 발생: {str(e)}")
                     return None
+            else:
+                pdf_pages_base64.append(base64.b64encode(file_bytes).decode("utf-8"))
 
             prompt = (
                 "제공된 영수증 파일의 비주얼 정보로부터 가맹점명, 사업자등록번호, 결제 일시, "
@@ -168,11 +171,9 @@ class ReceiptLLMClient:
                 "   - 예 (proposed_amount_pattern): `(?:합계\\s*([0-9,]+)|금액:\\s*([0-9,]+))`"
             )
 
-            base64_data = base64.b64encode(file_bytes).decode("utf-8")
-
             # 2. Gemini가 활성화된 경우 우선 시도
             if not is_ollama_target:
-                image_url_value = f"data:{mime_type};base64,{base64_data}"
+                image_url_value = f"data:{mime_type};base64,{pdf_pages_base64[0]}"
                 messages = [
                     {
                         "role": "user",
@@ -200,14 +201,14 @@ class ReceiptLLMClient:
 
             # 3. 로컬 Ollama 단독 기동 혹은 Gemini 실패 시의 폴백 기동
             # Ollama는 접두사(prefix)가 없어야 디코딩 오류가 발생하지 않습니다.
-            image_url_value = base64_data
+            content_list = [{"type": "text", "text": prompt}]
+            for img_b64 in pdf_pages_base64:
+                content_list.append({"type": "image_url", "image_url": {"url": img_b64}})
+
             messages = [
                 {
                     "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": image_url_value}},
-                    ],
+                    "content": content_list,
                 }
             ]
 
