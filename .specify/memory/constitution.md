@@ -19,7 +19,7 @@
   - plan-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\plan-template.md)
   - spec-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\spec-template.md)
   - tasks-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\tasks-template.md)
-- Pending / Deferred Items: 없음
+- Pending / Deferred Items: 이메일 포워딩 기반 가계부 자동 수집 파이프라인 (SendGrid 웹훅 & SPF/DKIM 보안 필터)
 -->
 
 # AI 기반 세금/영수증 PDF 분석 및 가계부 자동화 프로젝트 헌법
