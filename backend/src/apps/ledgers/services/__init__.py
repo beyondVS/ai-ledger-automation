@@ -203,6 +203,22 @@ class LedgerService:
                 if file_name.endswith(".pdf"):
                     import io
 
+                    # PDF 파일의 텍스트가 존재하는 경우, 동적 검증 태스크의 ocr_text로 대조할 수 있도록 선행 추출 수행
+                    try:
+                        import fitz
+
+                        image_file.seek(0)
+                        pdf_bytes = image_file.read()
+                        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                        extracted_text = ""
+                        for page in doc:
+                            extracted_text += page.get_text()
+                        if extracted_text.strip():
+                            raw_ocr_text = extracted_text
+                    except Exception as pdf_err:
+                        logger.warning(f"PDF 텍스트 추출 중 에러 발생: {str(pdf_err)}")
+
+                    image_file.seek(0)
                     pdf_buffer = io.BytesIO(image_file.read())
                     parsed_data = self.llm_client.parse_receipt(pdf_buffer, mime_type="application/pdf")
                 else:
@@ -269,11 +285,20 @@ class LedgerService:
 
             # 7. 신규 가맹점 캐시 템플릿 자동 제안 등록 (Bypass 미적용 시)
             if not used_bypass:
-                BypassParser.propose_new_template(
+                template = BypassParser.propose_new_template(
                     vendor_registration_number=parsed_data.get("vendor_registration_number", "0000000000"),
                     vendor_name=parsed_data.get("vendor_name"),
                     parsed_data=parsed_data,
                 )
+                if template and raw_ocr_text:
+                    from apps.tasks.tasks import verify_proposed_regex_task
+
+                    verify_proposed_regex_task.delay(
+                        template_id=str(template.id),
+                        ocr_text=raw_ocr_text,
+                        expected_date_raw=parsed_data.get("transaction_date", ""),
+                        expected_amount=total_amount,
+                    )
 
             return {"status": "COMPLETED", "job_id": None, "ledger": ledger}
 

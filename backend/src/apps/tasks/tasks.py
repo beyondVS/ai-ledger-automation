@@ -118,3 +118,72 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
                 pass
 
         raise exc
+
+
+@shared_task
+def verify_proposed_regex_task(template_id: str, ocr_text: str, expected_date_raw: str, expected_amount: float):
+    """
+    [US1] verify_proposed_regex_task
+    - LLM이 생성 제안한 정규식(date_pattern, amount_pattern)이 실제 영수증 원시 텍스트와 대조 시
+      동일한 결과값(expected_date, expected_amount)을 캡처해내는지 비동기 정합성 검증을 수행합니다.
+    - 검증 성공 시 is_auto_verified = True로 마킹하며, 실패 시 에러 사유를 남깁니다.
+    """
+    import re
+
+    from apps.ledgers.models import MerchantTemplate
+    from utils.bypass_parser import BypassParser
+
+    logger.info(f"[Celery] Starting regex verification for template: {template_id}")
+
+    try:
+        template = MerchantTemplate.objects.get(id=template_id)
+        rules = template.parsing_rules
+        if not rules:
+            raise ValueError("Template parsing_rules is empty")
+
+        date_pattern = rules.get("date_pattern")
+        amount_pattern = rules.get("amount_pattern")
+
+        if not date_pattern or not amount_pattern:
+            raise ValueError("Required patterns (date or amount) missing in rules")
+
+        # 1. 결제 일시 매칭 검증
+        date_match = re.search(date_pattern, ocr_text)
+        if not date_match:
+            raise ValueError(f"Date pattern failed to match raw text. Pattern: {date_pattern}")
+
+        normalized_matched_date = BypassParser._normalize_datetime_string(date_match.group(0))
+        expected_normalized = BypassParser._normalize_datetime_string(expected_date_raw)
+
+        if normalized_matched_date != expected_normalized:
+            raise ValueError(
+                f"Date verification mismatch. Matched: {normalized_matched_date}, Expected: {expected_normalized}"
+            )
+
+        # 2. 결제 금액 매칭 검증
+        amount_match = re.search(amount_pattern, ocr_text)
+        if not amount_match:
+            raise ValueError(f"Amount pattern failed to match raw text. Pattern: {amount_pattern}")
+
+        raw_amount = amount_match.group(1) if len(amount_match.groups()) >= 1 else amount_match.group(0)
+        cleaned_amount = re.sub(r"[^\d.]", "", raw_amount.replace(",", "").strip())
+        matched_amount = float(cleaned_amount)
+
+        if abs(matched_amount - expected_amount) > 0.01:
+            raise ValueError(f"Amount verification mismatch. Matched: {matched_amount}, Expected: {expected_amount}")
+
+        # 3. 모든 검증 성공 시 auto_verified 반영
+        template.is_auto_verified = True
+        template.regex_error_message = None
+        template.save()
+        logger.info(f"[Celery] Regex verification SUCCESS for template: {template_id}")
+
+    except Exception as e:
+        logger.warning(f"[Celery] Regex verification FAILED for template: {template_id}. Reason: {str(e)}")
+        try:
+            template = MerchantTemplate.objects.get(id=template_id)
+            template.is_auto_verified = False
+            template.regex_error_message = str(e)
+            template.save()
+        except Exception as db_err:
+            logger.error(f"[Celery] Failed to update verification failure to DB: {str(db_err)}")

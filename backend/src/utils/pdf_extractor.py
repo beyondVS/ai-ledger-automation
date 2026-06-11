@@ -352,7 +352,7 @@ class PDFTextExtractor:
 
     def extract_text_generator(
         self, layout: bool = True, start_page: int | None = None, end_page: int | None = None
-    ) -> Generator[tuple[int, str], None, None]:
+    ) -> Generator[tuple[int, str]]:
         """
         초대형 PDF 처리를 위해, 페이지 번호와 해당 페이지의 추출 텍스트 튜플을
         페이지 단위의 제네레이터(Generator)로 스트리밍 반환하여 메모리 고갈(OOM)을 예방합니다.

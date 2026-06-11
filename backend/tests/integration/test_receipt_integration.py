@@ -218,3 +218,64 @@ class TestReceiptIntegration(TestCase):
 
         template.refresh_from_db()
         self.assertTrue(template.is_verified)
+
+    def test_verify_proposed_regex_task_success(self):
+        # Given: 미검증 템플릿 생성
+        template = MerchantTemplate.objects.create(
+            vendor_registration_number="1234512345",
+            vendor_name="정규식 검증 상점",
+            parsing_rules={
+                "date_pattern": r"날짜:\s*([0-9\-]{10})",
+                "amount_pattern": r"합계:\s*([0-9,]+)",
+            },
+            is_verified=False,
+            is_auto_verified=False,
+        )
+
+        ocr_text = "정규식 검증 상점 / 날짜: 2026-06-11 / 합계: 20,000"
+
+        # When: Celery 검증 태스크 직접 동기 실행
+        from apps.tasks.tasks import verify_proposed_regex_task
+
+        verify_proposed_regex_task(
+            template_id=str(template.id),
+            ocr_text=ocr_text,
+            expected_date_raw="2026-06-11",
+            expected_amount=20000.0,
+        )
+
+        # Then: 검증 성공 및 is_auto_verified = True 확인
+        template.refresh_from_db()
+        self.assertTrue(template.is_auto_verified)
+        self.assertIsNone(template.regex_error_message)
+
+    def test_verify_proposed_regex_task_failure(self):
+        # Given: 미검증 템플릿 생성 (잘못된 정규식 유형 제안 시나리오)
+        template = MerchantTemplate.objects.create(
+            vendor_registration_number="5432154321",
+            vendor_name="정규식 검증 실패 상점",
+            parsing_rules={
+                "date_pattern": r"잘못된패턴:\s*([0-9\-]{10})",
+                "amount_pattern": r"합계:\s*([0-9,]+)",
+            },
+            is_verified=False,
+            is_auto_verified=False,
+        )
+
+        ocr_text = "정규식 검증 실패 상점 / 날짜: 2026-06-11 / 합계: 20,000"
+
+        # When: Celery 검증 태스크 직접 동기 실행
+        from apps.tasks.tasks import verify_proposed_regex_task
+
+        verify_proposed_regex_task(
+            template_id=str(template.id),
+            ocr_text=ocr_text,
+            expected_date_raw="2026-06-11",
+            expected_amount=20000.0,
+        )
+
+        # Then: 검증 실패 및 is_auto_verified = False 확인, 에러 메시지 갱신 확인
+        template.refresh_from_db()
+        self.assertFalse(template.is_auto_verified)
+        self.assertIsNotNone(template.regex_error_message)
+        self.assertIn("failed to match", template.regex_error_message.lower())

@@ -80,3 +80,30 @@ class BypassParserTestCase(TestCase):
         new_template = MerchantTemplate.objects.get(vendor_registration_number="1112233333")
         self.assertFalse(new_template.is_verified)
         self.assertEqual(new_template.vendor_name, "새로운 상점")
+
+    def test_parser_bypass_with_datetime_parsing(self):
+        # 날짜와 구체적인 시간 정보가 결합되어 있는 템플릿의 경우에도 정상 파싱할 수 있어야 함
+        MerchantTemplate.objects.create(
+            vendor_registration_number="1234567890",
+            vendor_name="결합시간 상점",
+            parsing_rules={
+                "date_pattern": r"(?:날짜:\s*\d{4}년\s*\d{1,2}월\s*\d{1,2}일\s*오[전후]\s*\d{1,2}:\d{2}|주문일자:\s*[0-9\-]{10})",
+                "amount_pattern": r"합계\s*([0-9,]+)",
+                "default_items": [],
+            },
+            is_verified=True,
+        )
+
+        # 1. 날짜 및 오후 시간 결합 케이스
+        ocr_text_1 = "결합시간 상점 / 사업자번호: 1234567890 / 날짜: 2026년 6월 11일 오후 3:45 / 합계 15,000"
+        result_1 = BypassParser.try_bypass_parsing(ocr_text_1, "1234567890")
+        self.assertIsNotNone(result_1)
+        # 오후 3:45 -> 15:45:00
+        self.assertEqual(result_1["transaction_date"], "2026-06-11T15:45:00Z")
+
+        # 2. 날짜만 존재하는 케이스 폴백
+        ocr_text_2 = "결합시간 상점 / 사업자번호: 1234567890 / 주문일자: 2026-06-11 / 합계 15,000"
+        result_2 = BypassParser.try_bypass_parsing(ocr_text_2, "1234567890")
+        self.assertIsNotNone(result_2)
+        # 시간은 00:00:00Z으로 채워짐
+        self.assertEqual(result_2["transaction_date"], "2026-06-11T00:00:00Z")
