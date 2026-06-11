@@ -18,15 +18,23 @@ class BypassParser:
         '2026년 6월 11일 오후 3:45' 또는 '2026-06-11' 등의 포맷을
         완전한 ISO 8601 포맷('YYYY-MM-DDTHH:MM:SSZ')으로 정규화합니다.
         """
+        import datetime
         import re
 
         from django.utils import timezone
 
         datetime_str = datetime_str.strip()
 
+        # 이미 정상적인 ISO 8601 형식인 경우 파싱 없이 즉시 반환
+        try:
+            parsed_dt = datetime.datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
+            return parsed_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        except ValueError:
+            pass
+
         # 1. 날짜 정보 추출 (년-월-일)
         year, month, day = None, None, None
-        date_match = re.search(r"(\d{4})[-년]\s*(\d{1,2})[-월]\s*(\d{1,2})", datetime_str)
+        date_match = re.search(r"(\d{4})[-년./]\s*(\d{1,2})[-월./]\s*(\d{1,2})", datetime_str)
         if date_match:
             year, month, day = map(int, date_match.groups())
         else:

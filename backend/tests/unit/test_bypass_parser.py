@@ -87,7 +87,7 @@ class BypassParserTestCase(TestCase):
             vendor_registration_number="1234567890",
             vendor_name="결합시간 상점",
             parsing_rules={
-                "date_pattern": r"(?:날짜:\s*\d{4}년\s*\d{1,2}월\s*\d{1,2}일\s*오[전후]\s*\d{1,2}:\d{2}|주문일자:\s*[0-9\-]{10})",
+                "date_pattern": r"(?:날짜:\s*\d{4}년\s*\d{1,2}월\s*\d{1,2}일\s*오[전후]\s*\d{1,2}:\d{2}|주문일자:\s*[0-9\-./]{10})",
                 "amount_pattern": r"합계\s*([0-9,]+)",
                 "default_items": [],
             },
@@ -107,3 +107,14 @@ class BypassParserTestCase(TestCase):
         self.assertIsNotNone(result_2)
         # 시간은 00:00:00Z으로 채워짐
         self.assertEqual(result_2["transaction_date"], "2026-06-11T00:00:00Z")
+
+        # 3. 슬래시(/) 및 온점(.) 날짜 파싱 케이스 검증
+        ocr_text_3 = "결합시간 상점 / 사업자번호: 1234567890 / 주문일자: 2026/06/11 / 합계 15,000"
+        result_3 = BypassParser.try_bypass_parsing(ocr_text_3, "1234567890")
+        self.assertIsNotNone(result_3)
+        self.assertEqual(result_3["transaction_date"], "2026-06-11T00:00:00Z")
+
+        ocr_text_4 = "결합시간 상점 / 사업자번호: 1234567890 / 주문일자: 2026.06.11 / 합계 15,000"
+        result_4 = BypassParser.try_bypass_parsing(ocr_text_4, "1234567890")
+        self.assertIsNotNone(result_4)
+        self.assertEqual(result_4["transaction_date"], "2026-06-11T00:00:00Z")
