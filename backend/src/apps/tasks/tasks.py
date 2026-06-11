@@ -77,10 +77,12 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
         logger.warning(f"[Celery] Task failed for Job: {job_id}. Reason: {str(exc)}")
 
         # 복구 가능한 임시 장애 상황 시 지수 백오프 재시도 적용 (최대 3회)
-        # (IntegrityError 중복 제외하고 일반 예외 및 네트워크 관련에 대해 재시도)
         from django.db import IntegrityError
 
-        if not isinstance(exc, IntegrityError) and self.request.retries < self.max_retries:
+        # 중복 제약조건 위반 여부 판단
+        is_dup = isinstance(exc, IntegrityError) or "unique constraint" in str(exc).lower()
+
+        if not is_dup and self.request.retries < self.max_retries:
             # 지수 백오프 시간 계산: 2^retries * 2 초 (2초, 4초, 8초)
             countdown = (2**self.request.retries) * 2
             logger.info(
@@ -102,10 +104,15 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
             with transaction.atomic():
                 job = ReceiptUploadJob.objects.select_for_update().get(id=job_id)
                 job.status = "FAILED"
-                # 상세 에러 로그 요약 기록
-                import traceback
 
-                job.failure_reason = f"{str(exc)}\n{traceback.format_exc()[:500]}"
+                # 중복일 경우 프론트엔드가 감지할 수 있도록 명확한 한글 메시지를 기록
+                if is_dup:
+                    job.failure_reason = "이미 등록된 중복 영수증입니다."
+                else:
+                    import traceback
+
+                    job.failure_reason = f"{str(exc)}\n{traceback.format_exc()[:500]}"
+
                 job.save()
         except Exception as db_err:
             logger.error(f"[Celery] Failed to update job status to FAILED: {str(db_err)}")
@@ -116,9 +123,8 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
             except OSError:
                 pass
 
-        # 중복 영수증 업로드 등으로 인한 IntegrityError는 시스템 비정상 크래시가 아닌
-        # 비즈니스 기대 방어 동작이므로, 예외를 전파하지 않고 로깅 후 정상 종료합니다.
-        if isinstance(exc, IntegrityError):
+        # 중복 예외 시 정상 리턴하여 Celery 크래시 노이즈 예방
+        if is_dup:
             logger.info(
                 f"[Celery] Task resolved expected IntegrityError (Duplicate check). Job {job_id} marked as FAILED."
             )
