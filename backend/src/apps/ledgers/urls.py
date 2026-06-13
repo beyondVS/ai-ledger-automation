@@ -1,4 +1,11 @@
-from apps.ledgers.views import LedgerIngestView, LedgerListView, ReceiptDetailView, ReceiptStatusView, ReceiptUploadView
+from apps.ledgers.views import (
+    LedgerIngestView,
+    LedgerListView,
+    MyTemplateListView,
+    ReceiptDetailView,
+    ReceiptStatusView,
+    ReceiptUploadView,
+)
 from django.urls import path
 
 # app_name = "ledgers"
@@ -16,4 +23,7 @@ urlpatterns = [
     path("<uuid:pk>/", ReceiptDetailView.as_view(), name="receipt-detail"),
     # [T008] [US1] 결제 데이터 인입 및 중복 방어 API
     path("ingest/", LedgerIngestView.as_view(), name="ledger-ingest"),
+    # 일반 사용자용 내 가맹점 템플릿 관리 API
+    path("my-templates/", MyTemplateListView.as_view(), name="my-template-list"),
+    path("my-templates/<uuid:template_id>/", MyTemplateListView.as_view(), name="my-template-detail"),
 ]

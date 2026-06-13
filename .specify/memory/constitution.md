@@ -1,25 +1,25 @@
 <!--
 [Sync Impact Report]
-- Version Change: v1.13.0 -> v1.14.0
-- Ratified: 2026-05-29 | Last Amended: 2026-06-11
+- Version Change: v1.15.1 -> v1.16.0
+- Ratified: 2026-05-29 | Last Amended: 2026-06-13
 - Key Principles Defined:
   1. I. 데이터 무결성 및 원자성 트랜잭션 최우선 (Data Integrity & Transaction Atomicity)
   2. II. 비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Processing & Scale Isolation)
   3. III. 하이브리드 비용 최적화 파이프라인 (Hybrid Bypass for Cost Control)
   4. IV. SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion)
-  5. V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
+  5. V. Vision-First PWA & HTTPS/JWT 보안 환경 강제 (Mobile-first PWA & HTTPS/JWT Mandated)
   6. VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
   7. VII. 선언적 의존성 및 uv 패키지 격리 수호 (Declarative Dependencies & Package Isolation)
   8. VIII. pytest 및 Django TestCase 하이브리드 테스트 수호 (Hybrid Test Architecture & Domain Parity)
   9. IX. ruff 및 pre-commit 자동화 품질 가드 수호 (Ruff Linter & pre-commit Quality Guard)
-- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트를 통해 네이티브하게 멀티모달 분석을 태움(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0). (4) 백엔드, Celery, 프론트엔드 전체 Dockerizing 완료 및 핫 리로딩 인프라 통합 구축(v1.9.0). (5) 동일 상품 연속 결제 오탐지 방지를 위해 approval_number 필드를 신설하고, 승인번호 고유성 대조 및 1분(60초) 임계 시각 대조 하이브리드 중복 방어 알고리즘을 도입. 프론트엔드 수정 내역 모달(FE-05-B) 내 유실되거나 유효하지 않은 카테고리 데이터 바인딩 유입 시 '미분류'로 자동 폴백하는 안전 바인딩 정책을 적용하여 누수를 제거함(v1.10.0). (6) 이메일 포워딩 수집 및 SPF/DKIM 보안 필터링의 구현 일정을 4주 개발 로드맵에서 제외하고 차후 확장 계획 백로그로 안전하게 이관 보존함(v1.10.1). (7) 동기식 레거시 파서(CostControlParser) 및 관련 태스크(process_llm_fallback_task)를 영구 제거하고 Celery 기반 비동기 파이프라인으로 일원화. 중복 결제 발생 시 재전파(re-raise) 처리 대신 안전한 FAILED 실패 상태 반환 구조로 전환(v1.11.0). (8) 백엔드 컨테이너의 파이썬 실행 환경을 3.13-slim으로 업그레이드하고, pyproject.toml 설정 파일을 프로젝트 루트에 단일화(Single Source of Truth)하여 Ruff 린트/포맷 룰을 워크스페이스 전역으로 일치시킴(v1.11.0). (9) Gemini API 호출 장애 시 로컬 Ollama 폴백 가동 대역에서 base64 데이터 디코딩 규격 충돌(prefix 유무) 문제를 방지하기 위해, parse_receipt 메서드 단에서 try-except 블록으로 에러를 캐치하고 Ollama에 맞는 무접두사 base64 스트링으로 페이로드를 동적 가공 재인서트하는 방어벽을 구축함(v1.11.0). (10) 이메일 상세 결제 시각(오전/오후 시:분) 결합 파싱 정규화 구현 및 LLM 제안 정규식을 원시 텍스트와 대조 검증하는 Celery 비동기 검증 태스크(verify_proposed_regex_task)를 추가하고, 검증 성공 시 템플릿의 자동 검증 플래그(is_auto_verified)를 True로 마킹하도록 전용 파이프라인 고도화(v1.12.0). (11) 사용자의 고유 타임존 설정을 보존하기 위해 User 모델에 timezone 필드를 추가하고, 영수증 결제일시 파싱 시 외부 의존성(dateparser) 추가 없이 파이썬 내장 표준 라이브러리(datetime, zoneinfo) 및 User.timezone을 기반으로 로컬 시간대를 UTC 기준 Timezone-aware 시간대로 정밀 정규화하는 파이프라인 및 중복 검증 태스크를 구축함. LLM API 스키마/프롬프트를 개정하여 Naive 일시만 추출하도록 통제함(v1.13.0). (12) ReceiptParser(BypassParser/ReceiptLLMClient)의 파싱 결과 및 create_ledger_transactional 적재 서비스 간의 계약(Contract) 단일화를 위해 기존 dict 구조를 Pydantic DTO(ReceiptSchema) 체계로 전면 전환 및 일원화하여 정적 타입 안전성을 확보함. 레거시 dict 분할 입력 포맷 및 FailedTask payload 조회를 수행하는 레거시 테스트에 대한 하위 호환성을 100% 보장하도록 복합 변환 및 폴백 템플릿 필터링 체계를 보강함(v1.14.0).
+- Added/Modified: (1) google-generativeai 라이브러리를 제거하고 google-genai 최신 공식 SDK 및 litellm 패키지를 도입하여 로컬 Ollama(gemma4:e4b) 연동 및 다이내믹 라우팅 분기 체계를 구축. (2) PDF 파싱 시 기계적 텍스트 파싱을 배제하고, PDF 원본 바이트를 Gemini 멀티모달 API에 application/pdf 파트를 통해 네이티브하게 멀티모달 분석을 태움(v1.7.0). (3) LiteLLM Router(litellm.Router)를 도입하여 로컬 환경에서는 Ollama gemma4:e4b를 최우선 주 모델 및 폴백 모델로 가동하고, 프로덕션(DEBUG=False) 환경에서만 Gemini-2.5-Flash를 우선적으로 라우팅하는 다이내믹 라우터(ReceiptLLMClient) 체계로 전격 통합(v1.8.0). (4) 백엔드, Celery, 프론트엔드 전체 Dockerizing 완료 및 핫 리로딩 인프라 통합 구축(v1.9.0). (5) 동일 상품 연속 결제 오탐지 방지를 위해 approval_number 필드를 신설하고, 승인번호 고유성 대조 및 1분(60초) 임계 시각 대조 하이브리드 중복 방어 알고리즘을 도입. 프론트엔드 수정 내역 모달(FE-05-B) 내 유실되거나 유효하지 않은 카테고리 데이터 바인딩 유입 시 '미분류'로 자동 폴백하는 안전 바인딩 정책을 적용하여 누수를 제거함(v1.10.0). (6) 이메일 포워딩 수집 및 SPF/DKIM 보안 필터링의 구현 일정을 4주 개발 로드맵에서 제외하고 차후 확장 계획 백로그로 안전하게 이관 보존함(v1.10.1). (7) 동기식 레거시 파서(CostControlParser) 및 관련 태스크(process_llm_fallback_task)를 영구 제거하고 Celery 기반 비동기 파이프라인으로 일원화. 중복 결제 발생 시 재전파(re-raise) 처리 대신 안전한 FAILED 실패 상태 반환 구조로 전환(v1.11.0). (8) 백엔드 컨테이너의 파이썬 실행 환경을 3.13-slim으로 업그레이드하고, pyproject.toml 설정 파일을 프로젝트 루트에 단일화(Single Source of Truth)하여 Ruff 린트/포맷 룰을 워크스페이스 전역으로 일치시킴(v1.11.0). (9) Gemini API 호출 장애 시 로컬 Ollama 폴백 가동 대역에서 base64 데이터 디코딩 규격 충돌(prefix 유무) 문제를 방지하기 위해, parse_receipt 메서드 단에서 try-except 블록으로 에러를 캐치하고 Ollama에 맞는 무접두사 base64 스트링으로 페이로드를 동적 가공 재인서트하는 방어벽을 구축함(v1.11.0). (10) 이메일 상세 결제 시각(오전/오후 시:분) 결합 파싱 정규화 구현 및 LLM 제안 정규식을 원시 텍스트와 대조 검증하는 Celery 비동기 검증 태스크(verify_proposed_regex_task)를 추가하고, 검증 성공 시 템플릿의 자동 검증 플래그(is_auto_verified)를 True로 마킹하도록 전용 파이프라인 고도화(v1.12.0). (11) 사용자의 고유 타임존 설정을 보존하기 위해 User 모델에 timezone 필드를 추가하고, 영수증 결제일시 파싱 시 외부 의존성(dateparser) 추가 없이 파이썬 내장 표준 라이브러리(datetime, zoneinfo) 및 User.timezone을 기반으로 로컬 시간대를 UTC 기준 Timezone-aware 시간대로 정밀 정규화하는 파이프라인 및 중복 검증 태스크를 구축함. LLM API 스키마/프롬프트를 개정하여 Naive 일시만 추출하도록 통제함(v1.13.0). (12) ReceiptParser(BypassParser/ReceiptLLMClient)의 파싱 결과 및 create_ledger_transactional 적재 서비스 간의 계약(Contract) 단일화를 위해 기존 dict 구조를 Pydantic DTO(ReceiptSchema) 체계로 전면 전환 및 일원화하여 정적 타입 안전성을 확보함. 레거시 dict 분할 입력 포맷 및 FailedTask payload 조회를 수행하는 레거시 테스트에 대한 하위 호환성을 100% 보장하도록 복합 변환 및 폴백 템플릿 필터링 체계를 보강함(v1.14.0). (13) 가맹점 템플릿의 자율 승격(Auto-Promotion, 동일 규칙 3회 연속 일치 시 is_verified: true 자동 승격) 및 자가 치유(Self-Healing, 파싱 오류/정정 발생 시 즉각 강등 및 Gemini를 활용한 정규식 재학습/자동 갱신, 자가 치유 3회 실패 시 블랙리스트 격리) 알고리즘을 도입하여 바이패스 효율을 극대화함. 가계부 수동 수정 화면에서 결제일자 입력 폼을 datetime-local 타입으로 통일하고 타임존 정규화 결함을 해소함(v1.15.0). (14) 어드민 전체 템플릿 관리 대시보드/페이지네이션 리스트/상세 페이지 및 일반 사용자용 내 가맹점 템플릿 관리(/my/templates) 기능의 구현 일정을 차후 확장 계획 백로그로 연기하여 이관 보존함(v1.15.1). (15) JWT Refresh Token을 httpOnly 쿠키로 주입하고, Access Token만 sessionStorage에 보관하며, 라우터 가드에서 JWT Payload를 Base64 파싱하여 is_staff 권한을 위변조 검증하는 httpOnly 이중 토큰 인증 아키텍처를 구축. 프론트엔드 대시보드 및 내 가맹점 템플릿 관리 화면에 데스크톱 브레이크포인트를 적용한 반응형 2-3열 그리드 적응형 레이아웃을 도입하여 UX/UI를 강화함(v1.16.0).
 - Added Sections: 없음
 - Deleted Sections: 없음
 - Synchronized Templates:
   - plan-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\plan-template.md)
   - spec-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\spec-template.md)
   - tasks-template.md: ✅ 동기화 완료 (D:\Projects\Private\ai-ledger-automation\.specify\templates\tasks-template.md)
-- Pending / Deferred Items: 이메일 포워딩 기반 가계부 자동 수집 파이프라인 (SendGrid 웹훅 & SPF/DKIM 보안 필터)
+- Pending / Deferred Items: 이메일 포워딩 기반 가계부 자동 수집 파이프라인 (SendGrid 웹훅 & SPF/DKIM 보안 필터), 어드민 전용 전체 템플릿 관리 대시보드/상세 고도화
 -->
 
 # AI 기반 세금/영수증 PDF 분석 및 가계부 자동화 프로젝트 헌법
@@ -37,14 +37,16 @@
 ### III. 하이브리드 비용 최적화 파이프라인 (Hybrid Bypass for Cost Control)
 
 유료 멀티모달 LLM API 연동에 수반되는 예산 소비를 차단하고 운영 효율을 극대화하기 위해 지능형 레이아웃 캐싱 및 바이패스(Bypass) 파이프라인을 작동합니다. 분석 대상 텍스트에서 가맹점의 10자리 사업자등록번호가 식별되면 가맹점 레이아웃 캐시 테이블(`merchant_templates`)을 최우선 인덱스 조회합니다. 해당 가맹점의 수동 검증 승인 마크(`is_verified: true`)가 지정된 정적 정규식 규칙이 캐시 데이터로 존재할 경우, 유료 LLM API의 호출을 전면 취소하고 로컬 정규식 파서 모듈을 통해 즉각 파싱을 마쳐 호출 비용을 0원에 수렴하도록 완벽히 통제합니다. 캐시 정보가 없거나 미검증 상태(`is_verified: false`)인 경우에 한해 LLM API를 폴백(Fallback) 가동하고, 성공 파싱 데이터 기반의 정규식 규칙 후보군을 자율 학습 알고리즘으로 자동 제안하여 캐시 DB에 격리 적재하는 자율 진화 파이프라인을 의무화합니다.
+가맹점 템플릿의 신뢰성을 극대화하기 위해 자율 승격(Auto-Promotion) 및 자가 치유(Self-Healing) 알고리즘을 탑재합니다. 미검증 템플릿(`is_verified: false`)의 정규식 규칙이 LLM 분석 및 실제 데이터 정합성 대조 과정에서 동일한 패턴으로 3회 연속 일치할 경우, 어드민 승인 없이도 `is_verified: true`로 자동 승격되어 바이패스 엔진에 즉시 반영됩니다. 반면, 바이패스 파싱 도중 에러가 발생하거나 사용자가 가계부 수정 UI에서 파싱된 데이터를 수동으로 정정할 경우, 해당 템플릿은 즉시 '미검증' 상태로 강등되며 백그라운드 Celery 태스크를 통해 Gemini에 의한 정규식 자가 치유(자동 갱신)가 가동됩니다. 만약 해당 가맹점 템플릿의 자가 치유 시도가 연속 3회 실패할 경우, 템플릿은 완전히 블랙리스트(Blacklist)로 격리 처리되어 이후 바이패스 매칭 후보에서 배제됩니다.
 
 ### IV. SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion) (※ 차후 백로그 이관)
 
 사용자 가계부에 이메일 포워딩을 통한 영수증 무단 누적 수집 시도를 완벽히 방어하기 위해 이중 전초선 필터링 방어막을 엄격하게 구축합니다. (※ 본 조항의 구체적인 구현 요건은 4주 개발 로드맵에서 보류되어 차후 확장 계획 백로그로 이관되었습니다.) SendGrid/Mailgun 등의 인바운드 메일 웹훅 유입 시, 메일 헤더 상에 기록된 SPF 및 DKIM 전자서명 보안 인장을 대조 검증하여 위변조 메일을 1차단합니다. 또한 마스터 DB에 사용자별로 사전에 매핑되어 등록된 화이트리스트 이메일 주소(사용자당 최대 3개)와 발송인 주소가 100% 일치할 경우에만 비동기 Celery 태스크 적재를 허용하여, 외부 악성 메일 폭탄 스팸 공격과 비동기 메시징 큐의 리소스 고갈 위협을 완벽히 격리 통제합니다.
 
-### V. Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)
+### V. Vision-First PWA & HTTPS/JWT 보안 환경 강제 (Mobile-first PWA & HTTPS/JWT Mandated)
 
 모바일 플랫폼에서의 즉각적이고 안정적인 바로가기 설치(A2HS) 및 네이티브 카메라 연동 최적화 사용자 경험을 웹 표준 사양 위에서 견고하게 실현합니다. 모바일 PWA 접속 시 HTML5 Capture API와 Accept 속성을 바인딩하여 사진첩 리소스를 거칠 필요 없이 스마트폰 네이티브 카메라 셔터를 직접 연동 촬영하도록 제어합니다. 또한 네트워크 전송 대역폭 절감 및 서버의 고용량 이미지 압축 연산 경감을 위해, 업로드 직전 클라이언트 단 HTML5 Canvas API를 가동하여 이미지를 가로 최대 1000px 수준으로 1차 압축 처리하여 전송합니다. 마지막으로, 서비스 워커의 정상적 등록 및 VAPID 명세의 백그라운드 Web Push 알림 수신을 위한 브라우저 보안 규격을 달성하기 위해, 로컬 호스트 디버깅 대역을 제외한 모든 실서버 환경에서 HTTPS SSL 보안 도메인 적용을 강제합니다.
+더불어, 사용자 인증 정보의 XSS 탈취 방지를 위해 JWT 인증 체계를 httpOnly 이중 토큰 아키텍처로 통제합니다. 세션 종료 시 정보가 즉시 파기되도록 localStorage 대신 sessionStorage를 활용해 accessToken을 단기 유지하고, refreshToken은 스토리지 저장을 일절 금지하며 백엔드에서 httpOnly 쿠키로 직접 주입 및 관리하도록 제한합니다. 또한, 라우터 가드에서는 단순히 클라이언트 스토리지를 맹신하지 않고, Access Token의 Payload 영역을 Base64 디코딩하여 is_staff 권한의 진위 여부를 엄격히 대조하는 클라이언트 보안 검증을 완수해야 합니다.
 
 ### VI. 크로스 플랫폼 대칭 툴링 및 문서 동기화 수호 (Cross-platform Symmetric Tooling & Autonomous Document Sync)
 
@@ -73,7 +75,7 @@
 * **데이터 보존 레이어 (Storage Layer)**: PostgreSQL v18+ (주요 ACID 데이터, Native UUIDv7 & AIO) + JSONB 지원 (비정형 원시 LLM 백업용) + approval_number (결제 승인번호 백업 보존)
 * **인공지능 연동 모듈 (AI Core)**: LiteLLM Router 기반 다이내믹 라우터 (로컬 환경: Ollama gemma4:e4b 우선 및 동일 모델 폴백 / 프로덕션 환경: Gemini-2.5-Flash 우선 및 Ollama 폴백. ReceiptLLMClient를 통한 단일 base64 image_url 통합 및 Pydantic Structured Outputs 규격 강제 바인딩)
 * **수집 파이프라인 (Email Ingestion)**: SendGrid / Mailgun Inbound Parser Webhook + SPF/DKIM 및 사용자 이메일 화이트리스트 이중 매핑 필터
-* **프론트엔드 플랫폼 (PWA Client)**: Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS
+* **프론트엔드 플랫폼 (PWA Client)**: Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS + sessionStorage 기반 Access Token 세션 관리 및 httpOnly refresh token Cookie 연동
 * **푸시 허브 (Notification)**: VAPID v2 표준 규격 Web Push API (백그라운드 디스패치를 위한 Celery 전용 Notification Queue 분리 운영)
 * **가상 인프라 배포 (Deployment)**: Docker Compose 통합 관리 (api_server, postgres_db, redis_broker, async_worker)
 
@@ -95,6 +97,8 @@
   - 자가 제안(Auto-Generation)되는 사업자번호 기반 정규식 템플릿은 무조건 `is_verified: false`로 신규 적재되어 실제 bypass 파서에 유입되지 못하게 격리 차단하고, 오직 어드민 수동 검토 완료 후 `is_verified: true` 승인 시에만 LLM 호출 우회 바이패스에 반영되도록 신뢰 한계선 준수.
   - 승인번호가 다른 연속 결제를 허용하고, 승인번호가 동일하거나 없을 경우 60초(1분) 이내의 인입 건에 대해서만 중복으로 간주하고 초과 건은 정상 적재 처리하는 60초 임계창 시간-윈도우 중복 방어 알고리즘 E2E 정합성 검증.
   - 프론트엔드 가계부 내역 수정 모달 상에서 기존 지정 카테고리가 누락되거나 유효하지 않을 때 UI 상에서 '미분류'로 자동 대치 바인딩 및 전송 정합성 검증.
+  - 사용자 인증 요청 시 httpOnly refresh_token 쿠키와 sessionStorage 내 accessToken의 유기적인 발급/갱신 흐름이 CSRF/XSS 상해 없이 유효하게 보장됨을 E2E 검증. 라우터 가드 내 JWT Payload base64 디코딩 staff 권한 검증에 대한 무결성 보증.
+  - 데스크톱 해상도 넓은 화면에서 대시보드 2열 분할 그리드 및 내 가맹점 템플릿 3열 그리드 레이아웃의 시각적 완성도 및 가독성 검증 완료.
 
 ## Governance
 
@@ -106,4 +110,4 @@
   - **MINOR (x.B.x)**: 비용 절감용 바이패스 엔진 추가, PWA 카메라 연동이나 이메일 웹훅 필터 고도화 등 신규 안전성 파이프라인이나 아키텍처 규칙이 추가/확장될 시 개정.
   - **PATCH (x.x.C)**: 세부 문맥 자구 정제, 오타 수정, 비실질적 포맷팅 최적화 시 개정.
 
-**Version**: v1.14.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-11
+**Version**: v1.16.0 | **Ratified**: 2026-05-29 | **Last Amended**: 2026-06-13

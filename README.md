@@ -34,7 +34,7 @@ graph TD
     subgraph API_Server [API 인입 서버]
         UploadRouter[업로드 라우터: 크기 제한]
         EmailRouter[이메일 웹훅 라우터: SPF/DKIM 및 화이트리스트 필터 (차후 확장 백로그)]
-        AuthRouter[인증 라우터: OAuth 2.0 & JWT 이중 발급 및 검증]
+        AuthRouter[인증 라우터: JWT httpOnly 쿠키 인증 및 sessionStorage 세션 관리]
     end
 
     %% 메시지 브로커 영역
@@ -101,7 +101,8 @@ graph TD
    - DB 인프라 고갈 방지를 위해 최대 가용 커넥션 수를 api_server 5개, async_worker 3개, 전체 합산 최대 8개 커넥션으로 하드 제한합니다.
 3. **하이브리드 비용 최적화 파이프라인 (Hybrid Bypass for Cost Control)**
    - 사업자등록번호가 판별되면 캐시 테이블(`merchant_templates`)을 최우선 조회하여 검증 승인된 정규식 규칙(`is_verified: true`)에 적합할 시 유료 LLM 호출을 완전 바이패스(Bypass)하여 정적 파싱합니다.
-   - 미검증 정규식 캐시는 어드민의 수동 검토 및 승인을 거쳐야만 바이패스 루프에 유입되도록 차단벽을 형성합니다.
+   - 미검증 템플릿(`is_verified: false`)은 정규식 규칙이 LLM 분석과 실제 대조 과정에서 동일한 패턴으로 3회 연속 일치할 때 어드민 개입 없이 자동으로 `is_verified: true` 승격 처리를 진행합니다(자율 승격).
+   - 바이패스 파싱 에러 발생 또는 사용자 수동 데이터 정정 시 즉각 미검증 강등 및 Gemini API를 통한 정규식 자동 갱신(자가 치유)이 작동하며, 연속 3회 자가 치유 실패 시 템플릿은 블랙리스트로 영구 격리되어 배제됩니다.
 4. **SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion - 백로그 이관)**
    - 이메일 수신 시 SPF 및 DKIM 전자서명 보안 인장을 정밀 대조하여 위변조 도메인을 필터링하고, 가입 사용자당 사전에 등록된 최대 3개의 화이트리스트 메일 발송인 정보와 100% 일치할 경우에만 비동기 큐 적재를 허용하는 기능으로, 4주차 개발 마일스톤에서는 보류되어 차후 확장 계획으로 이관되었습니다.
 5. **Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)**
@@ -126,7 +127,7 @@ graph TD
 | **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) + **psycopg3** (psycopg[binary] C 가속 적용) + approval_number (결제 승인번호 백업 보존) |
 | **AI Engine** | LiteLLM Router (로컬: Ollama gemma4:e4b 최우선 및 폴백 / 프로덕션: Gemini-2.5-Flash 우선 및 Ollama 폴백) |
 | **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router (차후 확장 백로그) |
-| **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS |
+| **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS + sessionStorage 세션 관리 및 httpOnly refresh token Cookie 연동 |
 | **Web Push** | VAPID v2 Web Push API (FCM / APNs 연동 백그라운드 알림) |
 | **Infrastructure** | Docker Compose 로컬 통합 인프라 및 HTTPS SSL 배포 규격 |
 
@@ -143,7 +144,7 @@ graph TD
 ### 2주차: MVP 프론트엔드 연동 및 동기식 E2E 릴리즈 (8일차 ~ 14일차)
 - 8~9일차: Vue 드롭존(Dropzone) 레이아웃 퍼블리싱 및 status/job_id 동기 API 연동.
 - 10~11일차: 반응형 그리드 대시보드 리스트 및 클라이언트 Canvas API 1차 압축 리사이징 모듈 내장.
-- 12~13일차: JWT 토큰 세션 발급 체계 적용 및 대시보드 내 소비 지출 내역 수동 CRUD 모달 기능 구현.
+- 12~13일차: JWT httpOnly 쿠키 기반 인증 및 sessionStorage 세션 적용 및 대시보드 내 소비 지출 내역 수동 CRUD 모달 기능 구현.
 - 14일차: E2E 동기식 MVP 완전체 통합 테스트 및 2주차 안정화 배포.
 
 ### 3주차: 비동기 분산 아키텍처 및 비용/보안 고도화 (15일차 ~ 21일차)

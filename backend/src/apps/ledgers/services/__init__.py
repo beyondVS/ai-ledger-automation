@@ -234,11 +234,36 @@ class LedgerService:
                     logger.warning(f"이미지 OCR 텍스트 추출 중 에러 발생 (Tesseract 미설치 시 무시됨): {str(img_err)}")
 
             # 2. 1차 로컬 바이패스 파싱 시도 (OCR 텍스트 및 10자리 사업자등록번호 감지 시)
+            should_demote_template = None
+            demote_reason = None
+
             if raw_ocr_text:
                 biz_num_match = re.search(r"\d{10}", raw_ocr_text.replace("-", ""))
                 if biz_num_match:
                     biz_num = biz_num_match.group(0)
-                    parsed_data = BypassParser.try_bypass_parsing(raw_ocr_text, biz_num, user_timezone=user.timezone)
+
+                    # T018: 검증 완료된 기존 템플릿이 바이패스 대상인지 사전 확인
+                    from apps.ledgers.models import MerchantTemplate
+
+                    existing_verified_template = MerchantTemplate.verified_objects.get_bypass_rule(biz_num)
+
+                    try:
+                        parsed_data = BypassParser.try_bypass_parsing(
+                            raw_ocr_text, biz_num, user_timezone=user.timezone
+                        )
+                    except Exception as parse_err:
+                        parsed_data = None
+                        logger.warning(f"Bypass parsing exception occurred: {str(parse_err)}")
+                        demote_reason = f"Bypass parsing exception: {str(parse_err)}"
+
+                    # 기존에 승인된 템플릿이 있었으나 바이패스 파싱에 실패한 경우 강등 대상으로 지정
+                    if existing_verified_template and not parsed_data:
+                        should_demote_template = existing_verified_template
+                        if not demote_reason:
+                            demote_reason = (
+                                "Bypass parser returned None (likely regex match failure or validation error)."
+                            )
+
                     if parsed_data:
                         used_bypass = True
 
@@ -278,23 +303,83 @@ class LedgerService:
             job.status = "COMPLETED"
             job.save()
 
-            # 7. 신규 가맹점 캐시 템플릿 자동 제안 등록 (Bypass 미적용 시)
-            if not used_bypass:
-                template = BypassParser.propose_new_template(
-                    vendor_registration_number=parsed_data.vendor_registration_number,
-                    vendor_name=parsed_data.vendor_name,
-                    parsed_data=parsed_data,
-                )
-                if template and raw_ocr_text:
-                    from apps.tasks.tasks import verify_proposed_regex_task
+            # T018: 파서 에러 감지 시 demote_template를 호출하여 즉시 강등 및 자가치유 트리거 연동
+            if should_demote_template:
+                from apps.ledgers.services.promotion import demote_template
 
-                    verify_proposed_regex_task.delay(
-                        template_id=str(template.id),
-                        ocr_text=raw_ocr_text,
-                        expected_date_raw=parsed_data.transaction_date,
-                        expected_amount=parsed_data.total_amount,
-                        user_timezone=user.timezone,
+                # 수동 정정이 아니므로 total_amount 정보를 기반으로 자가치유에 참고할 수 있는 dummy diff를 전달합니다.
+                dummy_diff = [{"field": "total_amount", "before": 0.0, "after": float(ledger.total_amount)}]
+                demote_template(
+                    template=should_demote_template,
+                    ledger=ledger,
+                    error_message=demote_reason,
+                    corrected_diff=dummy_diff,
+                    ocr_text=raw_ocr_text,
+                )
+
+            # 7. 실행 히스토리 (TemplateExecutionHistory) 적재
+            from apps.ledgers.models import MerchantTemplate, TemplateExecutionHistory
+
+            template = MerchantTemplate.objects.filter(
+                vendor_registration_number=parsed_data.vendor_registration_number
+            ).first()
+            if template:
+                TemplateExecutionHistory.objects.create(
+                    template=template,
+                    ledger=ledger,
+                    parsing_mode="BYPASS" if used_bypass else "LLM",
+                    is_success=True,
+                    user_corrected=False,
+                    corrected_diff=None,
+                )
+
+            # 8. 신규 가맹점 캐시 템플릿 자동 제안 및 일관성 기반 승격 처리 (Bypass 미적용 시)
+            if not used_bypass:
+                # 템플릿이 이미 미검증 상태로 존재하는 경우 일관성 판단 루프 진입
+                if template:
+                    if not template.is_verified and not template.is_blacklisted:
+                        # proposed_rules 추출
+                        proposed_rules = {
+                            "date_pattern": parsed_data.proposed_date_pattern,
+                            "amount_pattern": parsed_data.proposed_amount_pattern,
+                            "default_category": parsed_data.category,
+                            "default_items": [
+                                {"name": item.item_name, "quantity": item.quantity, "price": item.unit_price}
+                                for item in parsed_data.items
+                            ],
+                        }
+                        if not proposed_rules["date_pattern"] or not proposed_rules["amount_pattern"]:
+                            proposed_rules["date_pattern"] = (
+                                r"일시:\s*([\d\-\s:]+)"
+                                if not proposed_rules["date_pattern"]
+                                else proposed_rules["date_pattern"]
+                            )
+                            proposed_rules["amount_pattern"] = (
+                                r"(?:합계|금액|결제금액|받을금액):\s*([\d,]+)"
+                                if not proposed_rules["amount_pattern"]
+                                else proposed_rules["amount_pattern"]
+                            )
+
+                        from apps.ledgers.services.promotion import promote_template_if_consistent
+
+                        promote_template_if_consistent(template, proposed_rules)
+                else:
+                    # 템플릿이 아예 존재하지 않는 경우 신규 제안 등록
+                    new_template = BypassParser.propose_new_template(
+                        vendor_registration_number=parsed_data.vendor_registration_number,
+                        vendor_name=parsed_data.vendor_name,
+                        parsed_data=parsed_data,
                     )
+                    if new_template and raw_ocr_text:
+                        from apps.tasks.tasks import verify_proposed_regex_task
+
+                        verify_proposed_regex_task.delay(
+                            template_id=str(new_template.id),
+                            ocr_text=raw_ocr_text,
+                            expected_date_raw=parsed_data.transaction_date,
+                            expected_amount=parsed_data.total_amount,
+                            user_timezone=user.timezone,
+                        )
 
             return {"status": "COMPLETED", "job_id": None, "ledger": ledger}
 

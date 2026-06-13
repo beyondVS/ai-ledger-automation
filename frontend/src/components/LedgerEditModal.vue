@@ -52,7 +52,7 @@
           <label for="transaction_date" class="block text-sm font-semibold text-slate-700 mb-1">결제일자</label>
           <input
             id="transaction_date"
-            type="date"
+            type="datetime-local"
             v-model="form.transaction_date"
             class="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200/50 transition-all"
           />
@@ -163,7 +163,12 @@ watch(
   (newVal) => {
     if (newVal && props.ledger) {
       form.vendor_name = props.ledger.vendor_name || '';
-      form.transaction_date = props.ledger.transaction_date || '';
+      if (props.ledger.transaction_date) {
+        // datetime-local 바인딩을 위해 "2026-05-26T00:47:00Z" -> "2026-05-26T00:47" 슬라이싱
+        form.transaction_date = props.ledger.transaction_date.substring(0, 16);
+      } else {
+        form.transaction_date = '';
+      }
       form.total_amount = props.ledger.total_amount || 0;
       
       // 카테고리 바인딩 누수 방지 방어 코드 (T013)
@@ -218,7 +223,7 @@ async function handleSubmit() {
 
     const payload = {
       vendor_name: form.vendor_name,
-      transaction_date: form.transaction_date,
+      transaction_date: form.transaction_date ? `${form.transaction_date}:00Z` : '',
       total_amount: String(form.total_amount),
       category: finalCategory
     };
