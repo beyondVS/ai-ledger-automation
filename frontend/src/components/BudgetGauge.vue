@@ -8,7 +8,7 @@
         </p>
       </div>
       <button 
-        @click="openModal"
+        @click.stop="openModal"
         class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors duration-200"
         title="예산 수정"
       >
@@ -69,14 +69,16 @@
             <div class="mb-5">
               <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">예산 금액 (원)</label>
               <input 
-                v-model.number="inputAmount"
-                type="number" 
-                min="0"
-                step="1000"
+                :value="formattedInputAmount"
+                @input="onInputAmountChange"
+                type="text" 
                 class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                 placeholder="예: 1,000,000"
                 required
               />
+              <p v-if="inputAmount > 0" class="text-xs text-emerald-400 mt-2 font-medium">
+                한글 표기: {{ koreanAmountText }}
+              </p>
               <p v-if="errorMessage" class="text-xs text-rose-500 mt-2">{{ errorMessage }}</p>
             </div>
 
@@ -143,11 +145,59 @@ export default {
     },
     remainingClass() {
       return this.budget.remaining_amount < 0 ? 'text-rose-500 font-bold' : 'text-emerald-400';
+    },
+    formattedInputAmount() {
+      if (this.inputAmount === null || this.inputAmount === undefined || this.inputAmount === '') return '';
+      return this.inputAmount.toLocaleString();
+    },
+    koreanAmountText() {
+      const num = this.inputAmount;
+      if (!num || isNaN(num) || num <= 0) return '0원';
+      
+      const units = ['', '만', '억', '조'];
+      let result = [];
+      let temp = num;
+      let unitIndex = 0;
+      
+      while (temp > 0) {
+        const mod = temp % 10000;
+        if (mod > 0) {
+          let modStr = '';
+          const thousands = Math.floor(mod / 1000);
+          const hundreds = Math.floor((mod % 1000) / 100);
+          const tens = Math.floor((mod % 100) / 10);
+          const ones = mod % 10;
+          
+          if (thousands > 0) modStr += `${thousands}천`;
+          if (hundreds > 0) modStr += `${hundreds}백`;
+          if (tens > 0) modStr += `${tens}십`;
+          if (ones > 0) modStr += ones;
+          
+          const unit = units[unitIndex];
+          if (unitIndex === 0) {
+            result.unshift(modStr);
+          } else {
+            result.unshift(`${mod}${unit}`);
+          }
+        }
+        temp = Math.floor(temp / 10000);
+        unitIndex++;
+      }
+      
+      return result.filter(Boolean).join(' ') + '원';
     }
   },
   methods: {
     formatCurrency(value) {
       return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
+    },
+    onInputAmountChange(event) {
+      const value = event.target.value;
+      const cleanValue = value.replace(/[^0-9]/g, '');
+      const num = parseInt(cleanValue, 10);
+      this.inputAmount = isNaN(num) ? 0 : num;
+      
+      event.target.value = this.formattedInputAmount;
     },
     openModal() {
       this.inputAmount = this.budget.amount;
