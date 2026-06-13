@@ -1,6 +1,10 @@
 <template>
   <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
-    <Bar :data="chartData" :options="options" />
+    <!-- y축 단위 라벨 가이드 -->
+    <div class="absolute -top-5 right-2 text-3xs font-semibold text-slate-400 dark:text-slate-500 font-pretendard select-none">
+      (단위: 만원)
+    </div>
+    <Bar :data="processedChartData" :options="options" />
   </div>
 </template>
 
@@ -24,7 +28,50 @@ export default {
     }
   },
   computed: {
+    processedChartData() {
+      if (!this.chartData || !this.chartData.datasets || !this.chartData.datasets[0]) {
+        return this.chartData;
+      }
+      
+      const datasets = this.chartData.datasets.map(ds => {
+        return {
+          ...ds,
+          backgroundColor: (context) => {
+            const chart = context.chart;
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return 'rgba(79, 70, 229, 0.8)';
+            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+            gradient.addColorStop(0, 'rgba(79, 70, 229, 0.35)'); // Indigo-600
+            gradient.addColorStop(1, 'rgba(16, 185, 129, 0.85)'); // Emerald-500
+            return gradient;
+          },
+          hoverBackgroundColor: (context) => {
+            const chart = context.chart;
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return 'rgba(79, 70, 229, 1)';
+            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+            gradient.addColorStop(0, 'rgba(79, 70, 229, 0.65)');
+            gradient.addColorStop(1, 'rgba(16, 185, 129, 1)');
+            return gradient;
+          },
+          borderRadius: 8,
+          borderSkipped: false
+        };
+      });
+      
+      return {
+        ...this.chartData,
+        datasets
+      };
+    },
     options() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#9CA3AF' : '#4B5563'; // dark: slate-400, light: slate-600
+      const gridColor = isDark ? 'rgba(75, 85, 99, 0.15)' : 'rgba(209, 213, 219, 0.4)';
+      const tooltipBg = isDark ? '#1F2937' : '#FFFFFF';
+      const tooltipText = isDark ? '#F3F4F6' : '#1F2937';
+      const tooltipBorder = isDark ? '#374151' : '#E5E7EB';
+
       return {
         responsive: true,
         maintainAspectRatio: false,
@@ -34,23 +81,25 @@ export default {
               display: false
             },
             ticks: {
-              color: '#9CA3AF', // slate-400
+              color: textColor,
               font: {
-                family: 'Outfit, sans-serif'
+                family: 'Outfit, var(--font-pretendard), sans-serif',
+                size: 11
               }
             }
           },
           y: {
             grid: {
-              color: 'rgba(75, 85, 99, 0.2)' // slate-600 with opacity
+              color: gridColor
             },
             ticks: {
-              color: '#9CA3AF',
+              color: textColor,
               font: {
-                family: 'Outfit, sans-serif'
+                family: 'Outfit, var(--font-pretendard), sans-serif',
+                size: 11
               },
               callback: function(value) {
-                return (value / 10000).toLocaleString() + '만';
+                return (value / 10000).toLocaleString();
               }
             }
           }
@@ -61,11 +110,13 @@ export default {
           },
           tooltip: {
             padding: 12,
-            backgroundColor: '#1F2937', // gray-800
-            titleColor: '#F3F4F6', // gray-100
-            bodyColor: '#F3F4F6',
+            backgroundColor: tooltipBg,
+            titleColor: tooltipText,
+            bodyColor: tooltipText,
+            borderColor: tooltipBorder,
+            borderWidth: 1,
             bodyFont: {
-              family: 'Outfit, sans-serif'
+              family: 'Outfit, var(--font-pretendard), sans-serif'
             },
             callbacks: {
               label: function(context) {

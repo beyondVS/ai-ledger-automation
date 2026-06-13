@@ -20,6 +20,7 @@ class UserRegisterView(generics.CreateAPIView):
 
     serializer_class = UserRegisterSerializer
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -35,6 +36,7 @@ class UserLoginView(TokenObtainPairView):
 
     serializer_class = UserLoginSerializer
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)

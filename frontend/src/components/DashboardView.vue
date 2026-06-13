@@ -1,37 +1,53 @@
 <template>
-  <main class="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 sm:p-12 selection:bg-indigo-500">
+  <main class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-6 sm:p-12 selection:bg-indigo-500 transition-colors duration-300">
     <!-- 로그아웃 및 사용자 프로필 상단 바 -->
-    <div class="w-full max-w-lg md:max-w-4xl lg:max-w-5xl flex justify-between items-center mb-6 text-xs text-slate-400">
+    <div class="w-full max-w-lg md:max-w-4xl lg:max-w-5xl flex justify-between items-center mb-6 text-xs text-slate-500 dark:text-slate-400">
       <div class="flex items-center gap-2">
         <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-        <span class="font-semibold text-slate-200">{{ currentUsername }}</span>님 환영합니다
+        <span class="font-semibold text-slate-700 dark:text-slate-200">{{ currentUsername }}</span>님 환영합니다
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
+        <!-- 테마 토글 버튼 -->
         <button 
-          @click="goToMyTemplates"
-          class="px-3 py-1.5 rounded-lg bg-indigo-950/40 border border-indigo-900/50 text-indigo-300 hover:text-indigo-100 hover:bg-indigo-900/60 transition-all cursor-pointer font-semibold uppercase tracking-wider"
+          @click="toggleTheme" 
+          class="p-2 rounded-lg bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-800 transition-all cursor-pointer"
+          title="테마 전환"
         >
-          내 가맹점 템플릿
+          <svg v-if="isDarkMode" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25c0 5.385 4.365 9.75 9.75 9.75 4.542 0 8.368-3.109 9.502-7.248Z" />
+          </svg>
         </button>
-        <button 
-          @click="handleLogout"
-          class="logout-btn px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer font-semibold uppercase tracking-wider"
-        >
-          로그아웃
-        </button>
+
+        <div class="hidden md:flex items-center gap-2">
+          <button 
+            @click="goToMyTemplates"
+            class="px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 text-indigo-600 dark:text-indigo-300 hover:text-indigo-700 dark:hover:text-indigo-100 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer font-semibold uppercase tracking-wider"
+          >
+            내 가맹점 템플릿
+          </button>
+          <button 
+            @click="handleLogout"
+            class="logout-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-800 transition-all cursor-pointer font-semibold uppercase tracking-wider"
+          >
+            로그아웃
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="w-full max-w-lg md:max-w-4xl lg:max-w-5xl flex flex-col">
+    <div class="w-full max-w-lg md:max-w-4xl lg:max-w-5xl flex flex-col mb-16 md:mb-0">
       <!-- 헤더 브랜드 영역 (Aesthetics WOW - Outfit/Inter 모던 타이틀) -->
-        <header class="text-center md:text-left select-none max-w-xl mb-10">
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-3 tracking-wide uppercase font-outfit">
+        <header class="text-center md:text-left select-none max-w-xl mb-8 md:mb-10">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 mb-3 tracking-wide uppercase font-outfit">
             AI Automations
           </span>
-          <h1 class="font-outfit text-4xl md:text-5xl font-black text-slate-100 tracking-tight leading-none mb-3">
-            Smart Ledger <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-400 to-indigo-400">Receipts</span>
+          <h1 class="font-outfit text-4xl md:text-5xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-none mb-3">
+            Smart Ledger <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 dark:from-emerald-400 dark:via-teal-400 dark:to-indigo-400">Receipts</span>
           </h1>
-          <p class="text-slate-400 text-sm leading-relaxed break-keep">
+          <p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed break-keep">
             영수증 이미지를 올리면 고속 캐시 및 AI가 분석하여 가계부를 자동 작성합니다.
           </p>
         </header>
@@ -39,12 +55,30 @@
       <!-- 에러 피드백 알럿 영역 -->
       <div 
         v-if="errorMessage"
-        class="w-full max-w-md md:max-w-none mx-auto mb-5 p-4 rounded-xl bg-rose-950/30 border border-rose-900/40 text-rose-200 text-sm flex items-start space-x-3 transition-all duration-300 shadow-md animate-fade-in"
+        class="w-full max-w-md md:max-w-none mx-auto mb-5 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 text-rose-800 dark:text-rose-200 text-sm flex items-start space-x-3 transition-all duration-300 shadow-md animate-fade-in"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 flex-shrink-0 mt-0.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- 모바일 전용 탭 바 (md 미만 노출) -->
+      <div class="flex md:hidden w-full max-w-md mx-auto mb-6 bg-slate-200/60 dark:bg-slate-900 p-1 rounded-xl border border-slate-300 dark:border-slate-800/80">
+        <button 
+          @click="currentTab = 'upload'" 
+          class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer" 
+          :class="currentTab === 'upload' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'"
+        >
+          업로드 & 가맹점
+        </button>
+        <button 
+          @click="currentTab = 'stats'" 
+          class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer" 
+          :class="currentTab === 'stats' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'"
+        >
+          내역 & 예산 통계
+        </button>
       </div>
 
       <!-- 상단 대시보드 패널 (예산 게이지 및 TOP 3 가맹점) -->
@@ -53,25 +87,32 @@
           :budget="dashboardData.budget" 
           :current-month-str="currentMonthStr"
           @budget-updated="onBudgetUpdated"
+          class="md:block"
+          :class="currentTab === 'stats' ? 'block' : 'hidden'"
         />
         <TopMerchants 
           :merchants="dashboardData.top_merchants" 
+          class="md:block"
+          :class="currentTab === 'upload' ? 'block' : 'hidden'"
         />
       </div>
 
       <!-- 반응형 2열 본문 그리드 레이아웃 -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch w-full mt-2">
         <!-- 좌측 열: 메인 인터랙티브 작업 공간 -->
-        <div class="relative w-full max-w-md mx-auto md:mx-0 md:max-w-none">
+        <div 
+          class="relative w-full max-w-md mx-auto md:mx-0 md:max-w-none md:block"
+          :class="currentTab === 'upload' ? 'block' : 'hidden'"
+        >
           <!-- 업로드 진행 중 로딩 인디케이터 오버레이 -->
           <div 
             v-if="isUploading"
-            class="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-center p-8 border border-slate-800 shadow-2xl animate-fade-in"
+            class="absolute inset-0 z-50 bg-white/85 dark:bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-center p-8 border border-slate-200 dark:border-slate-800 shadow-2xl animate-fade-in"
           >
             <!-- 핀테크 감성 그라데이션 회전 링 -->
-            <div class="w-14 h-14 rounded-full border-4 border-slate-800 border-t-indigo-500 animate-spin mb-4"></div>
-            <h3 class="font-outfit text-slate-100 font-semibold text-lg mb-1">영수증 분석 중...</h3>
-            <p class="text-slate-400 text-xs tracking-wide">HTML5 Canvas 압축 및 AI OCR 파이프라인 가동 중</p>
+            <div class="w-14 h-14 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-indigo-500 dark:border-t-indigo-400 animate-spin mb-4"></div>
+            <h3 class="font-outfit text-slate-900 dark:text-slate-100 font-semibold text-lg mb-1">영수증 분석 중...</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-xs tracking-wide">HTML5 Canvas 압축 및 AI OCR 파이프라인 가동 중</p>
           </div>
 
           <!-- 드롭존 -->
@@ -92,39 +133,42 @@
         </div>
 
         <!-- 우측 열: 가계부 리스트 뷰 영역 (US1 MVP) -->
-        <section class="w-full max-w-md mx-auto md:mx-0 md:max-w-none p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col justify-between h-full">
+        <section 
+          class="w-full max-w-md mx-auto md:mx-0 md:max-w-none p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between h-full md:block"
+          :class="currentTab === 'stats' ? 'block' : 'hidden'"
+        >
           <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-2 select-none">
               <button 
                 @click="changeMonth(-1)"
-                class="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
+                class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-850 transition-all cursor-pointer"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                 </svg>
               </button>
-              <span class="text-xs font-semibold text-slate-300 tracking-wider font-mono uppercase">
+              <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 tracking-wider font-mono uppercase">
                 {{ selectedYear }}년 {{ selectedMonth }}월 지출
               </span>
               <button 
                 @click="changeMonth(1)"
-                class="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
+                class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-850 transition-all cursor-pointer"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               </button>
             </div>
-            <span class="text-indigo-400 font-bold font-outfit text-sm">{{ formattedMonthlyTotal }} 원</span>
+            <span class="text-indigo-600 dark:text-indigo-400 font-bold font-outfit text-sm">{{ formattedMonthlyTotal }} 원</span>
           </div>
 
           <!-- 빈 화면 대응 -->
-          <div v-if="ledgerList.length === 0 && pendingJobs.length === 0" class="text-center py-8 text-slate-500 text-xs">
+          <div v-if="ledgerList.length === 0 && pendingJobs.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-500 text-xs">
             선택하신 달의 가계부 지출 내역이 없습니다.
           </div>
 
-          <!-- 가계부 카드 목록 -->
-          <div v-else class="space-y-3 max-h-96 overflow-y-auto pr-1">
+          <!-- 가계부 카드 목록 (데스크톱 반응형 가변 높이 적용) -->
+          <div v-else class="space-y-3 max-h-96 md:max-h-[500px] lg:max-h-[640px] overflow-y-auto pr-1">
             <!-- 비동기 분석 대기중인 스켈레톤 로더 -->
             <LedgerShimmer
               v-for="job in pendingJobs"
@@ -147,13 +191,16 @@
       <!-- 하단 소비 시각화 차트 영역 -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 w-full items-stretch">
         <!-- 원형 차트 -->
-        <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-700 flex flex-col justify-between">
-          <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-6">카테고리별 지출 비율</h3>
+        <div 
+          class="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-350 dark:hover:border-slate-700 flex flex-col justify-between md:block"
+          :class="currentTab === 'stats' ? 'block' : 'hidden'"
+        >
+          <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-6">카테고리별 지출 비율</h3>
           <div v-if="dashboardData.category_spending && dashboardData.category_spending.length > 0" class="flex items-center justify-center h-[260px]">
-            <PieChart :chart-data="pieChartData" :key="pieChartData.datasets[0].data.join(',')" />
+            <PieChart :chart-data="pieChartData" :key="`${pieChartData.datasets[0].data.join(',')}-${isDarkMode}`" />
           </div>
-          <div v-else class="flex flex-col items-center justify-center h-[260px] text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mb-3 text-slate-600">
+          <div v-else class="flex flex-col items-center justify-center h-[260px] text-slate-400 dark:text-slate-500 text-sm border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mb-3 text-slate-400 dark:text-slate-600">
               <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
             </svg>
@@ -162,34 +209,82 @@
         </div>
 
         <!-- 막대 차트 -->
-        <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-700 flex flex-col justify-between">
+        <div 
+          class="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-350 dark:hover:border-slate-700 flex flex-col justify-between md:block"
+          :class="currentTab === 'stats' ? 'block' : 'hidden'"
+        >
           <div class="flex justify-between items-center mb-6">
-            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">월별 지출 추이</h3>
+            <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">월별 지출 추이</h3>
             
             <!-- 기간 필터 버튼 그룹 -->
-            <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+            <div class="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
               <button 
                 v-for="m in [3, 6, 12]" 
                 :key="m"
                 @click="updateMonthsFilter(m)"
                 class="px-3 py-1 rounded-md font-medium transition-all cursor-pointer"
-                :class="selectedMonthsFilter === m ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'"
+                :class="selectedMonthsFilter === m ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
               >
                 {{ m }}개월
               </button>
             </div>
           </div>
           <div v-if="dashboardData.monthly_trends && dashboardData.monthly_trends.length > 0" class="h-[260px] flex items-center justify-center">
-            <BarChart :chart-data="barChartData" :key="barChartData.datasets[0].data.join(',')" />
+            <BarChart :chart-data="barChartData" :key="`${barChartData.datasets[0].data.join(',')}-${isDarkMode}`" />
           </div>
-          <div v-else class="flex flex-col items-center justify-center h-[260px] text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mb-3 text-slate-600">
+          <div v-else class="flex flex-col items-center justify-center h-[260px] text-slate-400 dark:text-slate-500 text-sm border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mb-3 text-slate-400 dark:text-slate-600">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v5.25c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 0 1 3 18.375v-5.25ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125v-9.75ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v14.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
             </svg>
             <span>지출 통계 분석 데이터가 없습니다.</span>
           </div>
         </div>
       </div>
+
+      <!-- 모바일 전용 Bottom Navigation Bar (md 미만 하단 고정) -->
+      <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 border-t border-slate-200 dark:border-slate-800 backdrop-blur-md px-6 py-2 flex justify-around md:hidden shadow-lg">
+        <button 
+          @click="currentTab = 'upload'"
+          class="flex flex-col items-center gap-0.5 text-slate-500 dark:text-slate-400 cursor-pointer"
+          :class="{ 'text-indigo-600 dark:text-indigo-400 font-bold': currentTab === 'upload' }"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+          </svg>
+          <span class="text-3xs uppercase tracking-wide">업로드</span>
+        </button>
+
+        <button 
+          @click="currentTab = 'stats'"
+          class="flex flex-col items-center gap-0.5 text-slate-500 dark:text-slate-400 cursor-pointer"
+          :class="{ 'text-indigo-600 dark:text-indigo-400 font-bold': currentTab === 'stats' }"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v5.25c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 0 1 3 18.375v-5.25ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125v-9.75ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v14.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+          </svg>
+          <span class="text-3xs uppercase tracking-wide">내역/통계</span>
+        </button>
+
+        <button 
+          @click="goToMyTemplates"
+          class="flex flex-col items-center gap-0.5 text-slate-500 dark:text-slate-400 cursor-pointer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+          </svg>
+          <span class="text-3xs uppercase tracking-wide">템플릿</span>
+        </button>
+
+        <button 
+          @click="handleLogout"
+          class="flex flex-col items-center gap-0.5 text-slate-500 dark:text-slate-400 cursor-pointer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+          </svg>
+          <span class="text-3xs uppercase tracking-wide">로그아웃</span>
+        </button>
+      </nav>
 
       <!-- 정보 푸터 -->
       <footer class="text-center text-slate-600 text-xs font-mono tracking-wider mt-12 select-none">
@@ -260,6 +355,16 @@ export default {
     const pollingStatus = ref(null);
     let errorTimeout = null;
 
+    // 테마 및 모바일 탭 상태
+    const isDarkMode = ref(true);
+    const currentTab = ref('upload');
+
+    const toggleTheme = () => {
+      isDarkMode.value = !isDarkMode.value;
+      document.documentElement.classList.toggle('dark', isDarkMode.value);
+      localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light');
+    };
+
     // 선택된 년/월 상태 변수 (US1 MVP)
     const today = new Date();
     const selectedYear = ref(today.getFullYear());
@@ -327,6 +432,16 @@ export default {
     };
 
     onMounted(() => {
+      // 테마 초기 로딩 동기화
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        isDarkMode.value = false;
+        document.documentElement.classList.remove('dark');
+      } else {
+        isDarkMode.value = true;
+        document.documentElement.classList.add('dark');
+      }
+
       loadLedgerList();
       loadDashboardData();
       const sessionData = sessionStorage.getItem('ai_ledger_auth_session');
@@ -561,6 +676,9 @@ export default {
     });
 
     return {
+      isDarkMode,
+      currentTab,
+      toggleTheme,
       ledgerList,
       pendingJobs,
       formattedMonthlyTotal,

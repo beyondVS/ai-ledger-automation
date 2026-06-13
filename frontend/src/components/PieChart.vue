@@ -1,6 +1,6 @@
 <template>
   <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
-    <Pie :data="chartData" :options="options" />
+    <Pie :data="processedChartData" :options="options" />
   </div>
 </template>
 
@@ -24,7 +24,31 @@ export default {
     }
   },
   computed: {
+    processedChartData() {
+      if (!this.chartData || !this.chartData.datasets || !this.chartData.datasets[0]) {
+        return this.chartData;
+      }
+      const data = this.chartData.datasets[0].data || [];
+      const total = data.reduce((sum, val) => sum + val, 0);
+      
+      const newLabels = (this.chartData.labels || []).map((label, index) => {
+        const val = data[index] || 0;
+        const percentage = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+        return `${label} (${percentage}%)`;
+      });
+      
+      return {
+        ...this.chartData,
+        labels: newLabels
+      };
+    },
     options() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#9CA3AF' : '#4B5563'; // dark: slate-400, light: slate-600
+      const tooltipBg = isDark ? '#1F2937' : '#FFFFFF';
+      const tooltipText = isDark ? '#F3F4F6' : '#1F2937';
+      const tooltipBorder = isDark ? '#374151' : '#E5E7EB';
+
       return {
         responsive: true,
         maintainAspectRatio: false,
@@ -32,20 +56,22 @@ export default {
           legend: {
             position: 'bottom',
             labels: {
-              color: '#9CA3AF', // slate-400
+              color: textColor,
               font: {
-                family: 'Outfit, sans-serif',
-                size: 12
+                family: 'Outfit, var(--font-pretendard), sans-serif',
+                size: 11
               }
             }
           },
           tooltip: {
             padding: 12,
-            backgroundColor: '#1F2937', // gray-800
-            titleColor: '#F3F4F6', // gray-100
-            bodyColor: '#F3F4F6',
+            backgroundColor: tooltipBg,
+            titleColor: tooltipText,
+            bodyColor: tooltipText,
+            borderColor: tooltipBorder,
+            borderWidth: 1,
             bodyFont: {
-              family: 'Outfit, sans-serif'
+              family: 'Outfit, var(--font-pretendard), sans-serif'
             },
             callbacks: {
               label: function(context) {
