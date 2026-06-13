@@ -4,6 +4,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../components/auth/LoginView.vue';
 import RegisterView from '../components/auth/RegisterView.vue';
 import DashboardView from '../components/DashboardView.vue';
+import TemplateList from '../pages/admin/TemplateList.vue';
+import TemplateDetail from '../pages/admin/TemplateDetail.vue';
 
 const routes = [
   {
@@ -22,6 +24,18 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: DashboardView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/templates',
+    name: 'AdminTemplateList',
+    component: TemplateList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/templates/:id',
+    name: 'AdminTemplateDetail',
+    component: TemplateDetail,
     meta: { requiresAuth: true }
   },
   {

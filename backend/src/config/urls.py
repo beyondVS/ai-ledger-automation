@@ -1,4 +1,9 @@
-from admin.views import MerchantTemplateVerifyView
+from admin.views import (
+    AdminTemplateHistoryView,
+    AdminTemplateListView,
+    AdminTemplateResetHealingView,
+    MerchantTemplateVerifyView,
+)
 from django.contrib import admin
 from django.urls import include, path
 
@@ -16,5 +21,26 @@ urlpatterns = [
         "api/admin/merchant-templates/<uuid:template_id>/verify/",
         MerchantTemplateVerifyView.as_view(),
         name="admin-merchant-template-verify",
+    ),
+    # 신규 어드민 가맹점 템플릿 제어 API 엔드포인트
+    path(
+        "api/admin/templates/",
+        AdminTemplateListView.as_view(),
+        name="admin-template-list",
+    ),
+    path(
+        "api/admin/templates/<uuid:template_id>/history/",
+        AdminTemplateHistoryView.as_view(),
+        name="admin-template-history",
+    ),
+    path(
+        "api/admin/templates/<uuid:template_id>/verify/",
+        MerchantTemplateVerifyView.as_view(),
+        name="admin-template-verify",
+    ),
+    path(
+        "api/admin/templates/<uuid:template_id>/reset-healing/",
+        AdminTemplateResetHealingView.as_view(),
+        name="admin-template-reset-healing",
     ),
 ]

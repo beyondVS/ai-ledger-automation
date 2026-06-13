@@ -223,6 +223,9 @@ class ReceiptDetailView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+        before_total_amount = ledger.total_amount
+        before_transaction_date = ledger.transaction_date
+
         serializer = LedgerListSerializer(ledger, data=data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -249,6 +252,40 @@ class ReceiptDetailView(APIView):
                         rules["default_category"] = data["category"]
                         template.parsing_rules = rules
                         template.save()
+
+                # 수동 정정 발생 감지 및 강등 처리
+                corrected_diff = []
+                if "total_amount" in data and before_total_amount != ledger.total_amount:
+                    corrected_diff.append(
+                        {
+                            "field": "total_amount",
+                            "before": float(before_total_amount),
+                            "after": float(ledger.total_amount),
+                        }
+                    )
+                if "transaction_date" in data and before_transaction_date != ledger.transaction_date:
+                    corrected_diff.append(
+                        {
+                            "field": "transaction_date",
+                            "before": before_transaction_date.isoformat(),
+                            "after": ledger.transaction_date.isoformat(),
+                        }
+                    )
+
+                if corrected_diff and ledger.vendor_registration_number != "0000000000":
+                    from apps.ledgers.models import MerchantTemplate
+                    from apps.ledgers.services.promotion import demote_template
+
+                    template = MerchantTemplate.objects.filter(
+                        vendor_registration_number=ledger.vendor_registration_number
+                    ).first()
+                    if template and template.is_verified:
+                        demote_template(
+                            template=template,
+                            ledger=ledger,
+                            error_message="User manual correction triggered demotion.",
+                            corrected_diff=corrected_diff,
+                        )
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:

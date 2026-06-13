@@ -371,3 +371,4 @@ $RECYCLE.BIN/
 # Receipt Upload Temporary Directory Excludes
 temp_receipts/
 backend/src/temp_receipts/
+docs/receipt-example/**

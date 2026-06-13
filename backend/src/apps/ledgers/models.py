@@ -84,10 +84,13 @@ class VerifiedTemplateManager(models.Manager):
     [T019] VerifiedTemplateManager
     - 오직 수동 검토 완료 및 신뢰가 확보되어 is_verified: True 상태인 규칙만 우회 바이패스에 반영하며,
       미검증 템플릿의 bypass 파서 오동작 진입율을 영구히 0%로 통제합니다.
+      블랙리스트(is_blacklisted: True) 상태인 템플릿은 우회 대상에서 제외됩니다.
     """
 
     def get_bypass_rule(self, vendor_registration_number: str):
-        return self.filter(vendor_registration_number=vendor_registration_number, is_verified=True).first()
+        return self.filter(
+            vendor_registration_number=vendor_registration_number, is_verified=True, is_blacklisted=False
+        ).first()
 
 
 class MerchantTemplate(models.Model):
@@ -112,6 +115,11 @@ class MerchantTemplate(models.Model):
     is_auto_verified = models.BooleanField(default=False)
     # 유효성 검사 실패 시 에러 로그 기록
     regex_error_message = models.TextField(blank=True, null=True)
+
+    consistency_count = models.IntegerField(default=0)
+    self_healing_attempts = models.IntegerField(default=0)
+    is_blacklisted = models.BooleanField(default=False)
+    last_healing_at = models.DateTimeField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -153,3 +161,34 @@ class ReceiptUploadJob(models.Model):
 
     def __str__(self):
         return f"Job {self.id} - {self.status}"
+
+
+class TemplateExecutionHistory(models.Model):
+    """
+    [T005] TemplateExecutionHistory 데이터 모델
+    - 가맹점 템플릿의 실행 이력과 오류 및 사용자 수동 정정 차이(Diff) 데이터를 보존합니다.
+    """
+
+    id = models.UUIDField(primary_key=True, default=generate_uuidv7, editable=False, db_index=True)
+    template = models.ForeignKey(
+        MerchantTemplate, on_delete=models.SET_NULL, null=True, blank=True, related_name="execution_histories"
+    )
+    ledger = models.ForeignKey(
+        Ledger, on_delete=models.SET_NULL, null=True, blank=True, related_name="template_histories"
+    )
+    execution_time = models.DateTimeField(auto_now_add=True)
+    parsing_mode = models.CharField(max_length=10)  # "LLM" or "BYPASS"
+    is_success = models.BooleanField(default=True)
+    user_corrected = models.BooleanField(default=False)
+    corrected_diff = models.JSONField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = "template_execution_histories"
+        verbose_name = "template_execution_history"
+        verbose_name_plural = "template_execution_histories"
+
+    def __str__(self):
+        return (
+            f"History {self.id} for {self.template.vendor_name if self.template else 'Unknown'} ({self.parsing_mode})"
+        )
