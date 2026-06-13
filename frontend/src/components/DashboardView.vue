@@ -47,6 +47,18 @@
         <span>{{ errorMessage }}</span>
       </div>
 
+      <!-- 상단 대시보드 패널 (예산 게이지 및 TOP 3 가맹점) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 w-full">
+        <BudgetGauge 
+          :budget="dashboardData.budget" 
+          :current-month-str="currentMonthStr"
+          @budget-updated="onBudgetUpdated"
+        />
+        <TopMerchants 
+          :merchants="dashboardData.top_merchants" 
+        />
+      </div>
+
       <!-- 반응형 2열 본문 그리드 레이아웃 -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start w-full mt-2">
         <!-- 좌측 열: 메인 인터랙티브 작업 공간 -->
@@ -132,6 +144,46 @@
         </section>
       </div>
 
+      <!-- 하단 소비 시각화 차트 영역 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 w-full">
+        <!-- 원형 차트 -->
+        <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-700">
+          <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-6">카테고리별 지출 비율</h3>
+          <div v-if="dashboardData.category_spending && dashboardData.category_spending.length > 0" class="flex items-center justify-center">
+            <PieChart :chart-data="pieChartData" />
+          </div>
+          <div v-else class="flex items-center justify-center h-[300px] text-slate-500 text-sm">
+            데이터가 없습니다.
+          </div>
+        </div>
+
+        <!-- 막대 차트 -->
+        <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-700">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">월별 지출 추이</h3>
+            
+            <!-- 기간 필터 버튼 그룹 -->
+            <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+              <button 
+                v-for="m in [3, 6, 12]" 
+                :key="m"
+                @click="updateMonthsFilter(m)"
+                class="px-3 py-1 rounded-md font-medium transition-all cursor-pointer"
+                :class="selectedMonthsFilter === m ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'"
+              >
+                {{ m }}개월
+              </button>
+            </div>
+          </div>
+          <div v-if="dashboardData.monthly_trends && dashboardData.monthly_trends.length > 0">
+            <BarChart :chart-data="barChartData" />
+          </div>
+          <div v-else class="flex items-center justify-center h-[300px] text-slate-500 text-sm">
+            데이터가 없습니다.
+          </div>
+        </div>
+      </div>
+
       <!-- 정보 푸터 -->
       <footer class="text-center text-slate-600 text-xs font-mono tracking-wider mt-12 select-none">
         AI Ledger Automation v1.0.0 &copy; 2026
@@ -163,8 +215,13 @@ import Dropzone from './Dropzone.vue';
 import ReceiptList from './ReceiptList.vue';
 import LedgerListItem from './LedgerListItem.vue';
 import LedgerShimmer from './LedgerShimmer.vue';
+import PieChart from './PieChart.vue';
+import BarChart from './BarChart.vue';
+import BudgetGauge from './BudgetGauge.vue';
+import TopMerchants from './TopMerchants.vue';
 import { compressImage, uploadReceiptApi } from '../services/uploadService';
 import { fetchLedgerList } from '../services/ledgerService';
+import { fetchDashboardStatistics } from '../services/dashboardService';
 import { VirtualPollingManager } from '../services/pollingService';
 import { logout } from '../services/authService';
 import LedgerEditModal from './LedgerEditModal.vue';
@@ -178,7 +235,11 @@ export default {
     LedgerListItem,
     LedgerShimmer,
     LedgerEditModal,
-    LedgerDeleteModal
+    LedgerDeleteModal,
+    PieChart,
+    BarChart,
+    BudgetGauge,
+    TopMerchants
   },
   setup() {
     const router = useRouter();
@@ -203,6 +264,19 @@ export default {
     const isDeleteModalOpen = ref(false);
     const selectedLedgerForDelete = ref(null);
 
+    // 대시보드 통계 상태 정보 (US1, US2, US3)
+    const dashboardData = ref({
+      budget: { amount: 1000000, spent_amount: 0, remaining_amount: 1000000, spent_ratio: 0, status: 'safe' },
+      category_spending: [],
+      monthly_trends: [],
+      top_merchants: []
+    });
+    const selectedMonthsFilter = ref(3);
+
+    const currentMonthStr = computed(() => {
+      return `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`;
+    });
+
     const openEditModal = (ledger) => {
       selectedLedgerForEdit.value = ledger;
       isEditModalOpen.value = true;
@@ -214,23 +288,40 @@ export default {
     };
 
     const handleEditSave = (updatedLedger) => {
-      // 300ms 이내에 즉시 목록과 누적 월 합산 갱신
       ledgerList.value = ledgerList.value.map(item => 
         item.id === updatedLedger.id ? updatedLedger : item
       );
+      // 대시보드 실시간 지표 갱신
+      loadDashboardData();
     };
 
     const handleDeleteConfirm = () => {
-      // 300ms 이내에 즉시 삭제 및 소비 누계 갱신
       if (selectedLedgerForDelete.value) {
         ledgerList.value = ledgerList.value.filter(item => 
           item.id !== selectedLedgerForDelete.value.id
         );
       }
+      // 대시보드 실시간 지표 갱신
+      loadDashboardData();
+    };
+
+    const onBudgetUpdated = (updatedBudget) => {
+      // 게이지 수정 즉시 화면을 갱신
+      dashboardData.value.budget = {
+        amount: Number(updatedBudget.amount),
+        spent_amount: dashboardData.value.budget.spent_amount,
+        remaining_amount: Number(updatedBudget.amount) - dashboardData.value.budget.spent_amount,
+        spent_ratio: (dashboardData.value.budget.spent_amount / Number(updatedBudget.amount)) * 100,
+        status: (dashboardData.value.budget.spent_amount / Number(updatedBudget.amount)) * 100 < 50 ? 'safe' : 
+                (dashboardData.value.budget.spent_amount / Number(updatedBudget.amount)) * 100 <= 80 ? 'warning' : 'danger'
+      };
+      // 백엔드 전체 연동 갱신
+      loadDashboardData();
     };
 
     onMounted(() => {
       loadLedgerList();
+      loadDashboardData();
       const sessionData = sessionStorage.getItem('ai_ledger_auth_session');
       if (sessionData) {
         try {
@@ -253,6 +344,20 @@ export default {
       }
     };
 
+    const loadDashboardData = async () => {
+      try {
+        const data = await fetchDashboardStatistics(selectedMonthsFilter.value);
+        dashboardData.value = data;
+      } catch (err) {
+        console.error('Failed to load dashboard statistics', err);
+      }
+    };
+
+    const updateMonthsFilter = (months) => {
+      selectedMonthsFilter.value = months;
+      loadDashboardData();
+    };
+
     // 월 이동 제어 기능 (US1 MVP)
     const changeMonth = (offset) => {
       let year = selectedYear.value;
@@ -269,6 +374,7 @@ export default {
       selectedYear.value = year;
       selectedMonth.value = month;
       loadLedgerList();
+      loadDashboardData();
     };
 
     // 업로드된 영수증 날짜의 월로 대시보드 포커스 강제 동기화 (US1 MVP)
@@ -313,17 +419,10 @@ export default {
       pollingStatus.value = null;
 
       try {
-        // 1. 헌법 V조 수호: 가로 최대 1000px 이미지 1차 압축 처리
         const compressed = await compressImage(file);
-        
-        // 2. 동기식 Django API 업로드 연동
         const response = await uploadReceiptApi(compressed, file.name);
-        
-        // 3. UUIDv7 식별자 및 status 하위 호환성 확인
         const jobId = response.job_id;
         const status = response.status;
-
-        // 미리보기 URL 생성
         const previewUrl = URL.createObjectURL(compressed);
         
         currentFile.value = {
@@ -337,22 +436,18 @@ export default {
         };
 
         if (status === 'COMPLETED') {
-          // 동기 파싱 성공 즉시 렌더링 바인딩
           parsedData.value = response.data;
           pollingStatus.value = 'COMPLETED';
           syncDashboardMonthToReceipt(response.data.transaction_date);
           loadLedgerList();
+          loadDashboardData();
         } else {
-          // 3주차 비동기 호환을 위한 가상 폴링 대기 루프 개시
           pollingStatus.value = status;
-
-          // 리스트 최상단에 스켈레톤 로더 추가
           pendingJobs.value.push({
             id: jobId,
             status: status,
             raw_file_name: file.name
           });
-
           startVirtualPolling(jobId, status);
         }
 
@@ -376,6 +471,7 @@ export default {
           pendingJobs.value = pendingJobs.value.filter(j => j.id !== jobId);
           syncDashboardMonthToReceipt(completedData.transaction_date);
           loadLedgerList();
+          loadDashboardData();
         },
         (error) => {
           onValidationError(error.message || '비동기 폴링 상태 조회에 실패했습니다.');
@@ -402,7 +498,6 @@ export default {
       clearError();
     };
 
-    // 1차 유효성 검사 실패 수신 시
     const onValidationError = (error) => {
       errorMessage.value = error;
       
@@ -422,6 +517,42 @@ export default {
       return total.toLocaleString();
     });
 
+    const pieChartData = computed(() => {
+      const categories = dashboardData.value.category_spending || [];
+      const colors = [
+        '#10B981', // emerald-500
+        '#3B82F6', // blue-500
+        '#EC4899', // pink-500
+        '#F59E0B', // amber-500
+        '#8B5CF6', // violet-500
+        '#EF4444', // red-500
+        '#6B7280'  // gray-500 (미분류 fallback)
+      ];
+      return {
+        labels: categories.map(c => c.category_name),
+        datasets: [{
+          backgroundColor: categories.map((_, i) => colors[i % colors.length]),
+          borderWidth: 0,
+          data: categories.map(c => c.amount)
+        }]
+      };
+    });
+
+    const barChartData = computed(() => {
+      const trends = dashboardData.value.monthly_trends || [];
+      return {
+        labels: trends.map(t => t.month),
+        datasets: [{
+          label: '월별 지출액',
+          backgroundColor: 'rgba(79, 70, 229, 0.85)',
+          hoverBackgroundColor: 'rgba(79, 70, 229, 1)',
+          borderRadius: 6,
+          borderSkipped: false,
+          data: trends.map(t => t.amount)
+        }]
+      };
+    });
+
     return {
       ledgerList,
       pendingJobs,
@@ -438,16 +569,23 @@ export default {
       selectedLedgerForDelete,
       selectedYear,
       selectedMonth,
+      dashboardData,
+      selectedMonthsFilter,
+      currentMonthStr,
+      pieChartData,
+      barChartData,
       openEditModal,
       openDeleteModal,
       handleEditSave,
       handleDeleteConfirm,
+      onBudgetUpdated,
       handleLogout,
       goToMyTemplates,
       onFileDetected,
       onFileRemoved,
       onValidationError,
-      changeMonth
+      changeMonth,
+      updateMonthsFilter
     };
   }
 };

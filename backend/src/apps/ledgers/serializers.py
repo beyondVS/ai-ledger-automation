@@ -1,4 +1,4 @@
-from apps.ledgers.models import Ledger, LedgerItem
+from apps.ledgers.models import Ledger, LedgerItem, MonthlyBudget
 from rest_framework import serializers
 
 
@@ -78,3 +78,20 @@ class ReceiptUploadResponseSerializer(serializers.Serializer):
     status = serializers.CharField()
     ledger = LedgerListSerializer(allow_null=True)
     data = LedgerDetailResponseSerializer(source="ledger", allow_null=True, required=False)
+
+
+class MonthlyBudgetSerializer(serializers.ModelSerializer):
+    """
+    [T006] 월별 예산 데이터 직렬화기
+    - MonthlyBudget 모델의 CRUD 입출력을 담당합니다.
+    """
+
+    class Meta:
+        model = MonthlyBudget
+        fields = ["id", "budget_month", "amount", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate_amount(self, value):
+        if value < 0:
+            raise serializers.ValidationError("예산 금액은 0원 이상이어야 합니다.")
+        return value

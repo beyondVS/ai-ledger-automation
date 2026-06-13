@@ -192,3 +192,37 @@ class TemplateExecutionHistory(models.Model):
         return (
             f"History {self.id} for {self.template.vendor_name if self.template else 'Unknown'} ({self.parsing_mode})"
         )
+
+
+class MonthlyBudget(models.Model):
+    """
+    [T004] MonthlyBudget 데이터 모델
+    - 사용자별로 특정 월에 설정한 지출 목표 금액(예산) 정보를 저장합니다.
+    - UNIQUE (user, budget_month) 복합 고유 제약조건을 장착합니다.
+    """
+
+    id = models.UUIDField(primary_key=True, default=generate_uuidv7, editable=False, db_index=True)
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="monthly_budgets")
+
+    # 예산 설정 연월. 매월 1일로 정규화하여 저장 (예: 2026-06-01)
+    budget_month = models.DateField()
+    amount = models.DecimalField(max_digits=12, decimal_places=0, default=1000000)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "monthly_budgets"
+        verbose_name = "monthly_budget"
+        verbose_name_plural = "monthly_budgets"
+
+        # 특정 사용자가 동일한 월에 중복 예산을 생성하는 것을 방어
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "budget_month"],
+                name="unique_user_budget_month",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user.username}의 {self.budget_month.strftime('%Y-%m')} 예산: {self.amount}원"

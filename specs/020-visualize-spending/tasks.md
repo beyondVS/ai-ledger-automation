@@ -14,9 +14,9 @@
 
 **Purpose**: 프로젝트 기초 개발 인프라 준비 및 패키지 추가
 
-- [ ] T001 프론트엔드 package.json 파일에 chart.js 및 vue-chartjs 라이브러리 의존성 추가 설치
-- [ ] T002 백엔드 uv.lock 및 pyproject.toml 의존성 패키지 정합성 점검 및 uv sync 동기화 실행
-- [ ] T003 [P] uv run ruff check를 통한 기본 정적 분석 가드 작동 상태 확인
+- [X] T001 프론트엔드 package.json 파일에 chart.js 및 vue-chartjs 라이브러리 의존성 추가 설치
+- [X] T002 백엔드 uv.lock 및 pyproject.toml 의존성 패키지 정합성 점검 및 uv sync 동기화 실행
+- [X] T003 [P] uv run ruff check를 통한 기본 정적 분석 가드 작동 상태 확인
 
 ---
 
@@ -26,9 +26,9 @@
 
 **⚠️ CRITICAL**: 본 페이즈가 완료되어 DB에 MonthlyBudget이 이식되기 전까지는 어떠한 사용자 스토리도 실행할 수 없습니다.
 
-- [ ] T004 backend/ledgers/models.py 경로에 MonthlyBudget 데이터 모델 설계 및 UNIQUE (user, budget_month) 제약조건 추가
-- [ ] T005 [P] MonthlyBudget 모델에 대한 마이그레이션 파일 생성 및 migrate 적용 (makemigrations & migrate)
-- [ ] T006 [P] backend/ledgers/serializers.py 경로에 MonthlyBudgetSerializer 및 DTO 바인딩 로직 구현
+- [X] T004 backend/ledgers/models.py 경로에 MonthlyBudget 데이터 모델 설계 및 UNIQUE (user, budget_month) 제약조건 추가
+- [X] T005 [P] MonthlyBudget 모델에 대한 마이그레이션 파일 생성 및 migrate 적용 (makemigrations & migrate)
+- [X] T006 [P] backend/ledgers/serializers.py 경로에 MonthlyBudgetSerializer 및 DTO 바인딩 로직 구현
 
 **Checkpoint**: 예산 테이블 인프라 완료 - 각 사용자 스토리별 병렬 TDD 구현 준비 완료
 
@@ -44,17 +44,17 @@
 
 > **NOTE: 이 테스트 코드를 먼저 구현하고, 테스트가 실패(Red)하는 것을 확인한 뒤 구현에 착수하십시오.**
 
-- [ ] T007 [P] [US1] backend/tests/test_dashboard_api.py 경로에 /api/ledgers/dashboard/ 엔드포인트 GET 통계 DTO 반환 TDD 테스트 코드 작성
-- [ ] T008 [P] [US1] frontend/tests/unit/components/charts.spec.js 경로에 PieChart 및 BarChart 컴포넌트 Mock 데이터 렌더링 TDD 단위 테스트 코드 작성
+- [X] T007 [P] [US1] backend/tests/test_dashboard_api.py 경로에 /api/ledgers/dashboard/ 엔드포인트 GET 통계 DTO 반환 TDD 테스트 코드 작성
+- [X] T008 [P] [US1] frontend/tests/unit/components/charts.spec.js 경로에 PieChart 및 BarChart 컴포넌트 Mock 데이터 렌더링 TDD 단위 테스트 코드 작성
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] backend/ledgers/views.py 경로에 /api/ledgers/dashboard/ API 뷰 구현 (당월 실시간 집계 및 쿼리 파라미터 months 기간 필터 지원)
-- [ ] T010 [US1] backend/ledgers/urls.py 경로에 대시보드 통계 API 라우팅 등록
-- [ ] T011 [P] [US1] frontend/src/services/dashboardService.js 경로에 대시보드 API 연동 비동기 모듈 구현
-- [ ] T012 [P] [US1] frontend/src/components/PieChart.vue 경로에 Chart.js 기반 카테고리 소비 분포 원형 차트 구현
-- [ ] T013 [P] [US1] frontend/src/components/BarChart.vue 경로에 Chart.js 기반 월 지출 추이 막대 차트 구현
-- [ ] T014 [US1] frontend/src/pages/Dashboard.vue 경로에 차트 컴포넌트들을 반응형 2열 분할 그리드 내에 마운트 및 데이터 바인딩
+- [X] T009 [US1] backend/ledgers/views.py 경로에 /api/ledgers/dashboard/ API 뷰 구현 (당월 실시간 집계 및 쿼리 파라미터 months 기간 필터 지원)
+- [X] T010 [US1] backend/ledgers/urls.py 경로에 대시보드 통계 API 라우팅 등록
+- [X] T011 [P] [US1] frontend/src/services/dashboardService.js 경로에 대시보드 API 연동 비동기 모듈 구현
+- [X] T012 [P] [US1] frontend/src/components/PieChart.vue 경로에 Chart.js 기반 카테고리 소비 분포 원형 차트 구현
+- [X] T013 [P] [US1] frontend/src/components/BarChart.vue 경로에 Chart.js 기반 월 지출 추이 막대 차트 구현
+- [X] T014 [US1] frontend/src/pages/Dashboard.vue 경로에 차트 컴포넌트들을 반응형 2열 분할 그리드 내에 마운트 및 데이터 바인딩
 
 **Checkpoint**: MVP 달성 - 대시보드 진입 시 소비 차트 시각화가 완전히 기능하고 독립 검증 가능함
 
@@ -70,15 +70,15 @@
 
 > **NOTE: 이 테스트 코드를 먼저 구현하고, 테스트가 실패(Red)하는 것을 확인한 뒤 구현에 착수하십시오.**
 
-- [ ] T015 [P] [US2] backend/tests/test_dashboard_api.py 경로에 /api/budgets/ API의 예산 생성/수정(Upsert) 및 조회에 대한 TDD 테스트 코드 작성
+- [X] T015 [P] [US2] backend/tests/test_dashboard_api.py 경로에 /api/budgets/ API의 예산 생성/수정(Upsert) 및 조회에 대한 TDD 테스트 코드 작성
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] backend/ledgers/views.py 경로에 /api/budgets/ 예산 관리 API 뷰 구현 (UNIQUE 중복 예외 방어 및 Decimal 유효성 검사 처리)
-- [ ] T017 [US2] backend/ledgers/urls.py 경로에 예산 API 라우팅 등록
-- [ ] T018 [P] [US2] frontend/src/services/budgetService.js 경로에 예산 API 호출 모듈 구현
-- [ ] T019 [P] [US2] frontend/src/components/BudgetGauge.vue 경로에 남은 예산 게이지바 및 인라인 편집 아이콘/모달 구현 (안전/주의/경고 시각화 규칙 반영)
-- [ ] T020 [US2] frontend/src/pages/Dashboard.vue 경로에 예산 게이지바 컴포넌트 마운트 및 예산 변경에 따른 실시간 리액티브 갱신 바인딩
+- [X] T016 [US2] backend/ledgers/views.py 경로에 /api/budgets/ 예산 관리 API 뷰 구현 (UNIQUE 중복 예외 방어 및 Decimal 유효성 검사 처리)
+- [X] T017 [US2] backend/ledgers/urls.py 경로에 예산 API 라우팅 등록
+- [X] T018 [P] [US2] frontend/src/services/budgetService.js 경로에 예산 API 호출 모듈 구현
+- [X] T019 [P] [US2] frontend/src/components/BudgetGauge.vue 경로에 남은 예산 게이지바 및 인라인 편집 아이콘/모달 구현 (안전/주의/경고 시각화 규칙 반영)
+- [X] T020 [US2] frontend/src/pages/Dashboard.vue 경로에 예산 게이지바 컴포넌트 마운트 및 예산 변경에 따른 실시간 리액티브 갱신 바인딩
 
 **Checkpoint**: 예산 게이지 및 인라인 편집 기능 완료 - 차트와 예산 정보가 실시간 연동됨
 
@@ -94,13 +94,13 @@
 
 > **NOTE: 이 테스트 코드를 먼저 구현하고, 테스트가 실패(Red)하는 것을 확인한 뒤 구현에 착수하십시오.**
 
-- [ ] T021 [P] [US3] backend/tests/test_dashboard_api.py 경로에 가맹점 지출 집계 로직 및 3순위 정렬 무결성에 대한 TDD 테스트 코드 작성
+- [X] T021 [P] [US3] backend/tests/test_dashboard_api.py 경로에 가맹점 지출 집계 로직 및 3순위 정렬 무결성에 대한 TDD 테스트 코드 작성
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] backend/ledgers/views.py 경로에 가맹점 총액 합산 및 상위 3곳 필터링 ORM 집계 쿼리 최적화 구현 (가맹점명 없는 건 제외 처리)
-- [ ] T023 [P] [US3] frontend/src/components/TopMerchants.vue 경로에 TOP 3 가맹점 요약 카드 컴포넌트 구현 (반응형 3열 그리드 적용)
-- [ ] T024 [US3] frontend/src/pages/Dashboard.vue 경로에 TOP 3 가맹점 요약 카드 마운트 및 API 바인딩
+- [X] T022 [US3] backend/ledgers/views.py 경로에 가맹점 총액 합산 및 상위 3곳 필터링 ORM 집계 쿼리 최적화 구현 (가맹점명 없는 건 제외 처리)
+- [X] T023 [P] [US3] frontend/src/components/TopMerchants.vue 경로에 TOP 3 가맹점 요약 카드 컴포넌트 구현 (반응형 3열 그리드 적용)
+- [X] T024 [US3] frontend/src/pages/Dashboard.vue 경로에 TOP 3 가맹점 요약 카드 마운트 및 API 바인딩
 
 **Checkpoint**: 모든 기획 요구사항 충족 완료 - 차트, 예산, TOP 3 가맹점 요약이 완전하게 통합 구동됨
 
@@ -110,10 +110,10 @@
 
 **Purpose**: 성능 최적화, 린팅 스타일 정제 및 최종 E2E 가동 검증
 
-- [ ] T025 [P] 대시보드 통계 API(/api/ledgers/dashboard/) 쿼리에 EXPLAIN ANALYZE 분석을 실행하고 인덱스 최적화를 통해 100ms 이내 응답을 보장하는지 확인
-- [ ] T026 모바일 단말기 및 웹 뷰포트 반응형 화면 상태 검증 및 레이아웃 밀림 수정
-- [ ] T027 [P] uv run ruff check 및 uv run ruff format을 가동하여 스타일 및 정적 품질 검증 통과 보장
-- [ ] T028 [P] specs/020-visualize-spending/quickstart.md 안내서를 따라 가동 시나리오를 전수 E2E 검증하고 마무리
+- [X] T025 [P] 대시보드 통계 API(/api/ledgers/dashboard/) 쿼리에 EXPLAIN ANALYZE 분석을 실행하고 인덱스 최적화를 통해 100ms 이내 응답을 보장하는지 확인
+- [X] T026 모바일 단말기 및 웹 뷰포트 반응형 화면 상태 검증 및 레이아웃 밀림 수정
+- [X] T027 [P] uv run ruff check 및 uv run ruff format을 가동하여 스타일 및 정적 품질 검증 통과 보장
+- [X] T028 [P] specs/020-visualize-spending/quickstart.md 안내서를 따라 가동 시나리오를 전수 E2E 검증하고 마무리
 
 ---
 

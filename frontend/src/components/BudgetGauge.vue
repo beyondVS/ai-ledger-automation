@@ -1,0 +1,206 @@
+<template>
+  <div class="budget-gauge-card p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl relative overflow-hidden transition-all duration-300 hover:border-slate-700">
+    <div class="flex justify-between items-center mb-4">
+      <div>
+        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">당월 지출 예산</h3>
+        <p class="text-2xl font-bold text-white mt-1">
+          {{ formatCurrency(budget.amount) }}
+        </p>
+      </div>
+      <button 
+        @click="openModal"
+        class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors duration-200"
+        title="예산 수정"
+      >
+        <!-- Edit Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.83 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Gauge Bar -->
+    <div class="mt-4">
+      <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden relative">
+        <div 
+          class="h-full rounded-full transition-all duration-500 ease-out"
+          :class="statusClass"
+          :style="{ width: `${clampedRatio}%` }"
+        ></div>
+      </div>
+      <div class="flex justify-between items-center mt-2 text-xs font-medium">
+        <span class="text-slate-400">소진율 {{ budget.spent_ratio.toFixed(1) }}%</span>
+        <span :class="statusTextClass">
+          {{ budget.status === 'danger' ? '예산 초과 주의!' : budget.status === 'warning' ? '주의 단계' : '안정적' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-800/60">
+      <div>
+        <span class="text-xs text-slate-500">누적 지출</span>
+        <p class="text-base font-semibold text-slate-200 mt-0.5">{{ formatCurrency(budget.spent_amount) }}</p>
+      </div>
+      <div class="text-right">
+        <span class="text-xs text-slate-500">남은 예산</span>
+        <p class="text-base font-semibold mt-0.5" :class="remainingClass">
+          {{ formatCurrency(budget.remaining_amount) }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Modal Portal / Teleport or Inline -->
+    <Transition name="fade-blur">
+      <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+        <div 
+          v-click-outside="closeModal"
+          class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all"
+        >
+          <div class="flex justify-between items-center mb-6">
+            <h4 class="text-lg font-bold text-white">이번 달 예산 편집</h4>
+            <button @click="closeModal" class="text-slate-400 hover:text-white transition-colors duration-150">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <form @submit.prevent="submitBudget">
+            <div class="mb-5">
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">예산 금액 (원)</label>
+              <input 
+                v-model.number="inputAmount"
+                type="number" 
+                min="0"
+                step="1000"
+                class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                placeholder="예: 1,000,000"
+                required
+              />
+              <p v-if="errorMessage" class="text-xs text-rose-500 mt-2">{{ errorMessage }}</p>
+            </div>
+
+            <div class="flex justify-end gap-3">
+              <button 
+                type="button" 
+                @click="closeModal" 
+                class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+              >
+                취소
+              </button>
+              <button 
+                type="submit" 
+                :disabled="isSubmitting"
+                class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-700 text-white font-semibold transition-all shadow-lg shadow-emerald-500/20"
+              >
+                {{ isSubmitting ? '저장 중...' : '예산 저장' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Transition>
+  </div>
+</template>
+
+<script>
+import { upsertMonthlyBudget } from '../services/budgetService';
+
+export default {
+  name: 'BudgetGauge',
+  props: {
+    budget: {
+      type: Object,
+      required: true
+    },
+    currentMonthStr: {
+      type: String,
+      required: true // Format: 'YYYY-MM'
+    }
+  },
+  emits: ['budget-updated'],
+  data() {
+    return {
+      isModalOpen: false,
+      inputAmount: 1000000,
+      isSubmitting: false,
+      errorMessage: ''
+    };
+  },
+  computed: {
+    clampedRatio() {
+      return Math.min(Math.max(this.budget.spent_ratio, 0), 100);
+    },
+    statusClass() {
+      if (this.budget.status === 'danger') return 'bg-gradient-to-r from-rose-600 to-rose-500';
+      if (this.budget.status === 'warning') return 'bg-gradient-to-r from-amber-500 to-yellow-400';
+      return 'bg-gradient-to-r from-emerald-500 to-teal-400';
+    },
+    statusTextClass() {
+      if (this.budget.status === 'danger') return 'text-rose-400 font-semibold';
+      if (this.budget.status === 'warning') return 'text-amber-400 font-semibold';
+      return 'text-emerald-400 font-semibold';
+    },
+    remainingClass() {
+      return this.budget.remaining_amount < 0 ? 'text-rose-500 font-bold' : 'text-emerald-400';
+    }
+  },
+  methods: {
+    formatCurrency(value) {
+      return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
+    },
+    openModal() {
+      this.inputAmount = this.budget.amount;
+      this.errorMessage = '';
+      this.isModalOpen = true;
+    },
+    closeModal() {
+      this.isModalOpen = false;
+    },
+    async submitBudget() {
+      if (this.inputAmount < 0) {
+        this.errorMessage = '예산 금액은 0원 이상이어야 합니다.';
+        return;
+      }
+      this.isSubmitting = true;
+      this.errorMessage = '';
+      try {
+        const updatedBudget = await upsertMonthlyBudget(this.currentMonthStr, this.inputAmount);
+        this.$emit('budget-updated', updatedBudget);
+        this.closeModal();
+      } catch (err) {
+        this.errorMessage = err.message || '예산 저장 중 오류가 발생했습니다.';
+      } finally {
+        this.isSubmitting = false;
+      }
+    }
+  },
+  directives: {
+    'click-outside': {
+      beforeMount(el, binding) {
+        el.clickOutsideEvent = function(event) {
+          if (!(el === event.target || el.contains(event.target))) {
+            binding.value(event);
+          }
+        };
+        document.body.addEventListener('click', el.clickOutsideEvent);
+      },
+      unmounted(el) {
+        document.body.removeEventListener('click', el.clickOutsideEvent);
+      }
+    }
+  }
+};
+</script>
+
+<style scoped>
+.fade-blur-enter-active,
+.fade-blur-leave-active {
+  transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
+}
+.fade-blur-enter-from,
+.fade-blur-leave-to {
+  opacity: 0;
+  backdrop-filter: blur(0px);
+}
+</style>

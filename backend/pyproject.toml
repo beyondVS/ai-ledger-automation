@@ -1,6 +1,6 @@
 [project]
 name = "ai-ledger-backend"
-version = "1.16.0"
+version = "1.17.0"
 description = "AI-powered ledger automation backend"
 readme = "README.md"
 requires-python = ">=3.13"
