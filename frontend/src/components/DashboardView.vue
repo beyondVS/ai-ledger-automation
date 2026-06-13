@@ -7,14 +7,12 @@
         <span class="font-semibold text-slate-200">{{ currentUsername }}</span>님 환영합니다
       </div>
       <div class="flex items-center gap-2">
-        <!-- 템플릿 관리 기능 백로그 이관으로 인한 일시 주석 처리
         <button 
-          @click="goToTemplates"
+          @click="goToMyTemplates"
           class="px-3 py-1.5 rounded-lg bg-indigo-950/40 border border-indigo-900/50 text-indigo-300 hover:text-indigo-100 hover:bg-indigo-900/60 transition-all cursor-pointer font-semibold uppercase tracking-wider"
         >
-          템플릿 관리
+          내 가맹점 템플릿
         </button>
-        -->
         <button 
           @click="handleLogout"
           class="logout-btn px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer font-semibold uppercase tracking-wider"
@@ -297,11 +295,11 @@ export default {
       }
     };
 
-    const goToTemplates = () => {
+    const goToMyTemplates = () => {
       if (router) {
-        router.push({ name: 'AdminTemplateList' });
+        router.push({ name: 'MyTemplateList' });
       } else {
-        window.location.hash = '/admin/templates';
+        window.location.hash = '/my/templates';
       }
     };
 
@@ -442,7 +440,7 @@ export default {
       handleEditSave,
       handleDeleteConfirm,
       handleLogout,
-      goToTemplates,
+      goToMyTemplates,
       onFileDetected,
       onFileRemoved,
       onValidationError,
