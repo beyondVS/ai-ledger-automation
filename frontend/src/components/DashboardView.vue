@@ -1,7 +1,7 @@
 <template>
   <main class="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 sm:p-12 selection:bg-indigo-500">
     <!-- 로그아웃 및 사용자 프로필 상단 바 -->
-    <div class="w-full max-w-lg flex justify-between items-center mb-6 text-xs text-slate-400">
+    <div class="w-full max-w-lg md:max-w-4xl lg:max-w-5xl flex justify-between items-center mb-6 text-xs text-slate-400">
       <div class="flex items-center gap-2">
         <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
         <span class="font-semibold text-slate-200">{{ currentUsername }}</span>님 환영합니다
@@ -22,7 +22,7 @@
       </div>
     </div>
 
-    <div class="w-full max-w-lg flex flex-col">
+    <div class="w-full max-w-lg md:max-w-4xl lg:max-w-5xl flex flex-col">
       <!-- 헤더 브랜드 영역 (Aesthetics WOW - Outfit/Inter 모던 타이틀) -->
       <header class="text-center mb-10 select-none">
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-4 tracking-wide font-outfit uppercase">
@@ -39,7 +39,7 @@
       <!-- 에러 피드백 알럿 영역 -->
       <div 
         v-if="errorMessage"
-        class="w-full max-w-md mx-auto mb-5 p-4 rounded-xl bg-rose-950/30 border border-rose-900/40 text-rose-200 text-sm flex items-start space-x-3 transition-all duration-300 shadow-md animate-fade-in"
+        class="w-full max-w-md md:max-w-none mx-auto mb-5 p-4 rounded-xl bg-rose-950/30 border border-rose-900/40 text-rose-200 text-sm flex items-start space-x-3 transition-all duration-300 shadow-md animate-fade-in"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 flex-shrink-0 mt-0.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -47,87 +47,90 @@
         <span>{{ errorMessage }}</span>
       </div>
 
-      <!-- 메인 인터랙티브 작업 공간 -->
-      <div class="relative w-full max-w-md mx-auto">
-        <!-- 업로드 진행 중 로딩 인디케이터 오버레이 -->
-        <div 
-          v-if="isUploading"
-          class="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-center p-8 border border-slate-800 shadow-2xl animate-fade-in"
-        >
-          <!-- 핀테크 감성 그라데이션 회전 링 -->
-          <div class="w-14 h-14 rounded-full border-4 border-slate-800 border-t-indigo-500 animate-spin mb-4"></div>
-          <h3 class="font-outfit text-slate-100 font-semibold text-lg mb-1">영수증 분석 중...</h3>
-          <p class="text-slate-400 text-xs tracking-wide">HTML5 Canvas 압축 및 AI OCR 파이프라인 가동 중</p>
-        </div>
-
-        <!-- 드롭존 -->
-        <Dropzone 
-          v-if="!currentFile"
-          @file-detected="onFileDetected"
-          @validation-error="onValidationError"
-        />
-
-        <!-- 영수증 결과물 목록 및 분석된 가계부 명세 피드백 -->
-        <ReceiptList 
-          v-else
-          :file="currentFile"
-          :parsed-data="parsedData"
-          :polling-status="pollingStatus"
-          @file-removed="onFileRemoved"
-        />
-      </div>
-
-      <!-- 가계부 리스트 뷰 영역 (US1 MVP) -->
-      <section class="w-full max-w-md mx-auto mt-8 p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
-        <div class="flex justify-between items-center mb-6">
-          <div class="flex items-center gap-2 select-none">
-            <button 
-              @click="changeMonth(-1)"
-              class="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-              </svg>
-            </button>
-            <span class="text-xs font-semibold text-slate-300 tracking-wider font-mono uppercase">
-              {{ selectedYear }}년 {{ selectedMonth }}월 지출
-            </span>
-            <button 
-              @click="changeMonth(1)"
-              class="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </button>
+      <!-- 반응형 2열 본문 그리드 레이아웃 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start w-full mt-2">
+        <!-- 좌측 열: 메인 인터랙티브 작업 공간 -->
+        <div class="relative w-full max-w-md mx-auto md:mx-0 md:max-w-none">
+          <!-- 업로드 진행 중 로딩 인디케이터 오버레이 -->
+          <div 
+            v-if="isUploading"
+            class="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-center p-8 border border-slate-800 shadow-2xl animate-fade-in"
+          >
+            <!-- 핀테크 감성 그라데이션 회전 링 -->
+            <div class="w-14 h-14 rounded-full border-4 border-slate-800 border-t-indigo-500 animate-spin mb-4"></div>
+            <h3 class="font-outfit text-slate-100 font-semibold text-lg mb-1">영수증 분석 중...</h3>
+            <p class="text-slate-400 text-xs tracking-wide">HTML5 Canvas 압축 및 AI OCR 파이프라인 가동 중</p>
           </div>
-          <span class="text-indigo-400 font-bold font-outfit text-sm">{{ formattedMonthlyTotal }} 원</span>
-        </div>
 
-        <!-- 빈 화면 대응 -->
-        <div v-if="ledgerList.length === 0 && pendingJobs.length === 0" class="text-center py-8 text-slate-500 text-xs">
-          선택하신 달의 가계부 지출 내역이 없습니다.
-        </div>
-
-        <!-- 가계부 카드 목록 -->
-        <div v-else class="space-y-3 max-h-96 overflow-y-auto pr-1">
-          <!-- 비동기 분석 대기중인 스켈레톤 로더 -->
-          <LedgerShimmer
-            v-for="job in pendingJobs"
-            :key="job.id"
-            :job="job"
-            class="mb-3 animate-fade-in"
+          <!-- 드롭존 -->
+          <Dropzone 
+            v-if="!currentFile"
+            @file-detected="onFileDetected"
+            @validation-error="onValidationError"
           />
 
-          <LedgerListItem 
-            v-for="ledger in ledgerList" 
-            :key="ledger.id"
-            :ledger="ledger"
-            @edit="openEditModal"
-            @delete="openDeleteModal"
+          <!-- 영수증 결과물 목록 및 분석된 가계부 명세 피드백 -->
+          <ReceiptList 
+            v-else
+            :file="currentFile"
+            :parsed-data="parsedData"
+            :polling-status="pollingStatus"
+            @file-removed="onFileRemoved"
           />
         </div>
-      </section>
+
+        <!-- 우측 열: 가계부 리스트 뷰 영역 (US1 MVP) -->
+        <section class="w-full max-w-md mx-auto md:mx-0 md:max-w-none p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-2 select-none">
+              <button 
+                @click="changeMonth(-1)"
+                class="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+              </button>
+              <span class="text-xs font-semibold text-slate-300 tracking-wider font-mono uppercase">
+                {{ selectedYear }}년 {{ selectedMonth }}월 지출
+              </span>
+              <button 
+                @click="changeMonth(1)"
+                class="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
+              </button>
+            </div>
+            <span class="text-indigo-400 font-bold font-outfit text-sm">{{ formattedMonthlyTotal }} 원</span>
+          </div>
+
+          <!-- 빈 화면 대응 -->
+          <div v-if="ledgerList.length === 0 && pendingJobs.length === 0" class="text-center py-8 text-slate-500 text-xs">
+            선택하신 달의 가계부 지출 내역이 없습니다.
+          </div>
+
+          <!-- 가계부 카드 목록 -->
+          <div v-else class="space-y-3 max-h-96 overflow-y-auto pr-1">
+            <!-- 비동기 분석 대기중인 스켈레톤 로더 -->
+            <LedgerShimmer
+              v-for="job in pendingJobs"
+              :key="job.id"
+              :job="job"
+              class="mb-3 animate-fade-in"
+            />
+
+            <LedgerListItem 
+              v-for="ledger in ledgerList" 
+              :key="ledger.id"
+              :ledger="ledger"
+              @edit="openEditModal"
+              @delete="openDeleteModal"
+            />
+          </div>
+        </section>
+      </div>
 
       <!-- 정보 푸터 -->
       <footer class="text-center text-slate-600 text-xs font-mono tracking-wider mt-12 select-none">
@@ -228,7 +231,7 @@ export default {
 
     onMounted(() => {
       loadLedgerList();
-      const sessionData = localStorage.getItem('ai_ledger_auth_session');
+      const sessionData = sessionStorage.getItem('ai_ledger_auth_session');
       if (sessionData) {
         try {
           const parsed = JSON.parse(sessionData);

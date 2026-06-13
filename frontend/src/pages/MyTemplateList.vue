@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-100 p-6 sm:p-12 font-sans selection:bg-indigo-500 flex flex-col items-center justify-center">
-    <div class="w-full max-w-md flex flex-col space-y-6">
+    <div class="w-full max-w-md md:max-w-3xl lg:max-w-4xl flex flex-col space-y-6">
       
       <!-- 헤더 섹션 (대시보드와 동일한 모던 브랜드 톤) -->
       <header class="text-center select-none">
@@ -55,7 +55,7 @@
       </div>
 
       <!-- 가맹점 콤팩트 리스트 영역 (대시보드 리스트 스타일 계승) -->
-      <div v-else class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[32rem] overflow-y-auto pr-1">
         <div 
           v-for="template in templates" 
           :key="template.id"
