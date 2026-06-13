@@ -1,33 +1,67 @@
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-100 p-6 sm:p-12 font-sans selection:bg-indigo-500 flex flex-col items-center justify-center">
     <div class="w-full max-w-md md:max-w-3xl lg:max-w-4xl flex flex-col space-y-6">
-      
+      <!-- 상단 내비바 뒤로가기 -->
+      <div class="flex items-center justify-between w-full border-b border-slate-800/60 pb-4 select-none">
+        <router-link
+          to="/dashboard"
+          class="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-white transition duration-200"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+          </svg>
+          대시보드
+        </router-link>
+        <span class="text-xs text-slate-600 font-mono tracking-wider">My Templates</span>
+      </div>
+
       <!-- 헤더 섹션 (대시보드와 동일한 모던 브랜드 톤) -->
-      <header class="text-center select-none">
+      <header class="text-center select-none pt-2">
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-3 tracking-wide uppercase font-outfit">
           Parser Cache
         </span>
         <h1 class="font-outfit text-3xl font-black text-slate-100 tracking-tight leading-none mb-2">
           내 가맹점 <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-400 to-indigo-400">템플릿</span>
         </h1>
-        <p class="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto">
+        <p class="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto word-break-keep-all">
           결제했던 가맹점의 AI 영수증 분석 템플릿 상태를 확인하고 파싱 에러 시 초기화합니다.
         </p>
       </header>
 
-      <!-- 요약 정보 칩 (가로 3열 콤팩트 레이아웃) -->
-      <div class="grid grid-cols-3 gap-2 text-center text-2xs bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 shadow-lg select-none">
-        <div class="flex flex-col">
-          <span class="text-slate-500 uppercase tracking-wider font-semibold">총 템플릿</span>
-          <span class="text-sm font-bold text-slate-200 mt-0.5 font-mono">{{ templates.length }}</span>
+      <!-- 요약 정보 칩 (가로 3열 고속 통계 배너) -->
+      <div class="grid grid-cols-3 gap-2 bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 shadow-lg select-none">
+        <div class="flex items-center justify-center space-x-3">
+          <div class="p-2 rounded-lg bg-slate-800/60 text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h18v3.75H3V3Z" />
+            </svg>
+          </div>
+          <div class="flex flex-col text-left">
+            <span class="text-3xs text-slate-500 uppercase tracking-wider font-bold">총 템플릿</span>
+            <span class="text-base font-extrabold text-white mt-0.5 font-mono leading-none">{{ templates.length }}</span>
+          </div>
         </div>
-        <div class="flex flex-col border-x border-slate-800/80">
-          <span class="text-slate-500 uppercase tracking-wider font-semibold">우회 가동</span>
-          <span class="text-sm font-bold text-emerald-400 mt-0.5 font-mono">{{ verifiedCount }}</span>
+        <div class="flex items-center justify-center space-x-3 border-x border-slate-800/80">
+          <div class="p-2 rounded-lg bg-emerald-950/20 text-emerald-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+            </svg>
+          </div>
+          <div class="flex flex-col text-left pl-1">
+            <span class="text-3xs text-slate-500 uppercase tracking-wider font-bold">우회 가동</span>
+            <span class="text-base font-extrabold text-emerald-400 mt-0.5 font-mono leading-none">{{ verifiedCount }}</span>
+          </div>
         </div>
-        <div class="flex flex-col">
-          <span class="text-slate-500 uppercase tracking-wider font-semibold">자동 학습</span>
-          <span class="text-sm font-bold text-teal-400 mt-0.5 font-mono">{{ learningCount }}</span>
+        <div class="flex items-center justify-center space-x-3">
+          <div class="p-2 rounded-lg bg-teal-950/20 text-teal-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
+            </svg>
+          </div>
+          <div class="flex flex-col text-left pl-1">
+            <span class="text-3xs text-slate-500 uppercase tracking-wider font-bold">자동 학습</span>
+            <span class="text-base font-extrabold text-teal-400 mt-0.5 font-mono leading-none">{{ learningCount }}</span>
+          </div>
         </div>
       </div>
 
@@ -49,61 +83,67 @@
       </div>
 
       <!-- 빈 목록 대응 -->
-      <div v-else-if="templates.length === 0" class="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center text-slate-500 text-xs shadow-xl select-none">
-        <p class="font-semibold text-slate-400">가맹점 템플릿 내역이 없습니다.</p>
-        <p class="mt-1 text-2xs text-slate-600">영수증 분석이 시작되면 자동으로 빌드됩니다.</p>
+      <div v-else-if="templates.length === 0" class="flex flex-col items-center justify-center py-16 text-slate-500 border border-dashed border-slate-800 bg-slate-900/20 rounded-2xl shadow-xl select-none">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 mb-3 text-slate-700">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.008 1.24l.885 1.77a2.25 2.25 0 0 0 2.007 1.24h1.98a2.25 2.25 0 0 0 2.007-1.24l.885-1.77a2.25 2.25 0 0 1 2.007-1.24h3.86m-18 0h18a2.25 2.25 0 0 1 2.25 2.25v4.5A2.25 2.25 0 0 1 18 22.5H6a2.25 2.25 0 0 1-2.25-2.25v-4.5A2.25 2.25 0 0 1 2.25 13.5Z" />
+        </svg>
+        <p class="font-semibold text-slate-400">학습된 가맹점 템플릿이 없습니다.</p>
+        <p class="mt-1.5 text-2xs text-slate-600 font-medium">대시보드에 영수증을 업로드하여 첫 파서 템플릿 캐싱을 시작해 보세요.</p>
       </div>
 
-      <!-- 가맹점 콤팩트 리스트 영역 (대시보드 리스트 스타일 계승) -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[32rem] overflow-y-auto pr-1">
+      <!-- 가맹점 콤팩트 리스트 영역 (타일 형태 그리드 고도화) -->
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[32rem] overflow-y-auto pr-1">
         <div 
           v-for="template in templates" 
           :key="template.id"
-          class="bg-slate-900 border border-slate-800/80 rounded-xl p-3.5 flex items-center justify-between shadow-md hover:border-slate-700/60 transition duration-200"
+          class="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between space-y-4 shadow-xl hover:border-slate-700/60 hover:-translate-y-0.5 transition-all duration-200 group"
         >
-          <!-- 좌측: 가맹점 정보 -->
-          <div class="flex flex-col min-w-0 pr-2 select-none">
-            <span class="text-sm font-bold text-slate-200 truncate leading-snug" :title="template.vendor_name">
+          <!-- 상단: 가맹점 정보 -->
+          <div class="flex flex-col min-w-0 select-none">
+            <span class="text-base font-bold text-slate-200 truncate leading-snug group-hover:text-white" :title="template.vendor_name">
               {{ template.vendor_name }}
             </span>
-            <span class="text-2xs text-slate-500 font-mono mt-0.5">
-              {{ formatRegNumber(template.vendor_registration_number) }}
+            <span class="text-xxs text-slate-500 font-mono mt-1 tracking-wider">
+              사업자번호: {{ formatRegNumber(template.vendor_registration_number) }}
             </span>
           </div>
 
-          <!-- 우측: 상태 배지 및 초기화 제어 버튼 -->
-          <div class="flex items-center space-x-2 flex-shrink-0">
+          <!-- 하단: 상태 배지 및 초기화 제어 버튼 정렬 분리 -->
+          <div class="flex items-center justify-between border-t border-slate-800/60 pt-3 flex-shrink-0">
             <!-- 콤팩트 상태 배지 -->
             <span 
               v-if="template.is_blacklisted"
-              class="px-2 py-0.5 rounded-md text-3xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20"
+              class="px-2 py-0.5 rounded-lg text-3xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20"
             >
               차단됨
             </span>
             <span 
               v-else-if="template.is_verified"
-              class="px-2 py-0.5 rounded-md text-3xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+              class="px-2 py-0.5 rounded-lg text-3xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
             >
-              우회 중
+              우회 가동
             </span>
             <span 
               v-else-if="template.self_healing_attempts > 0"
-              class="px-2 py-0.5 rounded-md text-3xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse"
+              class="px-2 py-0.5 rounded-lg text-3xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse"
             >
-              치유 중
+              자가 치유
             </span>
             <span 
               v-else
-              class="px-2 py-0.5 rounded-md text-3xs font-semibold bg-teal-500/10 text-teal-400 border border-teal-500/20"
+              class="px-2 py-0.5 rounded-lg text-3xs font-semibold bg-teal-500/10 text-teal-400 border border-teal-500/20"
             >
-              학습 중
+              자동 학습
             </span>
 
-            <!-- 콤팩트 초기화 버튼 -->
+            <!-- 콤팩트 초기화 버튼 (아이콘 결합) -->
             <button
               @click="confirmReset(template)"
-              class="px-2.5 py-1 rounded-lg border border-rose-900/50 bg-rose-950/20 text-rose-300 hover:bg-rose-900/40 hover:text-rose-100 transition duration-200 text-2xs font-semibold cursor-pointer select-none"
+              class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-rose-900/30 bg-rose-950/20 text-rose-400 hover:bg-rose-900/30 hover:text-rose-100 transition duration-200 text-2xs font-semibold cursor-pointer select-none"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
               초기화
             </button>
           </div>
@@ -111,13 +151,7 @@
       </div>
 
       <!-- 푸터 및 돌아가기 -->
-      <div class="flex flex-col items-center space-y-4 pt-4 select-none">
-        <router-link
-          to="/dashboard"
-          class="w-full text-center py-2.5 rounded-xl border border-slate-800 text-xs font-semibold text-slate-400 bg-slate-900 hover:text-slate-200 hover:bg-slate-800 transition duration-200 cursor-pointer"
-        >
-          대시보드로 돌아가기
-        </router-link>
+      <div class="flex flex-col items-center space-y-4 pt-6 select-none border-t border-slate-900">
         <footer class="text-center text-slate-700 text-2xs font-mono tracking-wider">
           AI Ledger Automation v1.0.0 &copy; 2026
         </footer>

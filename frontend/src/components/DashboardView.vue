@@ -24,17 +24,17 @@
 
     <div class="w-full max-w-lg md:max-w-4xl lg:max-w-5xl flex flex-col">
       <!-- 헤더 브랜드 영역 (Aesthetics WOW - Outfit/Inter 모던 타이틀) -->
-      <header class="text-center mb-10 select-none">
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-4 tracking-wide font-outfit uppercase">
-          AI Automations
-        </span>
-        <h1 class="font-outfit text-4xl sm:text-5xl font-black text-slate-100 tracking-tight leading-none mb-3">
-          Smart Ledger <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-400 to-indigo-500">Receipts</span>
-        </h1>
-        <p class="text-slate-400 text-sm sm:text-base font-normal tracking-wide max-w-sm mx-auto leading-relaxed">
-          영수증 이미지를 올리면 고속 캐시 및 AI가 분석하여 가계부를 자동 작성합니다.
-        </p>
-      </header>
+        <header class="text-center md:text-left select-none max-w-xl mb-10">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-3 tracking-wide uppercase font-outfit">
+            AI Automations
+          </span>
+          <h1 class="font-outfit text-4xl md:text-5xl font-black text-slate-100 tracking-tight leading-none mb-3">
+            Smart Ledger <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-400 to-indigo-400">Receipts</span>
+          </h1>
+          <p class="text-slate-400 text-sm leading-relaxed break-keep">
+            영수증 이미지를 올리면 고속 캐시 및 AI가 분석하여 가계부를 자동 작성합니다.
+          </p>
+        </header>
 
       <!-- 에러 피드백 알럿 영역 -->
       <div 
@@ -48,7 +48,7 @@
       </div>
 
       <!-- 상단 대시보드 패널 (예산 게이지 및 TOP 3 가맹점) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 w-full">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 w-full items-stretch">
         <BudgetGauge 
           :budget="dashboardData.budget" 
           :current-month-str="currentMonthStr"
@@ -60,7 +60,7 @@
       </div>
 
       <!-- 반응형 2열 본문 그리드 레이아웃 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start w-full mt-2">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch w-full mt-2">
         <!-- 좌측 열: 메인 인터랙티브 작업 공간 -->
         <div class="relative w-full max-w-md mx-auto md:mx-0 md:max-w-none">
           <!-- 업로드 진행 중 로딩 인디케이터 오버레이 -->
@@ -92,7 +92,7 @@
         </div>
 
         <!-- 우측 열: 가계부 리스트 뷰 영역 (US1 MVP) -->
-        <section class="w-full max-w-md mx-auto md:mx-0 md:max-w-none p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+        <section class="w-full max-w-md mx-auto md:mx-0 md:max-w-none p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col justify-between h-full">
           <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-2 select-none">
               <button 
@@ -145,20 +145,24 @@
       </div>
 
       <!-- 하단 소비 시각화 차트 영역 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 w-full">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 w-full items-stretch">
         <!-- 원형 차트 -->
-        <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-700">
+        <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-700 flex flex-col justify-between">
           <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-6">카테고리별 지출 비율</h3>
-          <div v-if="dashboardData.category_spending && dashboardData.category_spending.length > 0" class="flex items-center justify-center">
-            <PieChart :chart-data="pieChartData" />
+          <div v-if="dashboardData.category_spending && dashboardData.category_spending.length > 0" class="flex items-center justify-center h-[260px]">
+            <PieChart :chart-data="pieChartData" :key="pieChartData.datasets[0].data.join(',')" />
           </div>
-          <div v-else class="flex items-center justify-center h-[300px] text-slate-500 text-sm">
-            데이터가 없습니다.
+          <div v-else class="flex flex-col items-center justify-center h-[260px] text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mb-3 text-slate-600">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
+            </svg>
+            <span>이번 달 카테고리별 지출 내역이 없습니다.</span>
           </div>
         </div>
 
         <!-- 막대 차트 -->
-        <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-700">
+        <div class="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-700 flex flex-col justify-between">
           <div class="flex justify-between items-center mb-6">
             <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">월별 지출 추이</h3>
             
@@ -175,11 +179,14 @@
               </button>
             </div>
           </div>
-          <div v-if="dashboardData.monthly_trends && dashboardData.monthly_trends.length > 0">
-            <BarChart :chart-data="barChartData" />
+          <div v-if="dashboardData.monthly_trends && dashboardData.monthly_trends.length > 0" class="h-[260px] flex items-center justify-center">
+            <BarChart :chart-data="barChartData" :key="barChartData.datasets[0].data.join(',')" />
           </div>
-          <div v-else class="flex items-center justify-center h-[300px] text-slate-500 text-sm">
-            데이터가 없습니다.
+          <div v-else class="flex flex-col items-center justify-center h-[260px] text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mb-3 text-slate-600">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v5.25c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 0 1 3 18.375v-5.25ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125v-9.75ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v14.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+            </svg>
+            <span>지출 통계 분석 데이터가 없습니다.</span>
           </div>
         </div>
       </div>
@@ -599,5 +606,8 @@ export default {
 }
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
+}
+.word-break-keep-all {
+  word-break: keep-all;
 }
 </style>

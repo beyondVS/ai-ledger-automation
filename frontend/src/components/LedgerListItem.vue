@@ -12,27 +12,27 @@
           <!-- 카테고리 뱃지 (T024) -->
           <span 
             v-if="ledger.category && ledger.category !== '미분류'"
-            class="px-2 py-0.5 text-xxs font-semibold rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+            class="px-2 py-0.5 text-xxs font-semibold rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 whitespace-nowrap flex-shrink-0"
           >
             {{ ledger.category }}
           </span>
           <span 
             v-else
-            class="px-2 py-0.5 text-xxs font-semibold rounded-full bg-slate-800 text-slate-400 border border-slate-700/50"
+            class="px-2 py-0.5 text-xxs font-semibold rounded-full bg-slate-800 text-slate-400 border border-slate-700/50 whitespace-nowrap flex-shrink-0"
           >
             미분류
           </span>
         </div>
-        <span class="text-xxs text-slate-500 font-mono">{{ ledger.transaction_date }}</span>
+        <span class="text-xxs text-slate-500 font-mono">{{ formatDateTime(ledger.transaction_date) }}</span>
       </div>
       
       <div class="flex items-center gap-4 flex-shrink-0">
         <div class="flex flex-col items-end gap-1">
           <span class="text-sm font-extrabold text-indigo-400 font-outfit">
-            {{ Number(ledger.total_amount).toLocaleString() }}원
+            {{ Math.round(Number(ledger.total_amount)).toLocaleString() }}원
           </span>
           <span class="text-xxs text-slate-600 font-mono">
-            세액: {{ Number(ledger.vat_amount).toLocaleString() }}원
+            세액: {{ Math.round(Number(ledger.vat_amount)).toLocaleString() }}원
           </span>
         </div>
 
@@ -98,4 +98,22 @@ defineProps({
 defineEmits(['edit', 'delete']);
 
 const isOpen = ref(false);
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${y}-${m}-${d} ${hh}:${mm}`;
+  } catch (e) {
+    return dateStr;
+  }
+};
 </script>
