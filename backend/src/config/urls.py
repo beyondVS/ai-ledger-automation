@@ -1,3 +1,4 @@
+from admin.views import MerchantTemplateVerifyView
 from django.contrib import admin
 from django.urls import include, path
 
@@ -10,4 +11,10 @@ urlpatterns = [
     # [T007] 영수증 업로드 및 상태 조회 API 연동
     path("api/v1/ledgers/", include("apps.ledgers.urls")),
     path("api/v1/receipts/", include("apps.ledgers.urls")),  # 프론트엔드 receipts 호출 호환 추가
+    # [T019] 어드민 가맹점 템플릿 수동 승인 API
+    path(
+        "api/admin/merchant-templates/<uuid:template_id>/verify/",
+        MerchantTemplateVerifyView.as_view(),
+        name="admin-merchant-template-verify",
+    ),
 ]

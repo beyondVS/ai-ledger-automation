@@ -2,11 +2,12 @@ import json
 import os
 
 from apps.accounts.models import User
+from apps.ledgers.exceptions import DuplicatePaymentError
 from apps.ledgers.models import Ledger, LedgerItem
 from apps.ledgers.services import create_ledger_transactional
 from apps.tasks.models import FailedTask
-from django.db import IntegrityError
 from django.test import TestCase
+from utils.llm_client import ReceiptItemSchema, ReceiptSchema
 from utils.pdf_extractor import PDFTextExtractor
 
 
@@ -48,23 +49,22 @@ class TestPDFIntegrationSuite(TestCase):
         self.assertIn("24000.00", result.raw_text)
 
         # 3. 추출된 데이터를 가공한 서비스 입력 페이로드 구성
-        ledger_data = {
-            "vendor_registration_number": "1208147528",
-            "vendor_name": "홍콩반점",
-            "transaction_date": "2026-05-29",
-            "total_amount": 24000.00,
-            "supply_value": 21818.18,
-            "vat_amount": 2181.82,
-            "raw_llm_response": result.raw_text,
-        }
-
-        items_data = [
-            {"item_name": "짜장면 곱빼기", "quantity": 2, "unit_price": 7000.00, "total_price": 14000.00},
-            {"item_name": "탕수육 소", "quantity": 1, "unit_price": 10000.00, "total_price": 10000.00},
-        ]
+        receipt_data = ReceiptSchema(
+            vendor_registration_number="1208147528",
+            vendor_name="홍콩반점",
+            transaction_date="2026-05-29",
+            total_amount=24000.00,
+            category="식비",
+            items=[
+                ReceiptItemSchema(item_name="짜장면 곱빼기", quantity=2, unit_price=7000.00, total_price=14000.00),
+                ReceiptItemSchema(item_name="탕수육 소", quantity=1, unit_price=10000.00, total_price=10000.00),
+            ],
+        )
 
         # 4. 트랜잭션 적재 기동 및 상태 검증
-        res = create_ledger_transactional(self.user_id_str, ledger_data, items_data)
+        res = create_ledger_transactional(
+            user_id=self.user_id_str, receipt_data=receipt_data, raw_llm_response={"raw_text": result.raw_text}
+        )
         self.assertEqual(res["status"], "SUCCESS")
 
         # DB 영속화 적재 수량 단언 검증
@@ -78,27 +78,25 @@ class TestPDFIntegrationSuite(TestCase):
         - 동일한 PDF 데이터를 지닌 영수증을 2회 연속 중복 적재 요청 시,
         - 고유 제약조건 예외가 정확하게 발생하고 롤백 및 FailedTask 격리가 완료되는지 검증합니다.
         """
-        ledger_data = {
-            "vendor_registration_number": "1208147528",
-            "vendor_name": "홍콩반점",
-            "transaction_date": "2026-05-29",
-            "total_amount": 24000.00,
-            "supply_value": 21818.18,
-            "vat_amount": 2181.82,
-        }
-
-        items_data = [
-            {"item_name": "짜장면 곱빼기", "quantity": 2, "unit_price": 7000.00, "total_price": 14000.00},
-            {"item_name": "탕수육 소", "quantity": 1, "unit_price": 10000.00, "total_price": 10000.00},
-        ]
+        receipt_data = ReceiptSchema(
+            vendor_registration_number="1208147528",
+            vendor_name="홍콩반점",
+            transaction_date="2026-05-29",
+            total_amount=24000.00,
+            category="식비",
+            items=[
+                ReceiptItemSchema(item_name="짜장면 곱빼기", quantity=2, unit_price=7000.00, total_price=14000.00),
+                ReceiptItemSchema(item_name="탕수육 소", quantity=1, unit_price=10000.00, total_price=10000.00),
+            ],
+        )
 
         # 1. 1차 인서트 시도: 정상 성공해야 함
-        res1 = create_ledger_transactional(self.user_id_str, ledger_data, items_data)
+        res1 = create_ledger_transactional(self.user_id_str, receipt_data)
         self.assertEqual(res1["status"], "SUCCESS")
 
-        # 2. 2차 인서트 시도: UNIQUE 복합 고유 키 충돌로 IntegrityError 발생 보장
-        with self.assertRaises(IntegrityError):
-            create_ledger_transactional(self.user_id_str, ledger_data, items_data)
+        # 2. 2차 인서트 시도: UNIQUE 복합 고유 키 충돌로 DuplicatePaymentError 발생 보장
+        with self.assertRaises(DuplicatePaymentError):
+            create_ledger_transactional(self.user_id_str, receipt_data)
 
         # 3. 2차 중복은 롤백되어 DB에 2번째 마스터 행이 증식되지 않았음을 입증 (여전히 1개)
         self.assertEqual(Ledger.objects.filter(user=self.user, vendor_registration_number="1208147528").count(), 1)
@@ -109,5 +107,5 @@ class TestPDFIntegrationSuite(TestCase):
         self.assertIsNotNone(failed_log.error_message)
 
         payload = json.loads(failed_log.raw_payload)
-        self.assertEqual(payload["ledger_data"]["vendor_name"], "홍콩반점")
-        self.assertEqual(float(payload["ledger_data"]["total_amount"]), 24000.00)
+        self.assertEqual(payload["receipt_data"]["vendor_name"], "홍콩반점")
+        self.assertEqual(float(payload["receipt_data"]["total_amount"]), 24000.00)

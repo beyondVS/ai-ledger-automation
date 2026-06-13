@@ -1,8 +1,8 @@
 [project]
 name = "ai-ledger-automation-monorepo"
-version = "1.10.0"
+version = "1.14.0"
 description = "AI-powered ledger automation monorepo workspace"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "ai-ledger-backend",
 ]
@@ -21,3 +21,24 @@ workspace = { members = ["backend"] }
 
 [tool.uv.sources]
 ai-ledger-backend = { workspace = true }
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+exclude = [
+    "**/migrations/*",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+    "E501",  # Line too long
+    "E402",  # Module level import not at top of file
+    "F403",  # Star imports (settings.py 상속용)
+    "F405",  # Undefined from star import
+    "E722",  # Bare except (레거시 코드 예외)
+    "B017",  # pytest.raises(Exception) 사용 허용
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true

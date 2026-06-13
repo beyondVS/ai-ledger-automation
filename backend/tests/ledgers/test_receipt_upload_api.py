@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from unittest.mock import MagicMock, patch
 
 from apps.accounts.models import User
 from apps.ledgers.models import Ledger, MerchantTemplate
@@ -29,6 +30,7 @@ class ReceiptUploadAPITestCase(TestCase):
             parsing_rules={
                 "merchant_name_regex": "스타벅스\\s+\\S+",
                 "total_amount_regex": "합계\\s+(\\d+)",
+                "date_pattern": r"날짜:\s*([\d\-]+)",
                 "default_items": [
                     {"name": "아이스 아메리카노", "quantity": 2, "price": 5000.00},
                     {"name": "초콜릿 칩 스콘", "quantity": 1, "price": 5000.00},
@@ -42,11 +44,19 @@ class ReceiptUploadAPITestCase(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
-    def test_receipt_upload_success_and_db_persistence(self):
-        # 1. 가상 영수증 이미지 데이터 생성 (파서의 금액 파싱 정합성을 위해 텍스트 포함 파일명 지정)
-        dummy_image_bytes = b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00\,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"
+    @patch("fitz.open")
+    def test_receipt_upload_success_and_db_persistence(self, mock_fitz_open):
+        # Given: fitz.open().page.get_text() 모킹
+        mock_doc = MagicMock()
+        mock_page = MagicMock()
+        mock_page.get_text.return_value = "스타벅스 역삼역점\n사업자번호: 120-86-12345\n합계 15000\n날짜: 2026-06-11"
+        mock_doc.__iter__.return_value = [mock_page]
+        mock_fitz_open.return_value = mock_doc
+
+        # 1. 가상 영수증 PDF 데이터 생성
+        dummy_image_bytes = b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"
         receipt_image = SimpleUploadedFile(
-            name="1208612345 합계 15000.jpg", content=dummy_image_bytes, content_type="image/jpeg"
+            name="starbucks.pdf", content=dummy_image_bytes, content_type="application/pdf"
         )
 
         # 2. 비동기 업로드 API 요청

@@ -56,18 +56,19 @@ class ReceiptUploadView(APIView):
             jobs_payload = []
 
             for image_file in image_files:
-                # 1. 3주차 호환 작업 추적 Job 생성 (PENDING 상태)
+                ext = os.path.splitext(image_file.name)[1]
+
+                # 3주차 호환 작업 추적 Job 생성 (PENDING 상태)
                 job = ReceiptUploadJob.objects.create(
                     user=current_user, status="PENDING", raw_file_name=image_file.name
                 )
 
-                # 2. 임시 디렉토리에 파일 업로드 저장
-                ext = os.path.splitext(image_file.name)[1]
+                # 임시 디렉토리에 파일 업로드 저장
                 temp_filename = f"{job.id}{ext}"
                 saved_filename = fs.save(temp_filename, image_file)
                 file_path = fs.path(saved_filename)
 
-                # 3. Celery 백그라운드 태스크 기동 및 장애 격리
+                # Celery 백그라운드 태스크 기동 및 장애 격리
                 try:
                     extract_receipt_text_task.delay(str(job.id), file_path)
                 except Exception as queue_err:
@@ -81,15 +82,16 @@ class ReceiptUploadView(APIView):
                     job.save()
                     raise queue_err
 
-                # 4. 응답 페이로드 누적
+                # 응답 페이로드 누적
                 jobs_payload.append({"job_id": job.id, "status": "PENDING", "ledger": None})
 
-            # 5. API 계약 응답 구조 직렬화 (단일 파일인 경우 단일 객체, 다중 파일인 경우 리스트 반환)
+            # API 계약 응답 구조 직렬화 (단일 파일인 경우 단일 객체, 다중 파일인 경우 리스트 반환)
             if len(image_files) == 1:
                 serializer = ReceiptUploadResponseSerializer(jobs_payload[0])
             else:
                 serializer = ReceiptUploadResponseSerializer(jobs_payload, many=True)
 
+            # 비동기 작업 접수 완료(202 Accepted) 반환
             return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
         except Exception as e:

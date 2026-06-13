@@ -108,6 +108,11 @@ class MerchantTemplate(models.Model):
     # 헌법 III조 수호: 캐시 정보 자율 학습 제안 시 기본값은 반드시 False로 보존
     is_verified = models.BooleanField(default=False)
 
+    # 비동기 Celery 정규식 유효성 테스트 성공 여부
+    is_auto_verified = models.BooleanField(default=False)
+    # 유효성 검사 실패 시 에러 로그 기록
+    regex_error_message = models.TextField(blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -1,9 +1,9 @@
 [project]
 name = "ai-ledger-backend"
-version = "1.10.0"
+version = "1.14.0"
 description = "AI-powered ledger automation backend"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "django>=6.0.6,<6.1",
     "django-environ>=0.13.0",
@@ -21,6 +21,7 @@ dependencies = [
     "psycopg-pool>=3.2.4",
     "pytest>=8.0.0",
     "pytest-django>=4.8.0",
+    "pytesseract>=0.3.10",
 ]
 
 [tool.pytest.ini_options]
@@ -29,23 +30,4 @@ pythonpath = "src"
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 
-[tool.ruff]
-target-version = "py312"
-line-length = 120
-exclude = [
-    "**/migrations/*",
-]
 
-[tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
-ignore = [
-    "E501",  # Line too long
-    "E402",  # Module level import not at top of file
-    "F403",  # Star imports (settings.py 상속용)
-    "F405",  # Undefined from star import
-    "E722",  # Bare except (레거시 코드 예외)
-    "B017",  # pytest.raises(Exception) 사용 허용
-]
-
-[tool.ruff.lint.isort]
-combine-as-imports = true
