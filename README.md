@@ -34,7 +34,7 @@ graph TD
     subgraph API_Server [API 인입 서버]
         UploadRouter[업로드 라우터: 크기 제한]
         EmailRouter[이메일 웹훅 라우터: SPF/DKIM 및 화이트리스트 필터 (차후 확장 백로그)]
-        AuthRouter[인증 라우터: OAuth 2.0 & JWT 이중 발급 및 검증]
+        AuthRouter[인증 라우터: JWT httpOnly 쿠키 인증 및 sessionStorage 세션 관리]
     end
 
     %% 메시지 브로커 영역
@@ -127,7 +127,7 @@ graph TD
 | **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) + **psycopg3** (psycopg[binary] C 가속 적용) + approval_number (결제 승인번호 백업 보존) |
 | **AI Engine** | LiteLLM Router (로컬: Ollama gemma4:e4b 최우선 및 폴백 / 프로덕션: Gemini-2.5-Flash 우선 및 Ollama 폴백) |
 | **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router (차후 확장 백로그) |
-| **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS |
+| **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS + sessionStorage 세션 관리 및 httpOnly refresh token Cookie 연동 |
 | **Web Push** | VAPID v2 Web Push API (FCM / APNs 연동 백그라운드 알림) |
 | **Infrastructure** | Docker Compose 로컬 통합 인프라 및 HTTPS SSL 배포 규격 |
 
@@ -144,7 +144,7 @@ graph TD
 ### 2주차: MVP 프론트엔드 연동 및 동기식 E2E 릴리즈 (8일차 ~ 14일차)
 - 8~9일차: Vue 드롭존(Dropzone) 레이아웃 퍼블리싱 및 status/job_id 동기 API 연동.
 - 10~11일차: 반응형 그리드 대시보드 리스트 및 클라이언트 Canvas API 1차 압축 리사이징 모듈 내장.
-- 12~13일차: JWT 토큰 세션 발급 체계 적용 및 대시보드 내 소비 지출 내역 수동 CRUD 모달 기능 구현.
+- 12~13일차: JWT httpOnly 쿠키 기반 인증 및 sessionStorage 세션 적용 및 대시보드 내 소비 지출 내역 수동 CRUD 모달 기능 구현.
 - 14일차: E2E 동기식 MVP 완전체 통합 테스트 및 2주차 안정화 배포.
 
 ### 3주차: 비동기 분산 아키텍처 및 비용/보안 고도화 (15일차 ~ 21일차)
