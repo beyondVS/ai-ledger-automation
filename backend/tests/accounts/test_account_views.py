@@ -67,12 +67,18 @@ class UserLoginViewTest(TestCase):
         cls.logout_url = reverse("user-logout")
 
     def test_login_success(self):
-        """올바른 계정 정보로 로그인 요청 시 200 OK와 함께 JWT 토큰(access, refresh)이 정상적으로 발급되는지 검증합니다."""
+        """올바른 계정 정보로 로그인 요청 시 200 OK와 함께 JWT access 토큰이 발급되고 refresh 토큰은 httpOnly 쿠키로 주입되는지 검증합니다."""
         payload = {"username": self.username, "password": self.password}
         response = self.client.post(self.login_url, data=payload, content_type="application/json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.data)
-        self.assertIn("refresh", response.data)
+        self.assertNotIn("refresh", response.data)
+
+        # httpOnly 쿠키 검증
+        self.assertIn("refresh_token", response.cookies)
+        cookie = response.cookies["refresh_token"]
+        self.assertTrue(cookie["httponly"])
+        self.assertEqual(cookie["samesite"], "Lax")
 
     def test_login_invalid_credentials(self):
         """잘못된 비밀번호로 로그인 요청 시 401 Unauthorized를 반환하는지 검증합니다."""
@@ -81,27 +87,34 @@ class UserLoginViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_logout_blacklist_success(self):
-        """로그아웃 요청 시, 수신된 리프레시 토큰이 블랙리스트 처리되어 만료 처리되는지 검증합니다."""
-        # 1. 로그인하여 토큰 획득
+        """로그아웃 요청 시, 수신된 리프레시 토큰이 블랙리스트 처리되고 쿠키가 삭제 처리되는지 검증합니다."""
+        # 1. 로그인하여 토큰 획득 및 쿠키 설정
         login_payload = {"username": self.username, "password": self.password}
         login_res = self.client.post(self.login_url, data=login_payload, content_type="application/json")
-        refresh_token = login_res.data["refresh"]
+        self.assertIn("refresh_token", login_res.cookies)
 
-        # 2. 리프레시 토큰을 실어 로그아웃 요청
-        logout_payload = {"refresh": refresh_token}
-        logout_res = self.client.post(self.logout_url, data=logout_payload, content_type="application/json")
+        # 2. 로그아웃 요청 (테스트 클라이언트는 이전 쿠키를 기억하므로 자동 전송됨)
+        logout_res = self.client.post(self.logout_url, content_type="application/json")
         self.assertEqual(logout_res.status_code, status.HTTP_205_RESET_CONTENT)
 
+        # 쿠키 삭제 처리 검증 (Max-Age가 0이거나 Expires가 과거 시점)
+        self.assertIn("refresh_token", logout_res.cookies)
+        self.assertEqual(logout_res.cookies["refresh_token"].value, "")
+
     def test_token_refresh_success(self):
-        """리프레시 토큰을 전송하여 새로운 Access Token을 정상적으로 갱신받는지 검증합니다."""
+        """리프레시 토큰을 쿠키로 전송하여 새로운 Access Token을 정상적으로 갱신받고, 토큰 로테이션이 동작하는지 검증합니다."""
         # 1. 로그인하여 토큰 획득
         login_payload = {"username": self.username, "password": self.password}
         login_res = self.client.post(self.login_url, data=login_payload, content_type="application/json")
-        refresh_token = login_res.data["refresh"]
+        self.assertIn("refresh_token", login_res.cookies)
 
         # 2. 리프레시 API 호출
         refresh_url = reverse("token-refresh")
-        refresh_payload = {"refresh": refresh_token}
-        refresh_res = self.client.post(refresh_url, data=refresh_payload, content_type="application/json")
+        refresh_res = self.client.post(refresh_url, content_type="application/json")
         self.assertEqual(refresh_res.status_code, status.HTTP_200_OK)
         self.assertIn("access", refresh_res.data)
+        self.assertNotIn("refresh", refresh_res.data)
+
+        # 신규 리프레시 토큰 로테이션 쿠키 검증
+        self.assertIn("refresh_token", refresh_res.cookies)
+        self.assertTrue(refresh_res.cookies["refresh_token"]["httponly"])
