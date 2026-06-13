@@ -34,7 +34,8 @@ export async function login({ username, password }) {
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ username, password })
+    body: JSON.stringify({ username, password }),
+    credentials: 'include' // 백엔드 httpOnly 쿠키 허용
   });
 
   if (!response.ok) {
@@ -45,15 +46,14 @@ export async function login({ username, password }) {
 
   const tokenData = await response.json();
   
-  // LocalStorage 영속화 스키마(data-model.md) 준수
+  // sessionStorage 마이그레이션 (refreshToken 스토리지 적재 원천 차단)
   const sessionData = {
     accessToken: tokenData.access,
-    refreshToken: tokenData.refresh,
     username: username,
     loginTimestamp: Date.now()
   };
 
-  localStorage.setItem('ai_ledger_auth_session', JSON.stringify(sessionData));
+  sessionStorage.setItem('ai_ledger_auth_session', JSON.stringify(sessionData));
 
   return tokenData;
 }
@@ -62,30 +62,54 @@ export async function login({ username, password }) {
  * 로그아웃 및 백엔드 토큰 무효화
  */
 export async function logout() {
-  const sessionData = localStorage.getItem('ai_ledger_auth_session');
-  if (!sessionData) {
-    return;
-  }
-
   try {
-    const parsed = JSON.parse(sessionData);
-    const refreshToken = parsed.refreshToken;
-
-    if (refreshToken) {
-      // 백엔드 세션 블랙리스트 호출 (비동기, 실패하더라도 로컬은 강제 폐기)
-      await fetch(`${BASE_URL}/logout/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ refresh: refreshToken })
-      }).catch(err => console.error('Backend logout failed', err));
-    }
+    // 백엔드 세션 블랙리스트 및 httpOnly 쿠키 파기 호출 (credentials 동반)
+    await fetch(`${BASE_URL}/logout/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
+    }).catch(err => console.error('Backend logout failed', err));
   } catch (e) {
-    console.error('Failed to parse session during logout', e);
+    console.error('Failed to clear session during logout', e);
   } finally {
-    localStorage.removeItem('ai_ledger_auth_session');
+    sessionStorage.removeItem('ai_ledger_auth_session');
   }
+}
+
+/**
+ * httpOnly 쿠키를 활용하여 Access Token을 갱신하고 스토리지에 업데이트
+ * @returns {Promise<string>} - 새롭게 갱신된 Access Token
+ */
+export async function refreshAccessToken() {
+  const response = await fetch(`${BASE_URL}/refresh/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include'
+  });
+
+  if (!response.ok) {
+    // 리프레시 실패 시 세션 파기
+    sessionStorage.removeItem('ai_ledger_auth_session');
+    throw new Error('인증 세션이 만료되었습니다. 다시 로그인해주세요.');
+  }
+
+  const tokenData = await response.json();
+  const sessionData = sessionStorage.getItem('ai_ledger_auth_session');
+  if (sessionData) {
+    try {
+      const parsed = JSON.parse(sessionData);
+      parsed.accessToken = tokenData.access;
+      parsed.loginTimestamp = Date.now();
+      sessionStorage.setItem('ai_ledger_auth_session', JSON.stringify(parsed));
+    } catch (e) {
+      console.error('Failed to update session during token refresh', e);
+    }
+  }
+  return tokenData.access;
 }
 
 /**
@@ -93,12 +117,11 @@ export async function logout() {
  * @returns {boolean}
  */
 export function isAuthenticated() {
-  const sessionData = localStorage.getItem('ai_ledger_auth_session');
+  const sessionData = sessionStorage.getItem('ai_ledger_auth_session');
   if (!sessionData) return false;
 
   try {
     const parsed = JSON.parse(sessionData);
-    // 엑세스 토큰 존재 여부 체크
     return !!(parsed && parsed.accessToken);
   } catch (e) {
     return false;
@@ -110,7 +133,7 @@ export function isAuthenticated() {
  * @returns {Object} - Header 객체
  */
 export function getAuthHeader() {
-  const sessionData = localStorage.getItem('ai_ledger_auth_session');
+  const sessionData = sessionStorage.getItem('ai_ledger_auth_session');
   if (!sessionData) return {};
 
   try {
@@ -123,3 +146,4 @@ export function getAuthHeader() {
   }
   return {};
 }
+
