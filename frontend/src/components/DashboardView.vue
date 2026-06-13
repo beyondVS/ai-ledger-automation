@@ -6,12 +6,20 @@
         <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
         <span class="font-semibold text-slate-200">{{ currentUsername }}</span>님 환영합니다
       </div>
-      <button 
-        @click="handleLogout"
-        class="logout-btn px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer font-semibold uppercase tracking-wider"
-      >
-        로그아웃
-      </button>
+      <div class="flex items-center gap-2">
+        <button 
+          @click="goToTemplates"
+          class="px-3 py-1.5 rounded-lg bg-indigo-950/40 border border-indigo-900/50 text-indigo-300 hover:text-indigo-100 hover:bg-indigo-900/60 transition-all cursor-pointer font-semibold uppercase tracking-wider"
+        >
+          템플릿 관리
+        </button>
+        <button 
+          @click="handleLogout"
+          class="logout-btn px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all cursor-pointer font-semibold uppercase tracking-wider"
+        >
+          로그아웃
+        </button>
+      </div>
     </div>
 
     <div class="w-full max-w-lg flex flex-col">
@@ -287,6 +295,14 @@ export default {
       }
     };
 
+    const goToTemplates = () => {
+      if (router) {
+        router.push({ name: 'AdminTemplateList' });
+      } else {
+        window.location.hash = '/admin/templates';
+      }
+    };
+
     // 영수증 파일 감지 성공 시 호출 (비동기 업로드 E2E 구동)
     const onFileDetected = async (file) => {
       clearError();
@@ -424,6 +440,7 @@ export default {
       handleEditSave,
       handleDeleteConfirm,
       handleLogout,
+      goToTemplates,
       onFileDetected,
       onFileRemoved,
       onValidationError,
