@@ -165,7 +165,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onBeforeMount } from 'vue';
 import { fetchMyTemplates, deleteMyTemplate } from '../services/ledgerService';
 
 export default {
@@ -177,6 +177,17 @@ export default {
     const errorMessage = ref(null);
     const isModalOpen = ref(false);
     const selectedTemplate = ref(null);
+
+    // Outfit 구글 웹 폰트 동적 헤더 로드
+    onBeforeMount(() => {
+      if (!document.getElementById('outfit-font')) {
+        const link = document.createElement('link');
+        link.id = 'outfit-font';
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap';
+        document.head.appendChild(link);
+      }
+    });
 
     const loadTemplates = async () => {
       loading.value = true;
@@ -244,21 +255,6 @@ export default {
     };
   }
 };
-</script>
-
-<script setup>
-// Outfit 구글 웹 폰트 동적 헤더 로드
-import { onBeforeMount } from 'vue';
-
-onBeforeMount(() => {
-  if (!document.getElementById('outfit-font')) {
-    const link = document.createElement('link');
-    link.id = 'outfit-font';
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap';
-    document.head.appendChild(link);
-  }
-});
 </script>
 
 <style scoped>
