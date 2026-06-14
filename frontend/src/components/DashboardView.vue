@@ -65,45 +65,74 @@
         />
       </div>
 
-      <!-- 반응형 2열 본문 그리드 레이아웃 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch w-full mt-2">
-        <!-- 좌측 열: 메인 인터랙티브 작업 공간 -->
+      <!-- 반응형 그리드 / 세로 배치 본문 레이아웃 (캘린더 뷰 동적 1열 확장 대응) -->
+      <div :class="viewMode === 'calendar' ? 'flex flex-col gap-8 w-full mt-2' : 'grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch w-full mt-2'">
+        <!-- 좌측 열: 메인 인터랙티브 작업 공간 (접이식 아코디언 카드화) -->
         <div 
-          class="relative w-full max-w-md mx-auto md:mx-0 md:max-w-none md:block"
-          :class="currentTab === 'upload' ? 'block' : 'hidden'"
+          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xl transition-all duration-300 mx-auto md:mx-0 md:block relative"
+          :class="[
+            viewMode === 'calendar' ? 'w-full order-2' : 'max-w-md md:max-w-none',
+            currentTab === 'upload' ? 'block' : 'hidden'
+          ]"
         >
-          <!-- 업로드 진행 중 로딩 인디케이터 오버레이 -->
-          <div 
-            v-if="isUploading"
-            class="absolute inset-0 z-50 bg-white/85 dark:bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-center p-8 border border-slate-200 dark:border-slate-800 shadow-2xl animate-fade-in"
-          >
-            <!-- 핀테크 감성 그라데이션 회전 링 -->
-            <div class="w-14 h-14 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-indigo-500 dark:border-t-indigo-400 animate-spin mb-4"></div>
-            <h3 class="font-outfit text-slate-900 dark:text-slate-100 font-semibold text-lg mb-1">영수증 분석 중...</h3>
-            <p class="text-slate-500 dark:text-slate-400 text-xs tracking-wide">HTML5 Canvas 압축 및 AI OCR 파이프라인 가동 중</p>
+          <!-- 카드 헤더 및 접기 토글 -->
+          <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800 mb-4 cursor-pointer select-none" @click="isUploadExpanded = !isUploadExpanded">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="w-4 h-4 text-indigo-500">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <span class="text-xs font-black text-slate-700 dark:text-slate-200 tracking-tight">새로운 영수증 등록 및 AI 분석</span>
+            </div>
+            <button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+              <svg v-if="isUploadExpanded" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+              </svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
           </div>
 
-          <!-- 드롭존 -->
-          <Dropzone 
-            v-if="!currentFile"
-            @file-detected="onFileDetected"
-            @validation-error="onValidationError"
-          />
+          <!-- 아코디언 콘텐츠 -->
+          <transition name="expand">
+            <div v-show="isUploadExpanded" class="relative">
+              <!-- 업로드 진행 중 로딩 인디케이터 오버레이 -->
+              <div 
+                v-if="isUploading"
+                class="absolute inset-0 z-50 bg-white/85 dark:bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-center p-8 border border-slate-200 dark:border-slate-800 shadow-2xl animate-fade-in"
+              >
+                <!-- 핀테크 감성 그라데이션 회전 링 -->
+                <div class="w-14 h-14 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-indigo-500 dark:border-t-indigo-400 animate-spin mb-4"></div>
+                <h3 class="font-outfit text-slate-900 dark:text-slate-100 font-semibold text-lg mb-1">영수증 분석 중...</h3>
+                <p class="text-slate-500 dark:text-slate-400 text-xs tracking-wide">HTML5 Canvas 압축 및 AI OCR 파이프라인 가동 중</p>
+              </div>
 
-          <!-- 영수증 결과물 목록 및 분석된 가계부 명세 피드백 -->
-          <ReceiptList 
-            v-else
-            :file="currentFile"
-            :parsed-data="parsedData"
-            :polling-status="pollingStatus"
-            @file-removed="onFileRemoved"
-          />
+              <!-- 드롭존 -->
+              <Dropzone 
+                v-if="!currentFile"
+                @file-detected="onFileDetected"
+                @validation-error="onValidationError"
+              />
+
+              <!-- 영수증 결과물 목록 및 분석된 가계부 명세 피드백 -->
+              <ReceiptList 
+                v-else
+                :file="currentFile"
+                :parsed-data="parsedData"
+                :polling-status="pollingStatus"
+                @file-removed="onFileRemoved"
+              />
+            </div>
+          </transition>
         </div>
 
         <!-- 우측 열: 가계부 리스트/캘린더 뷰 영역 (US1 MVP) -->
         <section 
-          class="w-full max-w-md mx-auto md:mx-0 md:max-w-none p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between h-full md:block"
-          :class="currentTab === 'stats' ? 'block' : 'hidden'"
+          class="w-full p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between h-full transition-all duration-300 md:block"
+          :class="[
+            viewMode === 'calendar' ? 'w-full order-1' : 'max-w-md md:max-w-none',
+            currentTab === 'stats' ? 'block' : 'hidden'
+          ]"
         >
           <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-2 select-none">
@@ -217,7 +246,10 @@
           :class="currentTab === 'stats' ? 'block' : 'hidden'"
         >
           <div class="flex justify-between items-center mb-6">
-            <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">월별 지출 추이</h3>
+            <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              월별 지출 추이
+              <span class="text-slate-400 dark:text-slate-500 text-3xs font-medium lowercase ml-1.5">(단위: 만원)</span>
+            </h3>
             
             <!-- 기간 필터 버튼 그룹 -->
             <div class="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
@@ -453,6 +485,7 @@ export default {
     const pollingStatus = ref(null);
     // 캘린더 및 다차원 복합 필터 모드 관련 상태
     const viewMode = ref('list'); // 'list' | 'calendar'
+    const isUploadExpanded = ref(true);
     const calendarSummaries = ref({});
     const calendarMonthlyTotal = ref(0);
     const activeFilters = ref({
@@ -676,6 +709,7 @@ export default {
 
     // 영수증 파일 감지 성공 시 호출 (비동기 업로드 E2E 구동)
     const onFileDetected = async (file) => {
+      isUploadExpanded.value = true;
       clearError();
       isUploading.value = true;
       pollingStatus.value = null;
@@ -852,6 +886,7 @@ export default {
       changeMonth,
       updateMonthsFilter,
       viewMode,
+      isUploadExpanded,
       calendarSummaries,
       calendarMonthlyTotal,
       activeFilters,
