@@ -519,6 +519,7 @@ export default {
         if (!item.transaction_date) return false;
         try {
           const date = new Date(item.transaction_date);
+          // 'sv-SE' 로캘은 타임존이 적용된 YYYY-MM-DD 문자열을 직접 반환하므로 추가 가공 없이 매칭하기 위해 사용합니다.
           const formatter = new Intl.DateTimeFormat('sv-SE', {
             timeZone: tz,
             year: 'numeric',
