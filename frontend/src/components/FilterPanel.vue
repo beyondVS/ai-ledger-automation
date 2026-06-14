@@ -130,7 +130,7 @@ export default {
     const isExpanded = ref(true);
 
     // 가계부 기본 대표 카테고리 구성 목록
-    const categoryOptions = ['식비', '쇼핑', '마트', '주거/통신', '의료/건강', '금융/보험', '미분류'];
+    const categoryOptions = ['식비', '쇼핑', '마트', '주거/통신', '의료/건강', '금융/보험', '문화/여가', '교통/차량', '카페/간식', '교육/육아', '생활/기타', '미분류'];
     
     const selectedCategories = ref([]);
 

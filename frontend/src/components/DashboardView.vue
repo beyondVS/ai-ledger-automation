@@ -452,6 +452,7 @@ import { compressImage, uploadReceiptApi } from '../services/uploadService';
 import { fetchLedgerList, fetchLedgerCalendar } from '../services/ledgerService';
 import { fetchDashboardStatistics } from '../services/dashboardService';
 import { VirtualPollingManager } from '../services/pollingService';
+import { fetchUserTimezone } from '../services/accountService';
 import { logout } from '../services/authService';
 import LedgerEditModal from './LedgerEditModal.vue';
 import LedgerDeleteModal from './LedgerDeleteModal.vue';
@@ -486,6 +487,7 @@ export default {
     // 캘린더 및 다차원 복합 필터 모드 관련 상태
     const viewMode = ref('list'); // 'list' | 'calendar'
     const isUploadExpanded = ref(true);
+    const userTimezone = ref('Asia/Seoul');
     const calendarSummaries = ref({});
     const calendarMonthlyTotal = ref(0);
     const activeFilters = ref({
@@ -501,7 +503,20 @@ export default {
     const dateDetailLedgers = computed(() => {
       if (!selectedDateForDetail.value) return [];
       return ledgerList.value.filter(item => {
-        return item.transaction_date && item.transaction_date.substring(0, 10) === selectedDateForDetail.value;
+        if (!item.transaction_date) return false;
+        try {
+          const date = new Date(item.transaction_date);
+          const formatter = new Intl.DateTimeFormat('sv-SE', {
+            timeZone: userTimezone.value,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          });
+          return formatter.format(date) === selectedDateForDetail.value;
+        } catch (e) {
+          console.error('Failed to convert timezone date', e);
+          return item.transaction_date.substring(0, 10) === selectedDateForDetail.value;
+        }
       });
     });
 
@@ -592,6 +607,7 @@ export default {
         document.documentElement.classList.add('dark');
       }
 
+      loadUserTimezone();
       loadLedgerList();
       loadDashboardData();
       const sessionData = sessionStorage.getItem('ai_ledger_auth_session');
@@ -606,6 +622,17 @@ export default {
         }
       }
     });
+
+    const loadUserTimezone = async () => {
+      try {
+        const response = await fetchUserTimezone();
+        if (response && response.data && response.data.timezone) {
+          userTimezone.value = response.data.timezone;
+        }
+      } catch (err) {
+        console.error('Failed to load user timezone in Dashboard', err);
+      }
+    };
 
     const loadLedgerList = async () => {
       try {
@@ -886,6 +913,7 @@ export default {
       changeMonth,
       updateMonthsFilter,
       viewMode,
+      userTimezone,
       isUploadExpanded,
       calendarSummaries,
       calendarMonthlyTotal,
