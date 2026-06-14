@@ -1,11 +1,13 @@
 import datetime
 import logging
+import re
 from decimal import ROUND_HALF_UP, Decimal
 
-from apps.ledgers.models import Ledger, ReceiptUploadJob
-from apps.ledgers.serializers import LedgerListSerializer, ReceiptUploadResponseSerializer
+from apps.ledgers.models import Ledger, MonthlyBudget, ReceiptUploadJob
+from apps.ledgers.serializers import LedgerListSerializer, MonthlyBudgetSerializer, ReceiptUploadResponseSerializer
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Min, Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -456,3 +458,266 @@ class MyTemplateListView(APIView):
                 {"error": "SYSTEM_ERROR", "message": "삭제 중 서버 에러가 발생했습니다."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class DashboardStatisticsView(APIView):
+    """
+    [T009, T021] DashboardStatisticsView
+    - 당월 가계부 통계 및 예산 소진율, 월별 소비 트렌드, TOP 3 가맹점을 단일 DTO로 반환합니다.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # 1. months 파라미터 파싱 (기본 3개월)
+        try:
+            months = int(request.query_params.get("months", 3))
+            if months <= 0:
+                months = 3
+        except (ValueError, TypeError):
+            months = 3
+
+        # 현재 서버 로컬 타임존 반영 기준 날짜
+        today = timezone.localdate() if settings.USE_TZ else datetime.date.today()
+
+        # 당월 1일 및 다음달 1일 계산
+        start_of_current_month = datetime.date(today.year, today.month, 1)
+        if today.month == 12:
+            start_of_next_month = datetime.date(today.year + 1, 1, 1)
+        else:
+            start_of_next_month = datetime.date(today.year, today.month + 1, 1)
+
+        if settings.USE_TZ:
+            current_month_start = timezone.make_aware(
+                datetime.datetime.combine(start_of_current_month, datetime.time.min)
+            )
+            current_month_end = timezone.make_aware(datetime.datetime.combine(start_of_next_month, datetime.time.min))
+        else:
+            current_month_start = datetime.datetime.combine(start_of_current_month, datetime.time.min)
+            current_month_end = datetime.datetime.combine(start_of_next_month, datetime.time.min)
+
+        # 2. 당월 총 지출액 계산
+        spent_amount_dec = Ledger.objects.filter(
+            user=user,
+            transaction_date__gte=current_month_start,
+            transaction_date__lt=current_month_end,
+        ).aggregate(total=Sum("total_amount"))["total"] or Decimal("0")
+        spent_amount = float(spent_amount_dec)
+
+        # 3. 당월 예산 조회 (폴백: 1,000,000)
+        budget_month_date = start_of_current_month
+        try:
+            budget_obj = MonthlyBudget.objects.get(user=user, budget_month=budget_month_date)
+            budget_amount = float(budget_obj.amount)
+        except MonthlyBudget.DoesNotExist:
+            budget_amount = 1000000.0
+
+        remaining_amount = budget_amount - spent_amount
+        spent_ratio = 0.0
+        if budget_amount > 0:
+            spent_ratio = float(spent_amount_dec / Decimal(str(budget_amount)) * 100)
+
+        # status 판정
+        if spent_ratio < 50.0:
+            budget_status = "safe"
+        elif spent_ratio <= 80.0:
+            budget_status = "warning"
+        else:
+            budget_status = "danger"
+
+        budget_dto = {
+            "amount": budget_amount,
+            "spent_amount": spent_amount,
+            "remaining_amount": remaining_amount,
+            "spent_ratio": spent_ratio,
+            "status": budget_status,
+        }
+
+        # 4. 카테고리별 소비 분포 계산 (식비, 교통비, 미분류 등)
+        category_spending_query = (
+            Ledger.objects.filter(
+                user=user,
+                transaction_date__gte=current_month_start,
+                transaction_date__lt=current_month_end,
+            )
+            .values("category")
+            .annotate(amount=Sum("total_amount"))
+            .order_by("-amount")
+        )
+
+        category_spending_dto = []
+        for item in category_spending_query:
+            category_name = item["category"] if item["category"] else "미분류"
+            amount_val = float(item["amount"])
+            ratio = 0.0
+            if spent_amount > 0:
+                ratio = round((amount_val / spent_amount) * 100, 1)
+
+            category_spending_dto.append(
+                {
+                    "category_name": category_name,
+                    "amount": amount_val,
+                    "ratio": ratio,
+                }
+            )
+
+        # 5. 월별 소비 트렌드 계산 (최근 months 개월)
+        monthly_trends_dto = []
+        for i in range(months - 1, -1, -1):
+            y = today.year
+            m = today.month - i
+            while m <= 0:
+                m += 12
+                y -= 1
+
+            start_date_raw = datetime.date(y, m, 1)
+            if m == 12:
+                end_date_raw = datetime.date(y + 1, 1, 1)
+            else:
+                end_date_raw = datetime.date(y, m + 1, 1)
+
+            if settings.USE_TZ:
+                start_dt = timezone.make_aware(datetime.datetime.combine(start_date_raw, datetime.time.min))
+                end_dt = timezone.make_aware(datetime.datetime.combine(end_date_raw, datetime.time.min))
+            else:
+                start_dt = datetime.datetime.combine(start_date_raw, datetime.time.min)
+                end_dt = datetime.datetime.combine(end_date_raw, datetime.time.min)
+
+            trend_spent = Ledger.objects.filter(
+                user=user,
+                transaction_date__gte=start_dt,
+                transaction_date__lt=end_dt,
+            ).aggregate(total=Sum("total_amount"))["total"] or Decimal("0")
+
+            monthly_trends_dto.append(
+                {
+                    "month": f"{y:04d}-{m:02d}",
+                    "amount": float(trend_spent),
+                }
+            )
+
+        # 6. TOP 3 가맹점 계산 (vendor_name 기준 aggregate)
+        top_merchants_query = (
+            Ledger.objects.filter(
+                user=user,
+                transaction_date__gte=current_month_start,
+                transaction_date__lt=current_month_end,
+            )
+            .exclude(vendor_name="")
+            .values("vendor_name")
+            .annotate(amount=Sum("total_amount"), min_created=Min("created_at"))
+            .order_by("-amount", "min_created")[:3]
+        )
+
+        top_merchants_dto = []
+        for rank, item in enumerate(top_merchants_query):
+            top_merchants_dto.append(
+                {
+                    "merchant_name": item["vendor_name"],
+                    "amount": float(item["amount"]),
+                    "rank": rank + 1,
+                }
+            )
+
+        response_data = {
+            "budget": budget_dto,
+            "category_spending": category_spending_dto,
+            "monthly_trends": monthly_trends_dto,
+            "top_merchants": top_merchants_dto,
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+class MonthlyBudgetView(APIView):
+    """
+    [T016] MonthlyBudgetView
+    - 예산 설정/수정(POST) 및 특정 월의 예산 단건 조회(GET)를 담당합니다.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        month_str = request.query_params.get("month")
+        if not month_str:
+            return Response(
+                {"budget_month": ["조회하고자 하는 연월이 필요합니다."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # YYYY-MM 형식 검증
+        if not re.match(r"^\d{4}-\d{2}$", month_str):
+            return Response(
+                {"budget_month": ["올바른 연월 형식(YYYY-MM)이 아닙니다."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            year, month = map(int, month_str.split("-"))
+            budget_date = datetime.date(year, month, 1)
+        except ValueError:
+            return Response(
+                {"budget_month": ["올바른 연월 형식(YYYY-MM)이 아닙니다."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            budget = MonthlyBudget.objects.get(user=request.user, budget_month=budget_date)
+            serializer = MonthlyBudgetSerializer(budget)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except MonthlyBudget.DoesNotExist:
+            default_data = {
+                "id": None,
+                "budget_month": budget_date.strftime("%Y-%m-%d"),
+                "amount": 1000000,
+                "created_at": None,
+                "updated_at": None,
+            }
+            return Response(default_data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        data = request.data.copy()
+        budget_month_str = data.get("budget_month")
+
+        if not budget_month_str:
+            return Response(
+                {"budget_month": ["예산을 설정하고자 하는 연월이 필요합니다."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # YYYY-MM 형식 검증 및 변환
+        if not re.match(r"^\d{4}-\d{2}$", budget_month_str):
+            return Response(
+                {"budget_month": ["올바른 연월 형식(YYYY-MM)이 아닙니다."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            year, month = map(int, budget_month_str.split("-"))
+            budget_date = datetime.date(year, month, 1)
+            data["budget_month"] = budget_date.strftime("%Y-%m-%d")
+        except ValueError:
+            return Response(
+                {"budget_month": ["올바른 연월 형식(YYYY-MM)이 아닙니다."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if "amount" not in data:
+            return Response(
+                {"amount": ["설정할 예산 총액이 필요합니다."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = MonthlyBudgetSerializer(data=data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        amount = serializer.validated_data["amount"]
+
+        budget, created = MonthlyBudget.objects.update_or_create(
+            user=request.user, budget_month=budget_date, defaults={"amount": amount}
+        )
+
+        response_serializer = MonthlyBudgetSerializer(budget)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

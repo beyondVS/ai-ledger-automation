@@ -1,46 +1,46 @@
 <template>
   <div class="flex flex-col w-full">
-    <!-- 가계부 마스터 카드 클릭 영역 -->
+    <!-- 가계부 마스터 카드 클릭 영역 (라이트/다크 대응 색상 및 테두리) -->
     <div 
-      class="p-4 bg-slate-950 border border-slate-900/60 hover:border-slate-800 transition-all flex justify-between items-center cursor-pointer select-none"
-      :class="isOpen ? 'rounded-t-xl border-b-0 border-slate-800/60' : 'rounded-xl'"
+      class="p-4 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-900/60 hover:border-slate-300 dark:hover:border-slate-800 transition-all flex justify-between items-center cursor-pointer select-none"
+      :class="isOpen ? 'rounded-t-xl border-b-0 border-slate-250 dark:border-slate-800/60' : 'rounded-xl'"
       @click="isOpen = !isOpen"
     >
       <div class="flex flex-col gap-1 min-w-0">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-bold text-slate-200 truncate">{{ ledger.vendor_name }}</span>
-          <!-- 카테고리 뱃지 (T024) -->
+          <span class="text-sm font-bold text-slate-900 dark:text-slate-200 truncate">{{ ledger.vendor_name }}</span>
+          <!-- 카테고리 뱃지 (라이트 모드 대비 보정) -->
           <span 
             v-if="ledger.category && ledger.category !== '미분류'"
-            class="px-2 py-0.5 text-xxs font-semibold rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+            class="px-2 py-0.5 text-xxs font-semibold rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 whitespace-nowrap flex-shrink-0"
           >
             {{ ledger.category }}
           </span>
           <span 
             v-else
-            class="px-2 py-0.5 text-xxs font-semibold rounded-full bg-slate-800 text-slate-400 border border-slate-700/50"
+            class="px-2 py-0.5 text-xxs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50 whitespace-nowrap flex-shrink-0"
           >
             미분류
           </span>
         </div>
-        <span class="text-xxs text-slate-500 font-mono">{{ ledger.transaction_date }}</span>
+        <span class="text-xxs text-slate-500 font-mono">{{ formatDateTime(ledger.transaction_date) }}</span>
       </div>
       
       <div class="flex items-center gap-4 flex-shrink-0">
         <div class="flex flex-col items-end gap-1">
-          <span class="text-sm font-extrabold text-indigo-400 font-outfit">
-            {{ Number(ledger.total_amount).toLocaleString() }}원
+          <span class="text-sm font-extrabold text-indigo-600 dark:text-indigo-400 font-outfit">
+            {{ Math.round(Number(ledger.total_amount)).toLocaleString() }}원
           </span>
-          <span class="text-xxs text-slate-600 font-mono">
-            세액: {{ Number(ledger.vat_amount).toLocaleString() }}원
+          <span class="text-xxs text-slate-500 dark:text-slate-650 font-mono">
+            세액: {{ Math.round(Number(ledger.vat_amount)).toLocaleString() }}원
           </span>
         </div>
 
-        <!-- 수정/삭제 버튼 그룹 (Aesthetics WOW) -->
-        <div class="flex items-center gap-1 border-l border-slate-800 pl-3">
+        <!-- 수정/삭제 버튼 그룹 -->
+        <div class="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-3">
           <button 
             type="button" 
-            class="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-slate-900 rounded-lg transition-all"
+            class="p-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
             title="수정"
             @click.stop="$emit('edit', ledger)"
           >
@@ -50,7 +50,7 @@
           </button>
           <button 
             type="button" 
-            class="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-slate-900 rounded-lg transition-all"
+            class="p-1.5 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer"
             title="삭제"
             @click.stop="$emit('delete', ledger)"
           >
@@ -60,7 +60,7 @@
           </button>
         </div>
         
-        <!-- 셰브론 회전 아이콘 (Aesthetics WOW) -->
+        <!-- 셰브론 회전 아이콘 -->
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
           fill="none" 
@@ -68,7 +68,7 @@
           stroke-width="2.5" 
           stroke="currentColor" 
           class="w-4 h-4 text-slate-500 transition-transform duration-300"
-          :class="{ 'rotate-180 text-indigo-400': isOpen }"
+          :class="{ 'rotate-180 text-indigo-600 dark:text-indigo-400': isOpen }"
         >
           <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
         </svg>
@@ -98,4 +98,22 @@ defineProps({
 defineEmits(['edit', 'delete']);
 
 const isOpen = ref(false);
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${y}-${m}-${d} ${hh}:${mm}`;
+  } catch (e) {
+    return dateStr;
+  }
+};
 </script>

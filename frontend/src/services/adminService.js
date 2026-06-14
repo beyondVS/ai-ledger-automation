@@ -57,10 +57,18 @@ export async function getTemplateHistory(templateId) {
  * @param {Object} regexPattern 
  * @returns {Promise<Object>}
  */
-export async function verifyTemplate(templateId, regexPattern) {
+export async function verifyTemplate(templateId, regexPattern = null, isVerified = null) {
+  const payload = {};
+  if (regexPattern !== null) {
+    payload.regex_pattern = regexPattern;
+  }
+  if (isVerified !== null) {
+    payload.is_verified = isVerified;
+  }
+
   const response = await fetch(`/api/admin/templates/${templateId}/verify/`, {
     method: 'POST',
-    body: JSON.stringify({ regex_pattern: regexPattern }),
+    body: JSON.stringify(payload),
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeader()

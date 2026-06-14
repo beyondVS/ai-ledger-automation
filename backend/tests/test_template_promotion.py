@@ -16,18 +16,16 @@ class TemplatePromotionTestCase(TestCase):
             vendor_registration_number="1208147526",
             vendor_name="테스트가맹점",
             parsing_rules={
-                "vendor_name": "테스트가맹점",
-                "transaction_date": r"\d{4}-\d{2}-\d{2}",
-                "total_amount": r"\d+",
+                "date_pattern": r"\d{4}-\d{2}-\d{2}",
+                "amount_pattern": r"\d+",
             },
             is_verified=False,
             consistency_count=0,
         )
-        self.rules_a = {"vendor_name": "테스트가맹점", "transaction_date": r"\d{4}-\d{2}-\d{2}", "total_amount": r"\d+"}
+        self.rules_a = {"date_pattern": r"\d{4}-\d{2}-\d{2}", "amount_pattern": r"\d+"}
         self.rules_b = {
-            "vendor_name": "다른가맹점패턴",
-            "transaction_date": r"\d{2}/\d{2}/\d{2}",
-            "total_amount": r"\d+",
+            "date_pattern": r"\d{2}/\d{2}/\d{2}",
+            "amount_pattern": r"\d+",
         }
 
     def test_promotion_on_three_consistent_calls(self):

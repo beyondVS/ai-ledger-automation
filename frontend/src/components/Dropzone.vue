@@ -3,8 +3,8 @@
     class="relative overflow-hidden rounded-2xl border-2 border-dashed transition-all duration-300 ease-out p-8 md:p-12 flex flex-col items-center justify-center text-center cursor-pointer will-change-transform"
     :class="[
       isDragOver
-        ? 'border-indigo-500 bg-indigo-950/20 shadow-[0_0_20px_rgba(99,102,241,0.15)] scale-[1.01] animate-pulse-glow'
-        : 'border-slate-800 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-900/60 shadow-lg'
+        ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-[0_0_20px_rgba(99,102,241,0.15)] scale-[1.01] animate-pulse-glow'
+        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-350 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/60 shadow-lg'
     ]"
     @dragover.prevent="onDragOver"
     @dragleave.prevent="onDragLeave"
@@ -27,7 +27,7 @@
     <!-- 업로드용 아름다운 일러스트레이션 아이콘 -->
     <div
       class="w-16 h-16 rounded-full flex items-center justify-center mb-5 transition-transform duration-500 ease-out"
-      :class="isDragOver ? 'bg-indigo-500/20 text-indigo-400 scale-110' : 'bg-slate-800 text-slate-400 group-hover:scale-105'"
+      :class="isDragOver ? 'bg-indigo-500/20 text-indigo-500 dark:text-indigo-400 scale-110' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:scale-105'"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -46,13 +46,13 @@
     </div>
 
     <!-- 메인 타이틀 & 지침 문구 (Outfit 핀테크 글꼴) -->
-    <h3 class="font-outfit text-xl font-semibold text-slate-100 mb-2 tracking-wide">
+    <h3 class="font-outfit text-xl font-semibold text-slate-800 dark:text-slate-100 mb-2 tracking-wide">
       {{ isDragOver ? '영수증을 여기에 떨어뜨리세요' : '영수증 파일 업로드' }}
     </h3>
-    <p class="text-slate-400 text-sm max-w-sm leading-relaxed mb-1">
+    <p class="text-slate-600 dark:text-slate-400 text-sm max-w-sm leading-relaxed mb-1">
       여기에 파일을 끌어다 놓거나, 클릭하여 카메라 촬영 또는 파일을 선택해 주세요.
     </p>
-    <p class="text-slate-500 text-xs font-mono tracking-tight mt-2">
+    <p class="text-slate-550 dark:text-slate-500 text-xs font-mono tracking-tight mt-2">
       지원 형식: PNG, JPG, JPEG, PDF (최대 10MB)
     </p>
   </div>

@@ -20,9 +20,22 @@ class MerchantTemplateVerifyView(APIView):
         parsing_rules = request.data.get("regex_pattern")
         if parsing_rules:
             template.parsing_rules = parsing_rules
-        template.is_verified = True
-        template.is_blacklisted = False
-        template.self_healing_attempts = 0
+
+        # is_verified 파라미터가 제공되면 업데이트, 생략 시 정규식 패턴 수정만 처리되도록 보정
+        is_verified_param = request.data.get("is_verified")
+        if is_verified_param is not None:
+            if isinstance(is_verified_param, str):
+                template.is_verified = is_verified_param.lower() == "true"
+            else:
+                template.is_verified = bool(is_verified_param)
+        else:
+            if not parsing_rules:
+                template.is_verified = True
+
+        if template.is_verified:
+            template.is_blacklisted = False
+            template.self_healing_attempts = 0
+
         template.save()
 
         return Response(
@@ -67,7 +80,15 @@ class AdminTemplateListView(APIView):
             queryset = queryset.filter(vendor_registration_number=vrn)
 
         results = []
+        from apps.ledgers.models import Ledger
+
         for t in queryset:
+            usernames = list(
+                Ledger.objects.filter(vendor_registration_number=t.vendor_registration_number)
+                .exclude(user__isnull=True)
+                .values_list("user__username", flat=True)
+                .distinct()
+            )
             results.append(
                 {
                     "id": str(t.id),
@@ -78,6 +99,7 @@ class AdminTemplateListView(APIView):
                     "consistency_count": t.consistency_count,
                     "self_healing_attempts": t.self_healing_attempts,
                     "last_healing_at": t.last_healing_at.isoformat() if t.last_healing_at else None,
+                    "associated_users": usernames,
                 }
             )
 

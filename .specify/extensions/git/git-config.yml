@@ -38,16 +38,16 @@ auto_commit:
     message: "[Spec Kit] Add project constitution"
   after_specify:
     enabled: true
-    message: "docs: 015 비동기 처리(Redis/Celery) 인프라 격리 설계 기획 명세서 추가"
+    message: "[Spec Kit] Add specification"
   after_clarify:
     enabled: true
-    message: "docs: 015 비동기 처리(Redis/Celery) 격리 기획 명확화 반영 및 품질 체크 완료"
+    message: "[Spec Kit] Clarify specification"
   after_plan:
     enabled: true
-    message: "docs: 015 비동기 처리(Redis/Celery) 아키텍처 설계 산출물(plan.md) 및 인터페이스 계약서 추가"
+    message: "[Spec Kit] Add implementation plan"
   after_tasks:
     enabled: true
-    message: "docs: 015 비동기 처리(Redis/Celery) TDD 구현 실행 태스크(tasks.md) 추가"
+    message: "[Spec Kit] Add tasks"
   after_implement:
     enabled: true
     message: "[Spec Kit] Implementation progress"

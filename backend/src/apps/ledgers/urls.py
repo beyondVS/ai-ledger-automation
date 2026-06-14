@@ -1,6 +1,8 @@
 from apps.ledgers.views import (
+    DashboardStatisticsView,
     LedgerIngestView,
     LedgerListView,
+    MonthlyBudgetView,
     MyTemplateListView,
     ReceiptDetailView,
     ReceiptStatusView,
@@ -26,4 +28,8 @@ urlpatterns = [
     # 일반 사용자용 내 가맹점 템플릿 관리 API
     path("my-templates/", MyTemplateListView.as_view(), name="my-template-list"),
     path("my-templates/<uuid:template_id>/", MyTemplateListView.as_view(), name="my-template-detail"),
+    # [T009] 대시보드 통계 API
+    path("dashboard/", DashboardStatisticsView.as_view(), name="dashboard-statistics"),
+    # [T016] 월별 예산 API
+    path("budgets/", MonthlyBudgetView.as_view(), name="monthly-budget-list"),
 ]

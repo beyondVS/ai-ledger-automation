@@ -45,4 +45,9 @@ class UserLoginSerializer(TokenObtainPairSerializer):
     [T016] standard username/password 검증용 Serializer
     """
 
-    pass
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token["is_staff"] = user.is_staff
+        token["is_superuser"] = user.is_superuser
+        return token
