@@ -4,7 +4,7 @@
 
 본 프로젝트는 귀찮은 영수증 수동 기입 과정을 전격 자동화하는 서비스입니다. 사용자가 웹 UI를 통해 영수증 파일(PDF, 이미지)을 업로드하는 것만으로 (차후 이메일 포워딩 연동 확장 예정) **Gemini-2.5-Flash** 멀티모달 AI가 사업자 정보, 결제 금액, 세부 품목 스키마를 판독하여 정밀한 PostgreSQL 가계부 원장 데이터베이스에 적재합니다.
 
-모바일 웹 네이티브 바로가기(A2HS) 및 카메라 연동을 지원하는 PWA 하이브리드 앱 환경과 대량 처리를 위한 Celery/Redis 비동기 인프라, 그리고 API 비용을 0원으로 수렴하게 하는 하이브리드 바이패스 파서를 구축하여 프리미엄 사용자 경험과 뛰어난 엔지니어링 신뢰성을 완벽하게 제공합니다.
+모바일 웹 네이티브 바로가기(A2HS) 및 카메라 연동을 지원하는 PWA 하이브리드 앱 환경과 대량 처리를 위한 Celery/Redis 비동기 인프라, 그리고 API 비용을 95% 이상 극적으로 절감하는 3단계 하이브리드 영수증 파싱 전략을 구축하여 프리미엄 사용자 경험과 뛰어난 엔지니어링 신뢰성을 완벽하게 제공합니다.
 
 ---
 
@@ -12,7 +12,7 @@
 
 - **제로 터치 수집 (Zero-touch Ingestion - 차후 확장 백로그):** 파일 업로드 뿐만 아니라 SPF/DKIM 보안 필터가 장착된 전용 수신 주소로 메일을 포워딩하는 것만으로 가계부가 즉시 자동 갱신되는 기능 (백로그 연기 보류).
 - **구조화된 AI 분석 (Vision-First Structured Outputs):** 발행처에 상관없이 멀티모달 LLM API가 레이아웃 이미지 및 텍스트를 판독해 완벽히 일관된 JSON 스키마로 강제 변환합니다.
-- **하이브리드 비용 최적화 (Bypass Parser Cache):** 사업자번호 기준 정규식 템플릿 캐싱과 자율 학습 파이프라인을 탑재하여, 반복 유입 가맹점은 LLM API 호출을 우회 처리함으로써 API 예산을 0원에 수렴하게 통제합니다.
+- **하이브리드 비용 최적화 (3-Tier Hybrid Pipeline):** 로컬 OCR과 로컬 LLM(Ollama gemma4:e4b)을 1차 기동하여 비용 0원을 달성하고, 로컬 추론 실패 시 텍스트 기반 Gemini 2.5 Flash를 호출하여 이미지 전송 대비 95% 이상의 API 비용을 절감하며, 최후의 보루로 Gemini 멀티모달 비전을 연동하여 파싱 신뢰도 99%를 수호합니다.
 - **모바일 하이브리드 최적화 (Installable PWA):** 앱스토어 설치 없이 모바일 홈 화면 설치(A2HS), 네이티브 카메라 다이렉트 엑세스, HTML5 Canvas 1차 이미지 리사이징 압축 전송을 통해 트래픽 부담을 억제합니다.
 
 ---
@@ -45,8 +45,7 @@ graph TD
     %% 백그라운드 워커 영역
     subgraph Worker_System [비동기 워커 시스템]
         SharpWorker[이미지 전처리 워커: Pillow 최적화]
-        BypassParser[하이브리드 바이패스 파서: 사업자번호 기반 레이아웃 캐시 조회]
-        LLMClient[LLM 연동 모듈: Structured JSON]
+        LLMClient[LLM 연동 모듈: 3단계 하이브리드 파이프라인]
         TxLoader[가계부 적재 모듈: DB 트랜잭션 수호자]
         NotificationWorker[푸시 알림 워커: VAPID Web Push 발송]
     end
@@ -59,6 +58,7 @@ graph TD
 
     %% 외부 API 연동
     Gemini[Gemini-2.5-Flash API]
+    Ollama[로컬 Ollama gemma4:e4b]
     PushServer[OS별 푸시 발송 서버: FCM / APNs]
 
     %% 데이터 흐름 맵핑
@@ -73,18 +73,18 @@ graph TD
     EmailRouter -->|3. 비동기 작업 발행 BE-02| RedisQueue
 
     RedisQueue -->|4. 작업 소비 BE-03| SharpWorker
-    SharpWorker -->|5. 최적 이미지 버퍼 인계| BypassParser
-    BypassParser -->|6. 캐시 적중 시 LLM 우회 파싱| TxLoader
-    BypassParser -.->|6. 캐시 미적중 시 신규 호출| LLMClient
-    LLMClient <==>|7. JSON 스키마 강제 BE-04| Gemini
-    LLMClient -->|8. JSON 데이터 인계| TxLoader
-    TxLoader -->|9. 단일 트랜잭션 적재 & 롤백 보장 BE-05| PostgreSQL
-    TxLoader -->|10. 완료 알림 작업 생성| RedisQueue
-    RedisQueue -->|11. 푸시 알림 발송 수행| NotificationWorker
-    NotificationWorker <==>|12. VAPID 인증서 명세 전송| PushServer
-    PushServer -->|13. 단말기 푸시 알림 전달| UI
+    SharpWorker -->|5. 최적 이미지 버퍼 인계| LLMClient
+    LLMClient -->|6. 1단계 로컬 OCR + 로컬 LLM 파싱 시도| Ollama
+    LLMClient -.->|7. 1단계 실패 시 2단계 Gemini Text-only 파싱| Gemini
+    LLMClient -.->|8. 2단계 실패 시 3단계 Gemini Vision 파싱| Gemini
+    LLMClient -->|9. 최종 JSON 데이터 인계| TxLoader
+    TxLoader -->|10. 단일 트랜잭션 적재 & 롤백 보장 BE-05| PostgreSQL
+    TxLoader -->|11. 완료 알림 작업 생성| RedisQueue
+    RedisQueue -->|12. 푸시 알림 발송 수행| NotificationWorker
+    NotificationWorker <==>|13. VAPID 인증서 명세 전송| PushServer
+    PushServer -->|14. 단말기 푸시 알림 전달| UI
 
-    UI -.->|14. 대시보드 동기 조회 API BE-07| PostgreSQL
+    UI -.->|15. 대시보드 동기 조회 API BE-07| PostgreSQL
 ```
 
 ---
@@ -99,10 +99,11 @@ graph TD
 2. **비동기 큐 전환 및 자원 점유 최적화 (Asynchronous Scale Isolation)**
    - 이미지 처리(Pillow) 및 외부 AI API 호출 등 CPU/네트워크 대기 시간이 긴 연산은 격리된 Celery 비동기 독립 워커 내부에서만 비동기 처리되며, API 서버는 즉시 202 Accepted 및 작업 식별자를 반환합니다.
    - DB 인프라 고갈 방지를 위해 최대 가용 커넥션 수를 api_server 5개, async_worker 3개, 전체 합산 최대 8개 커넥션으로 하드 제한합니다.
-3. **하이브리드 비용 최적화 파이프라인 (Hybrid Bypass for Cost Control)**
-   - 사업자등록번호가 판별되면 캐시 테이블(`merchant_templates`)을 최우선 조회하여 검증 승인된 정규식 규칙(`is_verified: true`)에 적합할 시 유료 LLM 호출을 완전 바이패스(Bypass)하여 정적 파싱합니다.
-   - 미검증 템플릿(`is_verified: false`)은 정규식 규칙이 LLM 분석과 실제 대조 과정에서 동일한 패턴으로 3회 연속 일치할 때 어드민 개입 없이 자동으로 `is_verified: true` 승격 처리를 진행합니다(자율 승격).
-   - 바이패스 파싱 에러 발생 또는 사용자 수동 데이터 정정 시 즉각 미검증 강등 및 Gemini API를 통한 정규식 자동 갱신(자가 치유)이 작동하며, 연속 3회 자가 치유 실패 시 템플릿은 블랙리스트로 영구 격리되어 배제됩니다.
+3. **3단계 하이브리드 영수증 파싱 전략 및 비용 최적화 (3-Tier Hybrid Pipeline & Cost Optimization)**
+   - **1단계 (Local Hybrid)**: PDF(PyMuPDF) 또는 이미지(Tesseract) 로컬 OCR 문자열 1차 획득 -> Ollama `gemma4:e4b` JSON 스키마 구조화 시도 (비용 0원 달성).
+   - **2단계 (Cloud Text-only Fallback)**: 로컬 모델의 스키마 붕괴 또는 금액 정합성(Checksum) 검증 실패 시, 이미 확보된 로컬 OCR 문자열만 Gemini-2.5-Flash API로 전송하여 입력 이미지 토큰 비용을 95% 이상 절감하는 초저비용 구조화 시도.
+   - **3단계 (Cloud Vision Fallback)**: 로컬 OCR 문자 추출 실패 또는 앞선 텍스트 파싱 오류 발생 시 최후의 보루로 영수증 원본 이미지(WebP 변환 데이터)를 Gemini-2.5-Flash 멀티모달로 송신하여 99% 파싱 무결성 수호.
+   - **레거시 정리**: 기존 정적 정규식 기반 캐시 파이프라인의 오작동 요소를 전면 비활성화 및 청소합니다.
 4. **SPF/DKIM 기반 엄격한 보안 메일 수집 (Secure Inbound Email Ingestion - 백로그 이관)**
    - 이메일 수신 시 SPF 및 DKIM 전자서명 보안 인장을 정밀 대조하여 위변조 도메인을 필터링하고, 가입 사용자당 사전에 등록된 최대 3개의 화이트리스트 메일 발송인 정보와 100% 일치할 경우에만 비동기 큐 적재를 허용하는 기능으로, 4주차 개발 마일스톤에서는 보류되어 차후 확장 계획으로 이관되었습니다.
 5. **Vision-First PWA & HTTPS 보안 환경 강제 (Mobile-first PWA & HTTPS Mandated)**
@@ -125,7 +126,7 @@ graph TD
 | **Backend Core** | Python 3.13 + Django Framework & Django REST Framework (DRF) (패키지 관리: **uv**) |
 | **Task Queue** | Celery + Redis Broker & Celery Worker Process |
 | **Storage** | PostgreSQL v18+ (Main ACID, Native UUIDv7 & AIO) & JSONB (Raw LLM JSON Backup) + **psycopg3** (psycopg[binary] C 가속 적용) + approval_number (결제 승인번호 백업 보존) |
-| **AI Engine** | LiteLLM Router (로컬: Ollama gemma4:e4b 최우선 및 폴백 / 프로덕션: Gemini-2.5-Flash 우선 및 Ollama 폴백) |
+| **AI Engine** | LiteLLM Router & 3-Tier Hybrid Pipeline (로컬: Ollama gemma4:e4b / 프로덕션: Gemini-2.5-Flash) |
 | **Ingestion** | SendGrid / Mailgun Inbound Webhook Ingestion Router (차후 확장 백로그) |
 | **Frontend** | Vue.js 3 (Vite + Vue 3) + PWA Manifest & Service Worker Cache (iOS Safari용 A2HS 수동 유도 툴팁 포함) + Tailwind CSS + sessionStorage 세션 관리 및 httpOnly refresh token Cookie 연동 |
 | **Web Push** | VAPID v2 Web Push API (FCM / APNs 연동 백그라운드 알림) |
@@ -150,15 +151,16 @@ graph TD
 ### 3주차: 비동기 분산 아키텍처 및 비용/보안 고도화 (15일차 ~ 21일차)
 - 15~16일차: Redis Broker 도입 및 Django settings.py 내 DB 커넥션 풀 엄격 크기 제한 튜닝.
 - 17일차: ORM `transaction.atomic()` 수호 로직 적용, 승인번호/60초 임계값 연속 결제 중복 방어 알고리즘 적용 및 수정 모달 카테고리 매핑 버그 해결 완료.
-- 18일차: 비용 통제 엔진 핵심(뼈대) 구현 (`MerchantTemplate` 모델 설계, 10자리 사업자번호 선 추출, 바이패스 및 LLM 폴백).
-- 19일차: 자율 템플릿 승인 및 자가 치유(Self-Healing) 알고리즘 고도화 완료.
+- 18일차: 비용 통제 엔진 핵심(뼈대) 구현 (Bypass 및 LLM 폴백 기반구조 구축).
+- 19일차: 정규식 일관성 검사 고도화 및 어드민 상세 UI 개정 완료.
 - 20~21일차: 가계부 UI 고도화(소비 시각화 차트, 예산 게이지, 캘린더 뷰 및 다차원 필터링) 개발 완료.
 
-### 4주차: PWA 플랫폼 최적화, Web Push 및 프로덕션 배포 (22일차 ~ 28일차)
-- 22일차: 3주차 비동기 아키텍처 튜닝 및 웹 업로드 경로 영수증 50종 부하 테스트 검증.
-- 23~24일차: PWA Manifest/Service Worker 캐시 연동, HTML5 Capture API 모바일 카메라 연동 및 A2HS 설치 가이드 배너 구현.
-- 25~26일차: VAPID Web Push 백그라운드 발송 허브 및 오프라인 단말 알림 수신 정합성 검증 완료.
-- 27~28일차: 실 배포 프로덕션 환경용 docker-compose.prod.yml 튜닝, SSL HTTPS 리버스 프록시(Nginx) 연동 및 정식 출시 완료.
+### 4주차: PWA 플랫폼 최적화, Web Push 및 프로덕션 배포 (22일차 ~ 29일차)
+- 22일차: 3단계 하이브리드 영수증 파싱 전략(OCR + Ollama, Cloud Text-only, Cloud Vision) 구축 및 기존 정규식 바이패스(Bypass) 템플릿 아키텍처 제거/정리.
+- 23일차: 3주차 비동기 아키텍처 튜닝 및 웹 업로드 경로 영수증 50종 부하 테스트 검증.
+- 24~25일차: PWA Manifest/Service Worker 캐시 연동, HTML5 Capture API 모바일 카메라 연동 및 A2HS 설치 가이드 배너 구현.
+- 26~27일차: VAPID Web Push 백그라운드 발송 허브 및 오프라인 단말 알림 수신 정합성 검증 완료.
+- 28~29일차: 실 배포 프로덕션 환경용 docker-compose.prod.yml 튜닝, SSL HTTPS 리버스 프록시(Nginx) 연동 및 정식 출시 완료.
 
 ---
 
