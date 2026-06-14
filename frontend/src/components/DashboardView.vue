@@ -481,6 +481,7 @@ export default {
     const parsedData = ref(null);
     const isUploading = ref(false);
     const errorMessage = ref(null);
+    let errorTimeout = null;
     const ledgerList = ref([]);
     const pendingJobs = ref([]);
     const pollingStatus = ref(null);
@@ -502,22 +503,25 @@ export default {
     const selectedDateForDetail = ref('');
     const dateDetailLedgers = computed(() => {
       if (!selectedDateForDetail.value) return [];
-      return ledgerList.value.filter(item => {
+      const tz = userTimezone.value && userTimezone.value.trim() ? userTimezone.value : 'Asia/Seoul';
+      const filtered = ledgerList.value.filter(item => {
         if (!item.transaction_date) return false;
         try {
           const date = new Date(item.transaction_date);
           const formatter = new Intl.DateTimeFormat('sv-SE', {
-            timeZone: userTimezone.value,
+            timeZone: tz,
             year: 'numeric',
             month: '2-digit',
             day: '2-digit'
           });
           return formatter.format(date) === selectedDateForDetail.value;
         } catch (e) {
-          console.error('Failed to convert timezone date', e);
+          console.error('Failed to convert timezone date for detail filtering', e);
           return item.transaction_date.substring(0, 10) === selectedDateForDetail.value;
         }
       });
+      console.log(`[DateClickDetail] Filtered items for date ${selectedDateForDetail.value} (timezone: ${tz}):`, filtered.length, 'items found from total', ledgerList.value.length);
+      return filtered;
     });
 
     // 테마 및 모바일 탭 상태
@@ -662,6 +666,7 @@ export default {
     };
 
     const onCalendarDateClick = (dateStr) => {
+      console.log(`[CalendarDateClick] User clicked date: ${dateStr}`);
       selectedDateForDetail.value = dateStr;
       isDateDetailModalOpen.value = true;
     };

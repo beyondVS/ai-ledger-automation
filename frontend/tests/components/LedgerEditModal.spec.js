@@ -13,7 +13,7 @@ describe('LedgerEditModal.vue', () => {
   const mockLedger = {
     id: '01944e8d-88f5-7c1c-9226-eb52c6f1a8e1',
     vendor_name: '스타벅스 강남점',
-    transaction_date: '2026-06-07',
+    transaction_date: '2026-06-07T00:00:00Z',
     total_amount: '15000.00',
     category: '미분류',
   };
@@ -41,7 +41,7 @@ describe('LedgerEditModal.vue', () => {
     });
 
     expect(wrapper.find('input[id="vendor_name"]').element.value).toBe('스타벅스 강남점');
-    expect(wrapper.find('input[id="transaction_date"]').element.value).toBe('2026-06-07');
+    expect(wrapper.find('input[id="transaction_date"]').element.value).toBe('2026-06-07T00:00');
     expect(wrapper.find('input[id="total_amount"]').element.value).toBe('15000.00');
     expect(wrapper.find('select[id="category"]').element.value).toBe('미분류');
   });
@@ -87,7 +87,7 @@ describe('LedgerEditModal.vue', () => {
     // API가 적절한 인자로 호출되었는지 확인
     expect(ledgerService.updateLedgerEntry).toHaveBeenCalledWith(mockLedger.id, {
       vendor_name: '스타벅스 신사점',
-      transaction_date: '2026-06-07',
+      transaction_date: '2026-06-07T00:00:00Z',
       total_amount: '15000.00',
       category: '식비',
     });

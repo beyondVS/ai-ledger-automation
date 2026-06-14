@@ -16,29 +16,33 @@ export async function fetchLedgerList(year, month, filters = {}) {
 
   let url = `${BASE_URL}/`;
   const hasCustomDate = filters.start_date || filters.end_date;
+  const queryParams = [];
 
   if (!hasCustomDate && year && month) {
-    url += `?year=${year}&month=${month}`;
-  } else {
-    url += '?';
+    queryParams.push(`year=${year}`);
+    queryParams.push(`month=${month}`);
   }
 
   // 추가 다차원 검색 필터 결합
   if (filters.q) {
-    url += `&q=${encodeURIComponent(filters.q)}`;
+    queryParams.push(`q=${encodeURIComponent(filters.q)}`);
   }
   if (filters.categories) {
-    url += `&categories=${encodeURIComponent(filters.categories)}`;
+    queryParams.push(`categories=${encodeURIComponent(filters.categories)}`);
   }
   if (filters.min_amount !== undefined && filters.min_amount !== null && filters.min_amount !== '') {
-    url += `&min_amount=${filters.min_amount}`;
+    queryParams.push(`min_amount=${filters.min_amount}`);
   }
   if (filters.max_amount !== undefined && filters.max_amount !== null && filters.max_amount !== '') {
-    url += `&max_amount=${filters.max_amount}`;
+    queryParams.push(`max_amount=${filters.max_amount}`);
   }
   if (hasCustomDate) {
-    if (filters.start_date) url += `&start_date=${filters.start_date}`;
-    if (filters.end_date) url += `&end_date=${filters.end_date}`;
+    if (filters.start_date) queryParams.push(`start_date=${filters.start_date}`);
+    if (filters.end_date) queryParams.push(`end_date=${filters.end_date}`);
+  }
+
+  if (queryParams.length > 0) {
+    url += `?${queryParams.join('&')}`;
   }
 
   const response = await fetch(url, {
