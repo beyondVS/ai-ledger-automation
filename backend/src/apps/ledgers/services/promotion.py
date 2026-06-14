@@ -13,8 +13,11 @@ def promote_template_if_consistent(template: MerchantTemplate, proposed_rules: d
     조건 만족 시 해당 가맹점 템플릿을 자동으로 승격시킵니다.
     """
     # 1. 템플릿의 기존 parsing_rules와 제안된 proposed_rules 비교
-    # dict의 동치 연산을 수행하여 정규식 패턴들의 일치성을 판별합니다.
-    is_matching = template.parsing_rules == proposed_rules
+    # 상세 품목(default_items)이나 카테고리(default_category)는 거래마다 동적으로 달라질 수 있으므로,
+    # 템플릿의 자동 승격은 오직 핵심 정규식 패턴(date_pattern, amount_pattern)의 일치 여부만 판별합니다.
+    is_matching = template.parsing_rules.get("date_pattern") == proposed_rules.get(
+        "date_pattern"
+    ) and template.parsing_rules.get("amount_pattern") == proposed_rules.get("amount_pattern")
 
     with transaction.atomic():
         # lock을 걸어 안전하게 카운터 증가 및 정합성을 지킵니다.

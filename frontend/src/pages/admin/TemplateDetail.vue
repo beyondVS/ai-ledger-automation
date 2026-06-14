@@ -45,13 +45,33 @@
             🔄 치유 카운터 초기화
           </button>
           
-          <!-- 수동 승격 및 정규식 조율 -->
+          <!-- 정규식 조율 (모달 팝업) -->
           <button
             @click="openVerifyModal"
             :disabled="actionLoading"
-            class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl text-sm transition shadow-md dark:shadow-lg dark:shadow-emerald-500/15 disabled:opacity-50 cursor-pointer"
+            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-bold rounded-xl text-sm transition shadow-md cursor-pointer"
           >
-            🛠️ 수동 정규식 조율 & 승격
+            🛠️ 정규식 조율
+          </button>
+
+          <!-- 수동 승격 -->
+          <button
+            v-if="!template.is_verified"
+            @click="handlePromote"
+            :disabled="actionLoading"
+            class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black rounded-xl text-sm transition shadow-md dark:shadow-emerald-500/15 disabled:opacity-50 cursor-pointer"
+          >
+            ✓ 승격 (우회 가동)
+          </button>
+
+          <!-- 수동 강등 -->
+          <button
+            v-else
+            @click="handleDemote"
+            :disabled="actionLoading"
+            class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-sm transition shadow-md disabled:opacity-50 cursor-pointer"
+          >
+            ✗ 강등 (검증 취소)
           </button>
         </div>
       </div>
@@ -71,9 +91,23 @@
               <div class="text-2xl font-black text-slate-800 dark:text-slate-200 mt-1 font-mono">{{ template.self_healing_attempts }} / 3</div>
             </div>
           </div>
-          <div class="text-xs text-slate-550 dark:text-slate-400">
+          <div class="text-xs text-slate-550 dark:text-slate-400 pb-2">
             <span class="font-semibold">최근 자가 치유 일시: </span>
             <span class="font-mono">{{ formatDateTime(template.last_healing_at) }}</span>
+          </div>
+          <!-- 연관 사용자 -->
+          <div class="border-t border-slate-200 dark:border-slate-800/80 pt-3 space-y-2">
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">연관 사용자</div>
+            <div class="flex flex-wrap gap-1.5">
+              <span 
+                v-for="user in template.associated_users" 
+                :key="user"
+                class="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350 border border-slate-200 dark:border-slate-700/60"
+              >
+                {{ user }}
+              </span>
+              <span v-if="!template.associated_users || template.associated_users.length === 0" class="text-slate-400 dark:text-slate-600 text-2xs">-</span>
+            </div>
           </div>
         </div>
 
@@ -159,13 +193,13 @@
       <div v-if="showVerifyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm p-4">
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-6 transform scale-100 transition-all duration-300">
           <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-            <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">🛠️ 수동 정규식 조율 및 템플릿 승격</h3>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">🛠️ 수동 정규식 조율</h3>
             <button @click="closeVerifyModal" class="text-slate-400 hover:text-slate-900 dark:hover:text-white transition text-lg cursor-pointer">&times;</button>
           </div>
 
           <div class="space-y-4">
             <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              정규식 패턴을 수동으로 편집하여 템플릿을 강제 승인(is_verified: true)시킵니다. 승격이 성공하면 즉시 LLM API 우회가 가동됩니다.
+              가맹점 템플릿의 정규식 패턴을 수동으로 편집 및 최적화하여 저장합니다.
             </p>
 
             <div class="space-y-3 font-mono text-xs">
@@ -201,7 +235,7 @@
               :disabled="actionLoading"
               class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold rounded-xl text-sm transition disabled:opacity-50 cursor-pointer"
             >
-              승격 완료
+              조율 완료 (저장)
             </button>
           </div>
         </div>
@@ -308,7 +342,7 @@ export default {
     closeVerifyModal() {
       this.showVerifyModal = false;
     },
-    // 수동 검증 및 승격 전송
+    // 수동 정규식 조율 전송
     async handleVerify() {
       if (!this.editRules.date_pattern.trim() || !this.editRules.amount_pattern.trim()) {
         alert('모든 정규식 패턴을 올바르게 채워야 합니다.');
@@ -319,8 +353,8 @@ export default {
         const response = await verifyTemplate(this.templateId, {
           date_pattern: this.editRules.date_pattern,
           amount_pattern: this.editRules.amount_pattern
-        });
-        alert('템플릿이 성공적으로 수동 승인되어 bypass 파이프라인에 적용되었습니다.');
+        }, null); // is_verified 상태는 유지하고 패턴만 업데이트
+        alert('템플릿의 정규식 패턴이 성공적으로 조율되어 저장되었습니다.');
         
         // 갱신 반영
         if (response.template) {
@@ -335,7 +369,47 @@ export default {
         await this.fetchTemplateDetails();
         await this.fetchHistory();
       } catch (err) {
+        alert(err.message || '정규식 조율 처리에 실패했습니다.');
+      } finally {
+        this.actionLoading = false;
+      }
+    },
+    // 수동 승격 처리
+    async handlePromote() {
+      if (!confirm('해당 템플릿을 검증 완료 상태로 승격시키겠습니까?\n승격 시 즉시 LLM을 거치지 않는 bypass 파싱이 적용됩니다.')) return;
+      this.actionLoading = true;
+      try {
+        const response = await verifyTemplate(this.templateId, null, true);
+        alert('템플릿이 성공적으로 수동 승인되어 우회 가동(bypass)이 활성화되었습니다.');
+        if (response.template) {
+          this.template.is_verified = response.template.is_verified;
+          this.template.is_blacklisted = response.template.is_blacklisted;
+          this.template.self_healing_attempts = response.template.self_healing_attempts;
+        }
+        await this.fetchTemplateDetails();
+        await this.fetchHistory();
+      } catch (err) {
         alert(err.message || '승격 처리에 실패했습니다.');
+      } finally {
+        this.actionLoading = false;
+      }
+    },
+    // 수동 강등 처리
+    async handleDemote() {
+      if (!confirm('해당 템플릿의 검증 상태를 취소(강등)하시겠습니까?\n강등 시 해당 가맹점의 다음 업로드 시점부터 자동 학습 파이프라인(LLM)이 다시 구동됩니다.')) return;
+      this.actionLoading = true;
+      try {
+        const response = await verifyTemplate(this.templateId, null, false);
+        alert('템플릿 검증 상태가 성공적으로 해제되었습니다.');
+        if (response.template) {
+          this.template.is_verified = response.template.is_verified;
+          this.template.is_blacklisted = response.template.is_blacklisted;
+          this.template.self_healing_attempts = response.template.self_healing_attempts;
+        }
+        await this.fetchTemplateDetails();
+        await this.fetchHistory();
+      } catch (err) {
+        alert(err.message || '강등 처리에 실패했습니다.');
       } finally {
         this.actionLoading = false;
       }
