@@ -1,6 +1,9 @@
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 p-6 md:p-10 font-sans transition-colors duration-300">
-    <div class="max-w-7xl mx-auto space-y-8">
+  <div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 p-6 md:p-10 font-sans flex flex-col items-center transition-colors duration-300">
+    <!-- 공통 네비바 컴포넌트 장착 -->
+    <NavBar />
+
+    <div class="w-full max-w-7xl space-y-8">
       
       <!-- 헤더 섹션 (그라데이션 타이틀) -->
       <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -11,14 +14,6 @@
           <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
             로컬 바이패스 템플릿의 실시간 자동 학습, 강등, 블랙리스트 격리 상태를 모니터링합니다.
           </p>
-        </div>
-        <div class="flex items-center space-x-2">
-          <router-link
-            to="/dashboard"
-            class="inline-flex items-center px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition duration-200"
-          >
-            ← 대시보드로 돌아가기
-          </router-link>
         </div>
       </div>
 
@@ -130,11 +125,13 @@
 <script>
 import { getTemplates } from '../../services/adminService';
 import TemplateListItem from '../../components/admin/TemplateListItem.vue';
+import NavBar from '../../components/NavBar.vue';
 
 export default {
   name: 'TemplateList',
   components: {
-    TemplateListItem
+    TemplateListItem,
+    NavBar
   },
   data() {
     return {

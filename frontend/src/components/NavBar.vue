@@ -43,6 +43,16 @@
         >
           템플릿 관리
         </router-link>
+        <router-link
+          v-if="isStaff"
+          to="/admin/templates"
+          class="px-3 py-1.5 rounded-lg transition-all duration-200 cursor-pointer"
+          :class="isActiveRoute('/admin/templates') 
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/15' 
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+        >
+          어드민 템플릿
+        </router-link>
       </div>
 
       <!-- 우측 끝: 테마 및 로그아웃 액션 버튼 그룹 -->
@@ -88,6 +98,24 @@ export default {
     const router = useRouter();
     const currentUsername = ref('사용자');
     const isDarkMode = ref(true);
+    const isStaff = ref(false);
+
+    // JWT payload base64 디코딩 헬퍼 함수
+    const parseJwt = (token) => {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    };
 
     // Outfit 구글 웹 폰트 동적 헤더 로드
     onBeforeMount(() => {
@@ -101,13 +129,19 @@ export default {
     });
 
     onMounted(() => {
-      // 1. 세션 사용자명 복원
+      // 1. 세션 사용자명 및 staff 여부 복원
       const sessionData = sessionStorage.getItem('ai_ledger_auth_session');
       if (sessionData) {
         try {
           const parsed = JSON.parse(sessionData);
           if (parsed && parsed.username) {
             currentUsername.value = parsed.username;
+          }
+          if (parsed && parsed.accessToken) {
+            const payload = parseJwt(parsed.accessToken);
+            if (payload && payload.is_staff) {
+              isStaff.value = true;
+            }
           }
         } catch (e) {
           console.error('Failed to parse session info in NavBar', e);
@@ -145,12 +179,17 @@ export default {
     };
 
     const isActiveRoute = (path) => {
-      return route && route.path === path;
+      if (!route) return false;
+      if (path === '/admin/templates') {
+        return route.path.startsWith('/admin/templates');
+      }
+      return route.path === path;
     };
 
     return {
       currentUsername,
       isDarkMode,
+      isStaff,
       toggleTheme,
       handleLogout,
       isActiveRoute

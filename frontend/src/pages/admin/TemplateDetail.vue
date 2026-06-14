@@ -1,6 +1,9 @@
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 p-6 md:p-10 font-sans transition-colors duration-300">
-    <div class="max-w-6xl mx-auto space-y-8">
+  <div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 p-6 md:p-10 font-sans flex flex-col items-center transition-colors duration-300">
+    <!-- 공통 네비바 컴포넌트 장착 -->
+    <NavBar />
+
+    <div class="w-full max-w-6xl space-y-8">
       
       <!-- 상단 상호작용 바 및 타이틀 -->
       <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -210,9 +213,13 @@
 
 <script>
 import { getTemplates, getTemplateHistory, verifyTemplate, resetHealing } from '../../services/adminService';
+import NavBar from '../../components/NavBar.vue';
 
 export default {
   name: 'TemplateDetail',
+  components: {
+    NavBar
+  },
   data() {
     return {
       templateId: this.$route.params.id,
