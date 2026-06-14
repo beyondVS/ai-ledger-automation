@@ -28,9 +28,6 @@
         <span>{{ errorMessage }}</span>
       </div>
 
-      <!-- 다차원 검색 필터 패널 -->
-      <FilterPanel @filter-change="onFilterChange" />
-
       <!-- 모바일 전용 탭 바 (md 미만 노출) -->
       <div class="flex md:hidden w-full max-w-md mx-auto mb-6 bg-slate-200/60 dark:bg-slate-900 p-1 rounded-xl border border-slate-300 dark:border-slate-800/80">
         <button 
@@ -65,15 +62,12 @@
         />
       </div>
 
-      <!-- 반응형 그리드 / 세로 배치 본문 레이아웃 (캘린더 뷰 동적 1열 확장 대응) -->
-      <div :class="viewMode === 'calendar' ? 'flex flex-col gap-8 w-full mt-2' : 'grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch w-full mt-2'">
-        <!-- 좌측 열: 메인 인터랙티브 작업 공간 (접이식 아코디언 카드화) -->
+      <!-- 메인 인터랙티브 영역 (1열 통합 구조) -->
+      <div class="flex flex-col gap-8 w-full mt-2">
+        <!-- 1. 새로운 영수증 등록 및 AI 분석 (접이식 아코디언 카드) -->
         <div 
-          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xl transition-all duration-300 mx-auto md:mx-0 md:block relative"
-          :class="[
-            viewMode === 'calendar' ? 'w-full order-2' : 'max-w-md md:max-w-none',
-            currentTab === 'upload' ? 'block' : 'hidden'
-          ]"
+          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xl transition-all duration-300 relative"
+          :class="currentTab === 'upload' ? 'block' : 'hidden md:block'"
         >
           <!-- 카드 헤더 및 접기 토글 -->
           <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800 mb-4 cursor-pointer select-none" @click="isUploadExpanded = !isUploadExpanded">
@@ -126,13 +120,10 @@
           </transition>
         </div>
 
-        <!-- 우측 열: 가계부 리스트/캘린더 뷰 영역 (US1 MVP) -->
+        <!-- 2. 가계부 리스트/캘린더 뷰 영역 (US1 MVP) -->
         <section 
-          class="w-full p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between h-full transition-all duration-300 md:block"
-          :class="[
-            viewMode === 'calendar' ? 'w-full order-1' : 'max-w-md md:max-w-none',
-            currentTab === 'stats' ? 'block' : 'hidden'
-          ]"
+          class="w-full p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between h-full transition-all duration-300"
+          :class="currentTab === 'stats' ? 'block' : 'hidden md:block'"
         >
           <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-2 select-none">
@@ -179,6 +170,25 @@
                 {{ viewMode === 'list' ? formattedMonthlyTotal : calendarMonthlyTotal.toLocaleString() }} 원
               </span>
             </div>
+          </div>
+
+          <!-- 필터 토글 버튼 및 상세 필터 패널 (제안 1) -->
+          <div class="mb-5 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+            <button 
+              @click="isFilterExpanded = !isFilterExpanded"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-3xs sm:text-2xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-850 transition-all cursor-pointer select-none"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="w-3.5 h-3.5 text-indigo-500">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+              </svg>
+              <span>상세 검색 필터 {{ isFilterExpanded ? '접기' : '펼치기' }}</span>
+            </button>
+            
+            <transition name="expand">
+              <div v-show="isFilterExpanded" class="mt-4">
+                <FilterPanel @filter-change="onFilterChange" />
+              </div>
+            </transition>
           </div>
 
           <!-- 1. 목록 뷰 모드 -->
@@ -488,6 +498,7 @@ export default {
     // 캘린더 및 다차원 복합 필터 모드 관련 상태
     const viewMode = ref('list'); // 'list' | 'calendar'
     const isUploadExpanded = ref(true);
+    const isFilterExpanded = ref(false);
     const userTimezone = ref('Asia/Seoul');
     const calendarSummaries = ref({});
     const calendarMonthlyTotal = ref(0);
@@ -920,6 +931,7 @@ export default {
       viewMode,
       userTimezone,
       isUploadExpanded,
+      isFilterExpanded,
       calendarSummaries,
       calendarMonthlyTotal,
       activeFilters,
