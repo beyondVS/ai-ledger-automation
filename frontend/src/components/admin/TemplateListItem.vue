@@ -1,10 +1,22 @@
 <template>
-  <tr class="hover:bg-slate-100 dark:hover:bg-slate-800/45 transition-colors duration-200 border-b border-slate-200 dark:border-slate-800/50">
+  <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50/60 dark:hover:bg-slate-800/45 transition-colors duration-200 border-b border-slate-200 dark:border-slate-800/50">
     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-850 dark:text-slate-200">
       {{ template.vendor_name }}
     </td>
     <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-550 dark:text-slate-400 font-mono">
       {{ formatBizNum(template.vendor_registration_number) }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-350">
+      <div class="flex flex-wrap gap-1 max-w-[150px]">
+        <span 
+          v-for="user in template.associated_users" 
+          :key="user"
+          class="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60"
+        >
+          {{ user }}
+        </span>
+        <span v-if="!template.associated_users || template.associated_users.length === 0" class="text-slate-400 dark:text-slate-600 text-2xs">-</span>
+      </div>
     </td>
     <td class="px-6 py-4 whitespace-nowrap">
       <span v-if="template.is_blacklisted" class="px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 shadow-sm animate-pulse">

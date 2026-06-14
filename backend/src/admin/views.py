@@ -67,7 +67,15 @@ class AdminTemplateListView(APIView):
             queryset = queryset.filter(vendor_registration_number=vrn)
 
         results = []
+        from apps.ledgers.models import Ledger
+
         for t in queryset:
+            usernames = list(
+                Ledger.objects.filter(vendor_registration_number=t.vendor_registration_number)
+                .exclude(user__isnull=True)
+                .values_list("user__username", flat=True)
+                .distinct()
+            )
             results.append(
                 {
                     "id": str(t.id),
@@ -78,6 +86,7 @@ class AdminTemplateListView(APIView):
                     "consistency_count": t.consistency_count,
                     "self_healing_attempts": t.self_healing_attempts,
                     "last_healing_at": t.last_healing_at.isoformat() if t.last_healing_at else None,
+                    "associated_users": usernames,
                 }
             )
 

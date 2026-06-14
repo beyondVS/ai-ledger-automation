@@ -76,7 +76,7 @@
       </div>
 
       <!-- 템플릿 목록 테이블 카드 -->
-      <div class="bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-md dark:shadow-2xl">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-md dark:shadow-2xl">
         <div v-if="loading" class="flex flex-col items-center justify-center py-20 space-y-4">
           <div class="w-10 h-10 border-4 border-slate-200 dark:border-slate-800 border-t-emerald-500 rounded-full animate-spin"></div>
           <p class="text-slate-500 dark:text-slate-400 text-sm">템플릿 목록을 로드하는 중입니다...</p>
@@ -97,9 +97,10 @@
         <div v-else class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+              <tr class="bg-slate-50/50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
                 <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">가맹점명</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">사업자번호</th>
+                <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">사용자</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">상태</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">일관성 누적</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">자가치유 시도</th>
@@ -107,7 +108,7 @@
                 <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">관리</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-800/50">
+            <tbody class="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800/50">
               <TemplateListItem
                 v-for="template in templates"
                 :key="template.id"
