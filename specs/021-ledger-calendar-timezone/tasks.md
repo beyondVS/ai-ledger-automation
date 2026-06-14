@@ -20,8 +20,8 @@
 
 **Purpose**: 프로젝트 구조 초기화 및 공유 설정 확인
 
-- [ ] T001 `specs/021-ledger-calendar-timezone/checklists/requirements.md` 경로의 품질 검증 체크리스트가 완료 상태인지 최종 확인
-- [ ] T002 `D:/Projects/Private/ai-ledger-automation/` 루트 디렉토리의 package.json 및 pyproject.toml 의존성 설정과 가상환경 동기화 상태 검토
+- [X] T001 `specs/021-ledger-calendar-timezone/checklists/requirements.md` 경로의 품질 검증 체크리스트가 완료 상태인지 최종 확인
+- [X] T002 `D:/Projects/Private/ai-ledger-automation/` 루트 디렉토리의 package.json 및 pyproject.toml 의존성 설정과 가상환경 동기화 상태 검토
 
 ---
 
@@ -29,9 +29,9 @@
 
 **Purpose**: 사용자 스토리 개발을 시작하기 전 완결되어야 하는 공통 데이터베이스 모델 확장 및 인프라 구성
 
-- [ ] T003 `backend/accounts/models.py` 경로에 사용자 타임존 설정을 보존할 `timezone` CharField 속성 및 마이그레이션 코드 추가
-- [ ] T004 `backend/accounts/middleware.py` 경로에 요청 사용자 프로필의 `timezone` 값을 감지하여 Django 스레드 로컬에 동적으로 활성화하는 `TimezoneMiddleware` 미들웨어 클래스 구현
-- [ ] T005 `backend/ledgers/filters.py` 경로에 django-filter 라이브러리를 사용해 복합 다차원 쿼리 조회를 처리할 `LedgerFilter` 구조 설계 및 생성
+- [X] T003 `backend/accounts/models.py` 경로에 사용자 타임존 설정을 보존할 `timezone` CharField 속성 및 마이그레이션 코드 추가
+- [X] T004 `backend/accounts/middleware.py` 경로에 요청 사용자 프로필의 `timezone` 값을 감지하여 Django 스레드 로컬에 동적으로 활성화하는 `TimezoneMiddleware` 미들웨어 클래스 구현
+- [X] T005 `backend/ledgers/filters.py` 경로에 django-filter 라이브러리를 사용해 복합 다차원 쿼리 조회를 처리할 `LedgerFilter` 구조 설계 및 생성
 
 **Checkpoint**: Foundational 인프라 준비 완료 - 사용자 스토리 독립 테스트 및 병렬 구현 시작 가능
 
@@ -45,17 +45,17 @@
 
 ### Tests for User Story 3 (TDD Required)
 
-- [ ] T006 [P] [US3] `backend/accounts/tests/test_timezone_api.py` 경로에 `django.test.TestCase` 및 `setUpTestData`를 활용해 타임존 변경 API 계약 준수 및 무효 타임존 예외 처리(400 Bad Request)를 테스트하는 코드 작성
-- [ ] T007 [P] [US3] `backend/ledgers/tests/test_timezone_pipeline.py` 경로에 `django.test.TestCase`를 활용해 신규 가계부 거래 적재 시 사용자 타임존 오프셋 기준으로 시간대가 정밀 보정되는 E2E 파이프라인 통합 테스트 작성
-- [ ] T008 [P] [US3] `backend/accounts/tests/test_timezone_validation.py` 경로에 `unittest.TestCase`를 상속하여 장고 부트스트랩을 우회하는 IANA 타임존 명칭 유효성 검사 로직 단독 단위 테스트 작성
+- [X] T006 [P] [US3] `backend/accounts/tests/test_timezone_api.py` 경로에 `django.test.TestCase` 및 `setUpTestData`를 활용해 타임존 변경 API 계약 준수 및 무효 타임존 예외 처리(400 Bad Request)를 테스트하는 코드 작성
+- [X] T007 [P] [US3] `backend/ledgers/tests/test_timezone_pipeline.py` 경로에 `django.test.TestCase`를 활용해 신규 가계부 거래 적재 시 사용자 타임존 오프셋 기준으로 시간대가 정밀 보정되는 E2E 파이프라인 통합 테스트 작성
+- [X] T008 [P] [US3] `backend/accounts/tests/test_timezone_validation.py` 경로에 `unittest.TestCase`를 상속하여 장고 부트스트랩을 우회하는 IANA 타임존 명칭 유효성 검사 로직 단독 단위 테스트 작성
 
 ### Implementation for User Story 3
 
-- [ ] T009 [US3] `backend/accounts/utils.py` 경로에 `zoneinfo` 라이브러리를 활용해 전달받은 타임존 문자열이 유효한 IANA 타임존 포맷인지 판단하는 유효성 검사 로직 구현
-- [ ] T010 [US3] `backend/accounts/views.py` 경로에 `PATCH /api/v1/accounts/timezone/` 엔드포인트를 구현하여 타임존 유효성 검증 후 DB에 영속화하는 API 뷰 코딩 (T006 테스트 통과 확인)
-- [ ] T011 [US3] `backend/ledgers/services.py` 경로에 영수증 결제 데이터 적재 비동기 서비스 메서드에 `UserAccount.timezone` 정보를 로드하여 시간대 정합성을 정규화 및 반영하는 파이프라인 로직 구현 (T007 테스트 통과 확인)
-- [ ] T012 [US3] `frontend/src/services/accountService.js` 경로에 사용자 타임존 설정을 백엔드와 송수신하는 PATCH API 비동기 네트워크 통신 모듈 구현
-- [ ] T013 [US3] `frontend/src/pages/Settings.vue` 경로에 환경설정 탭 UI 내 IANA 표준 타임존 목록 드롭다운 컴포넌트 추가 및 갱신 API 연동 바인딩
+- [X] T009 [US3] `backend/accounts/utils.py` 경로에 `zoneinfo` 라이브러리를 활용해 전달받은 타임존 문자열이 유효한 IANA 타임존 포맷인지 판단하는 유효성 검사 로직 구현
+- [X] T010 [US3] `backend/accounts/views.py` 경로에 `PATCH /api/v1/accounts/timezone/` 엔드포인트를 구현하여 타임존 유효성 검증 후 DB에 영속화하는 API 뷰 코딩 (T006 테스트 통과 확인)
+- [X] T011 [US3] `backend/ledgers/services.py` 경로에 영수증 결제 데이터 적재 비동기 서비스 메서드에 `UserAccount.timezone` 정보를 로드하여 시간대 정합성을 정규화 및 반영하는 파이프라인 로직 구현 (T007 테스트 통과 확인)
+- [X] T012 [US3] `frontend/src/services/accountService.js` 경로에 사용자 타임존 설정을 백엔드와 송수신하는 PATCH API 비동기 네트워크 통신 모듈 구현
+- [X] T013 [US3] `frontend/src/pages/Settings.vue` 경로에 환경설정 탭 UI 내 IANA 표준 타임존 목록 드롭다운 컴포넌트 추가 및 갱신 API 연동 바인딩
 
 **Checkpoint**: 사용자 타임존 동적 변경 및 시간 정합성 연동 파이프라인 완결
 
@@ -69,14 +69,14 @@
 
 ### Tests for User Story 1 (TDD Required)
 
-- [ ] T014 [P] [US1] `backend/ledgers/tests/test_calendar_api.py` 경로에 `django.test.TestCase` 및 `setUpTestData`를 활용해 월별 지출 합산 및 건수 요약 집계 데이터가 사용자 타임존 로컬 일자 기준으로 그룹핑되어 반환되는지 검증하는 API 테스트 작성
+- [X] T014 [P] [US1] `backend/ledgers/tests/test_calendar_api.py` 경로에 `django.test.TestCase` 및 `setUpTestData`를 활용해 월별 지출 합산 및 건수 요약 집계 데이터가 사용자 타임존 로컬 일자 기준으로 그룹핑되어 반환되는지 검증하는 API 테스트 작성
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] `backend/ledgers/views.py` 경로에 `GET /api/v1/ledgers/calendar/` API 엔드포인트를 추가하고, 데이터베이스에서 사용자의 로컬 일자별로 합계(`Sum`) 및 건수(`Count`)를 집계하여 DTO 맵 구조로 응답하는 뷰 구현 (T014 테스트 통과 확인)
-- [ ] T016 [US1] `frontend/src/services/ledgerService.js` 경로에 월별 캘린더 지출 요약 API를 호출하여 프론트엔드로 전달하는 비동기 함수 모듈 구현
-- [ ] T017 [US1] `frontend/src/components/CalendarView.vue` 경로에 Tailwind CSS `grid-cols-7`을 활용한 Vanilla CSS Grid 방식의 월별 달력 컴포넌트를 설계하여 일자별 합산 금액 및 건수 뱃지를 바인딩 표시하도록 코딩
-- [ ] T018 [US1] `frontend/src/pages/Dashboard.vue` 경로에 캘린더 뷰 토글 버튼을 추가하고 목록 뷰와의 실시간 전환 모드 및 월별 날짜 클릭 시의 상세 내역 팝업 연동 구현
+- [X] T015 [US1] `backend/ledgers/views.py` 경로에 `GET /api/v1/ledgers/calendar/` API 엔드포인트를 추가하고, 데이터베이스에서 사용자의 로컬 일자별로 합계(`Sum`) 및 건수(`Count`)를 집계하여 DTO 맵 구조로 응답하는 뷰 구현 (T014 테스트 통과 확인)
+- [X] T016 [US1] `frontend/src/services/ledgerService.js` 경로에 월별 캘린더 지출 요약 API를 호출하여 프론트엔드로 전달하는 비동기 함수 모듈 구현
+- [X] T017 [US1] `frontend/src/components/CalendarView.vue` 경로에 Tailwind CSS `grid-cols-7`을 활용한 Vanilla CSS Grid 방식의 월별 달력 컴포넌트를 설계하여 일자별 합산 금액 및 건수 뱃지를 바인딩 표시하도록 코딩
+- [X] T018 [US1] `frontend/src/pages/Dashboard.vue` 경로에 캘린더 뷰 토글 버튼을 추가하고 목록 뷰와의 실시간 전환 모드 및 월별 날짜 클릭 시의 상세 내역 팝업 연동 구현
 
 **Checkpoint**: Vanilla 캘린더 뷰 컴포넌트 및 API 데이터 바인딩 완결
 
@@ -90,13 +90,13 @@
 
 ### Tests for User Story 2 (TDD Required)
 
-- [ ] T019 [P] [US2] `backend/ledgers/tests/test_filter_api.py` 경로에 `django.test.TestCase` 및 `setUpTestData`를 활용해 상호명 부분일치, 복수 카테고리(OR 조건), 기간 및 금액 범위 쿼리 파라미터 필터링 정합성을 대조 검증하는 API 통합 테스트 작성
+- [X] T019 [P] [US2] `backend/ledgers/tests/test_filter_api.py` 경로에 `django.test.TestCase` 및 `setUpTestData`를 활용해 상호명 부분일치, 복수 카테고리(OR 조건), 기간 및 금액 범위 쿼리 파라미터 필터링 정합성을 대조 검증하는 API 통합 테스트 작성
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] `backend/ledgers/views.py` 경로에 `LedgerFilterSet`을 바인딩하고 `select_related` 및 복합 검색 필터 파라미터를 연동하여 ORM 수준에서 필터링 조회 쿼리를 수행하도록 API 뷰 코딩 (T019 테스트 통과 확인)
-- [ ] T021 [US2] `frontend/src/components/FilterPanel.vue` 경로에 상호명 입력, 카테고리 복수 체크박스 칩 선택, 기간(시작/종료) 달력, 최소/최대 금액 범위를 처리하는 다차원 검색 필터 UI 컴포넌트 마크업 및 로직 구현
-- [ ] T022 [US2] `frontend/src/pages/Dashboard.vue` 경로에 `FilterPanel`을 삽입하고, 사용자가 입력한 필터 반응형 상태(Reactive State) 정보를 목록 API 및 캘린더 API 호출의 쿼리 매개변수로 즉시 전달해 화면 데이터를 실시간 리프레시하도록 코딩
+- [X] T020 [US2] `backend/src/apps/ledgers/views.py` 에 `LedgerFilterSet`을 바인딩하고 `select_related` 및 복합 검색 필터 파라미터를 연동하여 ORM 수준에서 필터링 조회 쿼리를 수행하도록 API 뷰 코딩 (T019 테스트 통과 확인)
+- [X] T021 [US2] `frontend/src/components/FilterPanel.vue` 경로에 상호명 입력, 카테고리 복수 체크박스 칩 선택, 기간(시작/종료일) 달력, 최소/최대 금액 범위를 처리하는 다차원 검색 필터 UI 컴포넌트 마크업 및 로직 구현
+- [X] T022 [US2] `frontend/src/pages/Dashboard.vue` 경로에 `FilterPanel`을 삽입하고, 사용자가 입력한 필터 반응형 상태(Reactive State) 정보를 목록 API 및 캘린더 API 호출의 쿼리 매개변수로 즉시 전달해 화면 데이터를 실시간 리프레시하도록 코딩
 
 **Checkpoint**: 다차원 복합 검색 필터 패널 및 목록/캘린더 뷰 E2E 연동 완료
 
@@ -106,9 +106,9 @@
 
 **Purpose**: 데이터베이스 성능 튜닝 인덱스 반영 및 시스템 전반의 린팅/포매팅 및 통합 정합성 확인
 
-- [ ] T023 [P] `backend/ledgers/migrations/` 경로에 PostgreSQL v18에 맞춰 `(user_id, transaction_datetime DESC)` 시계열 복합 인덱스 및 `vendor_name` 삼중합(Trigram) GIN 인덱스를 생성하는 데이터베이스 마이그레이션 파일 작성 및 DB 반영
-- [ ] T024 `uv run pre-commit run --all-files` 훅 가드를 터미널에서 구동하여 Ruff 포매팅 및 Linter 스타일 검사를 워크스페이스 전역에서 전원 통과시킴
-- [ ] T025 `uv run pytest` 테스트 러너를 실행하여 작성된 모든 하이브리드 테스트(T006, T007, T008, T014, T019 등) 및 기존 가계부 테스트 스위트가 오류 없이 100% 통과함을 기계적으로 입증함
+- [X] T023 [P] `backend/ledgers/migrations/` 경로에 PostgreSQL v18에 맞춰 `(user_id, transaction_datetime DESC)` 시계열 복합 인덱스 및 `vendor_name` 삼중합(Trigram) GIN 인덱스를 생성하는 데이터베이스 마이그레이션 파일 작성 및 DB 반영
+- [X] T024 `uv run pre-commit run --all-files` 훅 가드를 터미널에서 구동하여 Ruff 포매팅 및 Linter 스타일 검사를 워크스페이스 전역에서 전원 통과시킴
+- [X] T025 `uv run pytest` 테스트 러너를 실행하여 작성된 모든 하이브리드 테스트(T006, T007, T008, T014, T019 등) 및 기존 가계부 테스트 스위트가 오류 없이 100% 통과함을 기계적으로 입증함
 
 ---
 

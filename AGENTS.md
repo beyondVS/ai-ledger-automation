@@ -128,6 +128,7 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 - **선언적 의존성 통제 표준 (Package Dependency Control)**: 파이썬 의존성 패키지를 추가하거나 버전을 변경할 때, 결코 런타임 가상 환경에 직접 수동 설치하지 않고 반드시 `pyproject.toml`을 편집한 후 `uv lock` 및 `uv sync`를 통해 락 파일을 갱신하고 가상 환경의 일치(100% parity)를 달성해야 합니다.
 - **하이브리드 테스트 작성 규약 (Hybrid Test Strategy)**: [**최상위 프로젝트 헌법 제VIII조**](file:///.specify/memory/constitution.md)에 의거하여, DB 결합 백엔드 테스트(ORM, API 뷰 등)는 반드시 `django.test.TestCase`를 상속받고 `setUpTestData(cls)`를 사용하여 초기 DB 오버헤드를 극소화하여야 합니다. 반면, DB 조회가 없는 순수 유틸리티 테스트는 `unittest.TestCase`를 상속받아 장고 부트스트랩을 우회하고 속도를 극대화해야 합니다. 전체 테스트 실행은 강력하고 지능적인 `pytest` 러너를 활용해 초고속 피드백 루프를 수호합니다.
 - **커밋 메시지 규약 (Commit Conventions)**: 커밋 메시지는 Conventional Commits 규약(`feat:`, `fix:`, `docs:`, `refactor:` 등)을 준수하여 작성하십시오. 프로젝트 내 특정 언어 규칙(예: 한글 작성 등)이 있다면 이를 최우선으로 따르십시오.
+- **프론트엔드 디자인 및 UX 가이드라인 준수**: 프론트엔드 코드(Vue.js, Tailwind CSS) 수정 및 화면 설계 시, 반드시 [docs/frontend_design_guidelines.md](file:///D:/Projects/Private/ai-ledger-automation/docs/frontend_design_guidelines.md)에 기술된 레이아웃, 네비게이션, 컬러 시스템, 컴포넌트 규격, 마이크로 애니메이션 등의 핵심 원칙들을 일관되게 준수하여 UX의 일치성을 유지해야 합니다.
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,

@@ -28,6 +28,9 @@
         <span>{{ errorMessage }}</span>
       </div>
 
+      <!-- 다차원 검색 필터 패널 -->
+      <FilterPanel @filter-change="onFilterChange" />
+
       <!-- 모바일 전용 탭 바 (md 미만 노출) -->
       <div class="flex md:hidden w-full max-w-md mx-auto mb-6 bg-slate-200/60 dark:bg-slate-900 p-1 rounded-xl border border-slate-300 dark:border-slate-800/80">
         <button 
@@ -97,7 +100,7 @@
           />
         </div>
 
-        <!-- 우측 열: 가계부 리스트 뷰 영역 (US1 MVP) -->
+        <!-- 우측 열: 가계부 리스트/캘린더 뷰 영역 (US1 MVP) -->
         <section 
           class="w-full max-w-md mx-auto md:mx-0 md:max-w-none p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between h-full md:block"
           :class="currentTab === 'stats' ? 'block' : 'hidden'"
@@ -124,30 +127,65 @@
                 </svg>
               </button>
             </div>
-            <span class="text-indigo-600 dark:text-indigo-400 font-bold font-outfit text-sm">{{ formattedMonthlyTotal }} 원</span>
+
+            <!-- 목록 / 달력 토글 버튼 스위치 -->
+            <div class="flex items-center gap-2.5">
+              <div class="flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200 dark:border-slate-800 text-3xs sm:text-2xs font-bold select-none">
+                <button 
+                  @click="viewMode = 'list'"
+                  class="px-2 py-1 rounded-md transition-all cursor-pointer"
+                  :class="viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
+                >
+                  목록
+                </button>
+                <button 
+                  @click="viewMode = 'calendar'"
+                  class="px-2 py-1 rounded-md transition-all cursor-pointer"
+                  :class="viewMode === 'calendar' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
+                >
+                  달력
+                </button>
+              </div>
+              <span class="text-indigo-600 dark:text-indigo-400 font-bold font-outfit text-sm hidden sm:inline-block">
+                {{ viewMode === 'list' ? formattedMonthlyTotal : calendarMonthlyTotal.toLocaleString() }} 원
+              </span>
+            </div>
           </div>
 
-          <!-- 빈 화면 대응 -->
-          <div v-if="ledgerList.length === 0 && pendingJobs.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-500 text-xs">
-            선택하신 달의 가계부 지출 내역이 없습니다.
+          <!-- 1. 목록 뷰 모드 -->
+          <div v-if="viewMode === 'list'">
+            <!-- 빈 화면 대응 -->
+            <div v-if="ledgerList.length === 0 && pendingJobs.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-500 text-xs">
+              선택하신 달의 가계부 지출 내역이 없습니다.
+            </div>
+
+            <!-- 가계부 카드 목록 (데스크톱 반응형 가변 높이 적용) -->
+            <div v-else class="space-y-3 max-h-96 md:max-h-[500px] lg:max-h-[640px] overflow-y-auto pr-1">
+              <!-- 비동기 분석 대기중인 스켈레톤 로더 -->
+              <LedgerShimmer
+                v-for="job in pendingJobs"
+                :key="job.id"
+                :job="job"
+                class="mb-3 animate-fade-in"
+              />
+
+              <LedgerListItem 
+                v-for="ledger in ledgerList" 
+                :key="ledger.id"
+                :ledger="ledger"
+                @edit="openEditModal"
+                @delete="openDeleteModal"
+              />
+            </div>
           </div>
 
-          <!-- 가계부 카드 목록 (데스크톱 반응형 가변 높이 적용) -->
-          <div v-else class="space-y-3 max-h-96 md:max-h-[500px] lg:max-h-[640px] overflow-y-auto pr-1">
-            <!-- 비동기 분석 대기중인 스켈레톤 로더 -->
-            <LedgerShimmer
-              v-for="job in pendingJobs"
-              :key="job.id"
-              :job="job"
-              class="mb-3 animate-fade-in"
-            />
-
-            <LedgerListItem 
-              v-for="ledger in ledgerList" 
-              :key="ledger.id"
-              :ledger="ledger"
-              @edit="openEditModal"
-              @delete="openDeleteModal"
+          <!-- 2. 캘린더 뷰 모드 -->
+          <div v-else-if="viewMode === 'calendar'" class="animate-fade-in">
+            <CalendarView 
+              :year="selectedYear" 
+              :month="selectedMonth" 
+              :daily-summaries="calendarSummaries"
+              @date-click="onCalendarDateClick"
             />
           </div>
         </section>
@@ -272,6 +310,95 @@
       @close="isDeleteModalOpen = false"
       @confirm="handleDeleteConfirm"
     />
+
+    <!-- 일자별 상세 조회 모달 팝업 -->
+    <transition name="fade">
+      <div 
+        v-if="isDateDetailModalOpen" 
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm"
+        @click.self="isDateDetailModalOpen = false"
+      >
+        <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl animate-fade-in max-h-[85vh] flex flex-col">
+          <!-- 모달 헤더 -->
+          <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 select-none">
+            <div>
+              <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 font-mono">
+                {{ selectedDateForDetail }}
+              </h3>
+              <p class="text-4xs text-slate-400 mt-0.5">선택하신 날짜에 작성된 상세 지출 명세 목록입니다.</p>
+            </div>
+            <button 
+              @click="isDateDetailModalOpen = false"
+              class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- 상세 리스트 -->
+          <div class="overflow-y-auto flex-1 space-y-3 pr-1 py-1">
+            <div v-if="dateDetailLedgers.length === 0" class="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+              해당 날짜의 가계부 내역이 존재하지 않습니다.
+            </div>
+            <div 
+              v-for="ledger in dateDetailLedgers" 
+              :key="ledger.id"
+              class="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 rounded-xl flex items-center justify-between gap-3 group transition-all"
+            >
+              <div class="min-w-0 flex-1">
+                <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100 tracking-tight truncate">{{ ledger.vendor_name }}</h4>
+                <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                  <span class="text-4xs font-bold px-1.5 py-0.5 rounded bg-slate-200/50 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    {{ ledger.category }}
+                  </span>
+                  <span v-if="ledger.transaction_date" class="text-4xs text-slate-400 dark:text-slate-500 font-mono">
+                    {{ ledger.transaction_date.substring(11, 16) }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 flex-shrink-0">
+                <span class="text-xs font-black text-slate-900 dark:text-indigo-400">
+                  {{ Number(ledger.total_amount).toLocaleString() }}원
+                </span>
+                <!-- 편집제어 액션 버튼들 -->
+                <div class="flex gap-1">
+                  <button 
+                    @click="openEditModal(ledger)"
+                    class="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:border-indigo-200 transition-all cursor-pointer"
+                    title="수정"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                    </svg>
+                  </button>
+                  <button 
+                    @click="openDeleteModal(ledger)"
+                    class="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all cursor-pointer"
+                    title="삭제"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.244 2.244 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 모달 푸터 -->
+          <div class="border-t border-slate-100 dark:border-slate-800 pt-3 mt-4 flex justify-end select-none">
+            <button 
+              @click="isDateDetailModalOpen = false"
+              class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-all cursor-pointer"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </main>
 </template>
 
@@ -287,8 +414,10 @@ import PieChart from './PieChart.vue';
 import BarChart from './BarChart.vue';
 import BudgetGauge from './BudgetGauge.vue';
 import TopMerchants from './TopMerchants.vue';
+import CalendarView from './CalendarView.vue';
+import FilterPanel from './FilterPanel.vue';
 import { compressImage, uploadReceiptApi } from '../services/uploadService';
-import { fetchLedgerList } from '../services/ledgerService';
+import { fetchLedgerList, fetchLedgerCalendar } from '../services/ledgerService';
 import { fetchDashboardStatistics } from '../services/dashboardService';
 import { VirtualPollingManager } from '../services/pollingService';
 import { logout } from '../services/authService';
@@ -308,7 +437,9 @@ export default {
     PieChart,
     BarChart,
     BudgetGauge,
-    TopMerchants
+    TopMerchants,
+    CalendarView,
+    FilterPanel
   },
   setup() {
     const router = useRouter();
@@ -320,7 +451,26 @@ export default {
     const ledgerList = ref([]);
     const pendingJobs = ref([]);
     const pollingStatus = ref(null);
-    let errorTimeout = null;
+    // 캘린더 및 다차원 복합 필터 모드 관련 상태
+    const viewMode = ref('list'); // 'list' | 'calendar'
+    const calendarSummaries = ref({});
+    const calendarMonthlyTotal = ref(0);
+    const activeFilters = ref({
+      q: '',
+      categories: '',
+      min_amount: '',
+      max_amount: ''
+    });
+
+    // 캘린더 일자 클릭 시 상세 내역 모달 관련 상태
+    const isDateDetailModalOpen = ref(false);
+    const selectedDateForDetail = ref('');
+    const dateDetailLedgers = computed(() => {
+      if (!selectedDateForDetail.value) return [];
+      return ledgerList.value.filter(item => {
+        return item.transaction_date && item.transaction_date.substring(0, 10) === selectedDateForDetail.value;
+      });
+    });
 
     // 테마 및 모바일 탭 상태
     const isDarkMode = ref(true);
@@ -426,11 +576,34 @@ export default {
 
     const loadLedgerList = async () => {
       try {
-        const data = await fetchLedgerList(selectedYear.value, selectedMonth.value);
+        const data = await fetchLedgerList(selectedYear.value, selectedMonth.value, activeFilters.value);
         ledgerList.value = data;
+        loadCalendarData();
       } catch (err) {
         console.error('Failed to load ledger list', err);
       }
+    };
+
+    const onFilterChange = (newFilters) => {
+      activeFilters.value = newFilters;
+      loadLedgerList();
+    };
+
+    const loadCalendarData = async () => {
+      try {
+        const response = await fetchLedgerCalendar(selectedYear.value, selectedMonth.value, activeFilters.value);
+        if (response && response.status === 'success') {
+          calendarSummaries.value = response.data.daily_summaries;
+          calendarMonthlyTotal.value = response.data.monthly_total;
+        }
+      } catch (err) {
+        console.error('Failed to load calendar data', err);
+      }
+    };
+
+    const onCalendarDateClick = (dateStr) => {
+      selectedDateForDetail.value = dateStr;
+      isDateDetailModalOpen.value = true;
     };
 
     const loadDashboardData = async () => {
@@ -677,7 +850,16 @@ export default {
       onFileRemoved,
       onValidationError,
       changeMonth,
-      updateMonthsFilter
+      updateMonthsFilter,
+      viewMode,
+      calendarSummaries,
+      calendarMonthlyTotal,
+      activeFilters,
+      isDateDetailModalOpen,
+      selectedDateForDetail,
+      loadCalendarData,
+      onCalendarDateClick,
+      onFilterChange
     };
   }
 };
