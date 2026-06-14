@@ -1,42 +1,7 @@
 <template>
   <main class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-6 sm:p-12 selection:bg-indigo-500 transition-colors duration-300">
-    <!-- 로그아웃 및 사용자 프로필 상단 바 -->
-    <div class="w-full max-w-lg md:max-w-4xl lg:max-w-5xl flex justify-between items-center mb-6 text-xs text-slate-500 dark:text-slate-400">
-      <div class="flex items-center gap-2">
-        <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-        <span class="font-semibold text-slate-700 dark:text-slate-200">{{ currentUsername }}</span>님 환영합니다
-      </div>
-      <div class="flex items-center gap-3">
-        <!-- 테마 토글 버튼 -->
-        <button 
-          @click="toggleTheme" 
-          class="p-2 rounded-lg bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-800 transition-all cursor-pointer"
-          title="테마 전환"
-        >
-          <svg v-if="isDarkMode" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
-          </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25c0 5.385 4.365 9.75 9.75 9.75 4.542 0 8.368-3.109 9.502-7.248Z" />
-          </svg>
-        </button>
-
-        <div class="hidden md:flex items-center gap-2">
-          <button 
-            @click="goToMyTemplates"
-            class="px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 text-indigo-600 dark:text-indigo-300 hover:text-indigo-700 dark:hover:text-indigo-100 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer font-semibold uppercase tracking-wider"
-          >
-            내 가맹점 템플릿
-          </button>
-          <button 
-            @click="handleLogout"
-            class="logout-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-800 transition-all cursor-pointer font-semibold uppercase tracking-wider"
-          >
-            로그아웃
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- 공통 네비바 컴포넌트 장착 -->
+    <NavBar />
 
     <div class="w-full max-w-lg md:max-w-4xl lg:max-w-5xl flex flex-col mb-16 md:mb-0">
       <!-- 헤더 브랜드 영역 (Aesthetics WOW - Outfit/Inter 모던 타이틀) -->
@@ -313,6 +278,7 @@
 <script>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import NavBar from './NavBar.vue';
 import Dropzone from './Dropzone.vue';
 import ReceiptList from './ReceiptList.vue';
 import LedgerListItem from './LedgerListItem.vue';
@@ -332,6 +298,7 @@ import LedgerDeleteModal from './LedgerDeleteModal.vue';
 export default {
   name: 'DashboardView',
   components: {
+    NavBar,
     Dropzone,
     ReceiptList,
     LedgerListItem,

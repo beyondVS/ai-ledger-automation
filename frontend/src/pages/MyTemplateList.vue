@@ -1,19 +1,9 @@
 <template>
   <div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 p-6 sm:p-12 font-sans selection:bg-indigo-500 flex flex-col items-center justify-center transition-colors duration-300">
+    <!-- 공통 네비바 컴포넌트 장착 -->
+    <NavBar />
+
     <div class="w-full max-w-md md:max-w-3xl lg:max-w-4xl flex flex-col space-y-6">
-      <!-- 상단 내비바 뒤로가기 -->
-      <div class="flex items-center justify-between w-full border-b border-slate-200 dark:border-slate-800/60 pb-4 select-none">
-        <router-link
-          to="/dashboard"
-          class="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition duration-200"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
-          대시보드
-        </router-link>
-        <span class="text-xs text-slate-400 dark:text-slate-600 font-mono tracking-wider">My Templates</span>
-      </div>
 
       <!-- 헤더 섹션 (대시보드와 동일한 모던 브랜드 톤) -->
       <header class="text-center select-none pt-2">
@@ -200,10 +190,14 @@
 
 <script>
 import { ref, onMounted, computed, onBeforeMount } from 'vue';
+import NavBar from '../components/NavBar.vue';
 import { fetchMyTemplates, deleteMyTemplate } from '../services/ledgerService';
 
 export default {
   name: 'MyTemplateList',
+  components: {
+    NavBar
+  },
   setup() {
     const templates = ref([]);
     const loading = ref(false);
