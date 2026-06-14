@@ -925,6 +925,7 @@ export default {
       activeFilters,
       isDateDetailModalOpen,
       selectedDateForDetail,
+      dateDetailLedgers,
       loadCalendarData,
       onCalendarDateClick,
       onFilterChange
