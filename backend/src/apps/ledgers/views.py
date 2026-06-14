@@ -143,41 +143,64 @@ class LedgerListView(APIView):
     [T023] 가계부 리스트 조회 API
     - 로그인한 사용자 본인의 가계부 데이터만 격리하여 조회합니다.
     - query_params로 year와 month를 입력받아 동적으로 해당 월의 데이터를 필터링합니다.
+    - 다차원 검색 조건이 들어오는 경우 django-filter(LedgerFilter)를 사용하여 실시간 필터 조회를 지원합니다.
     """
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        # 헌법 I조 수호: 로그인한 사용자의 데이터만 격리 쿼리 필터 적용
-        today = timezone.localdate() if settings.USE_TZ else datetime.date.today()
+        # start_date 또는 end_date가 직접 전달된 경우, 월별 고정 필터링 범위를 무시하고 사용자 정의 기간을 전체 적용합니다.
+        has_custom_date = "start_date" in request.query_params or "end_date" in request.query_params
 
-        try:
-            year = int(request.query_params.get("year", today.year))
-            month = int(request.query_params.get("month", today.month))
-            if not (1 <= month <= 12):
+        # 1. 헌법 I조 수호: 로그인한 사용자의 데이터만 격리 쿼리 필터 적용
+        queryset = Ledger.objects.filter(user=request.user)
+
+        if not has_custom_date:
+            today = timezone.localdate() if settings.USE_TZ else datetime.date.today()
+
+            try:
+                year = int(request.query_params.get("year", today.year))
+                month = int(request.query_params.get("month", today.month))
+                if not (1 <= month <= 12):
+                    month = today.month
+            except (ValueError, TypeError):
+                year = today.year
                 month = today.month
-        except (ValueError, TypeError):
-            year = today.year
-            month = today.month
 
-        if settings.USE_TZ:
-            start_of_month = timezone.make_aware(datetime.datetime(year, month, 1))
-            if month == 12:
-                end_of_month = timezone.make_aware(datetime.datetime(year + 1, 1, 1))
-            else:
-                end_of_month = timezone.make_aware(datetime.datetime(year, month + 1, 1))
-        else:
-            start_of_month = datetime.datetime(year, month, 1)
-            if month == 12:
-                end_of_month = datetime.datetime(year + 1, 1, 1)
-            else:
-                end_of_month = datetime.datetime(year, month + 1, 1)
+            if settings.USE_TZ:
+                import zoneinfo
 
-        ledgers = Ledger.objects.filter(
-            user=request.user,
-            transaction_date__gte=start_of_month,
-            transaction_date__lt=end_of_month,
-        ).order_by("-transaction_date")
+                tzname = request.user.timezone or settings.TIME_ZONE
+                try:
+                    tz = zoneinfo.ZoneInfo(tzname)
+                except Exception:
+                    tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
+
+                start_of_month = timezone.make_aware(datetime.datetime(year, month, 1), tz)
+                if month == 12:
+                    end_of_month = timezone.make_aware(datetime.datetime(year + 1, 1, 1), tz)
+                else:
+                    end_of_month = timezone.make_aware(datetime.datetime(year, month + 1, 1), tz)
+            else:
+                start_of_month = datetime.datetime(year, month, 1)
+                if month == 12:
+                    end_of_month = datetime.datetime(year + 1, 1, 1)
+                else:
+                    end_of_month = datetime.datetime(year, month + 1, 1)
+
+            queryset = queryset.filter(
+                transaction_date__gte=start_of_month,
+                transaction_date__lt=end_of_month,
+            )
+
+        # 2. 다차원 복합 필터(q, categories, min_amount, max_amount, start_date, end_date 등) 적용
+        from .filters import LedgerFilter
+
+        filter_set = LedgerFilter(request.query_params, queryset=queryset)
+        queryset = filter_set.qs
+
+        # N+1 방지를 위해 정렬 후 직렬화
+        ledgers = queryset.order_by("-transaction_date")
         serializer = LedgerListSerializer(ledgers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -721,3 +744,116 @@ class MonthlyBudgetView(APIView):
 
         response_serializer = MonthlyBudgetSerializer(budget)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class LedgerCalendarView(APIView):
+    """
+    [US1] 캘린더 뷰 전용 월별 지출 합산 및 건수 요약 집계 API (GET /api/v1/ledgers/calendar/)
+    - 사용자 선호 타임존 기준으로 로컬 일자별 합계와 건수를 요약 집계하여 DTO 형태로 반환합니다.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # 1. 필수 쿼리 파라미터 year, month 유효성 검사 및 정규화
+        year_param = request.query_params.get("year")
+        month_param = request.query_params.get("month")
+
+        if not year_param or not month_param:
+            return Response(
+                {
+                    "status": "error",
+                    "code": "MISSING_PARAMETERS",
+                    "message": "year 및 month 쿼리 파라미터는 필수입니다.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            year = int(year_param)
+            month = int(month_param)
+            if not (1 <= month <= 12):
+                raise ValueError()
+        except ValueError:
+            return Response(
+                {
+                    "status": "error",
+                    "code": "INVALID_PARAMETERS",
+                    "message": "year 및 month의 형식 또는 범위가 올바르지 않습니다.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 2. 사용자 선호 시간대 오프셋 추출 및 make_aware 월 범위 생성
+        import datetime
+        import zoneinfo
+
+        from django.conf import settings
+        from django.utils import timezone
+
+        tzname = request.user.timezone or settings.TIME_ZONE
+        try:
+            tz = zoneinfo.ZoneInfo(tzname)
+        except Exception:
+            tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
+
+        # 사용자 설정 타임존 기준 로컬 1일 00시 ~ 다음달 1일 00시(미만)
+        local_start = datetime.datetime(year, month, 1, 0, 0, 0)
+        if month == 12:
+            local_end = datetime.datetime(year + 1, 1, 1, 0, 0, 0)
+        else:
+            local_end = datetime.datetime(year, month + 1, 1, 0, 0, 0)
+
+        start_of_month = timezone.make_aware(local_start, tz)
+        end_of_month = timezone.make_aware(local_end, tz)
+
+        # 3. 헌법 I조 수호: 로그인한 사용자의 해당 월 지출 내역 기본 필터링
+        queryset = Ledger.objects.filter(
+            user=request.user,
+            transaction_date__gte=start_of_month,
+            transaction_date__lt=end_of_month,
+        )
+
+        # 4. 다차원 복합 필터(상호명, 카테고리, 금액 대역 등) 적용
+        from .filters import LedgerFilter
+
+        filter_set = LedgerFilter(request.query_params, queryset=queryset)
+        queryset = filter_set.qs
+
+        # 5. 사용자 선호 시간대(Active Timezone) 기준 PostgreSQL 날짜별 TruncDate 집계 (Sum, Count)
+        from django.db.models import Count, Sum
+        from django.db.models.functions import TruncDate
+
+        daily_stats = (
+            queryset.annotate(local_date=TruncDate("transaction_date", tzinfo=tz))
+            .values("local_date")
+            .annotate(total_amount=Sum("total_amount"), count=Count("id"))
+            .order_by("local_date")
+        )
+
+        daily_summaries = {}
+        monthly_total = 0
+
+        for stat in daily_stats:
+            date_str = stat["local_date"].strftime("%Y-%m-%d")
+            total = float(stat["total_amount"]) if stat["total_amount"] is not None else 0.0
+            count = stat["count"]
+
+            daily_summaries[date_str] = {
+                "total_amount": total,
+                "count": count,
+            }
+            monthly_total += total
+
+        return Response(
+            {
+                "status": "success",
+                "data": {
+                    "year": year,
+                    "month": month,
+                    "daily_summaries": daily_summaries,
+                    "monthly_total": monthly_total,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )

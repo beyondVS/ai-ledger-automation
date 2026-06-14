@@ -3,7 +3,7 @@ import { fetchLedgerList } from '../../src/services/ledgerService';
 
 describe('ledgerService - fetchLedgerList', () => {
   beforeEach(() => {
-    vi.stubGlobal('localStorage', {
+    vi.stubGlobal('sessionStorage', {
       getItem: vi.fn().mockReturnValue(JSON.stringify({
         accessToken: 'mocked-jwt-access-token',
         username: 'testuser'

@@ -62,45 +62,68 @@
         />
       </div>
 
-      <!-- 반응형 2열 본문 그리드 레이아웃 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch w-full mt-2">
-        <!-- 좌측 열: 메인 인터랙티브 작업 공간 -->
+      <!-- 메인 인터랙티브 영역 (1열 통합 구조) -->
+      <div class="flex flex-col gap-8 w-full mt-2">
+        <!-- 1. 새로운 영수증 등록 및 AI 분석 (접이식 아코디언 카드) -->
         <div 
-          class="relative w-full max-w-md mx-auto md:mx-0 md:max-w-none md:block"
-          :class="currentTab === 'upload' ? 'block' : 'hidden'"
+          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xl transition-all duration-300 relative"
+          :class="currentTab === 'upload' ? 'block' : 'hidden md:block'"
         >
-          <!-- 업로드 진행 중 로딩 인디케이터 오버레이 -->
-          <div 
-            v-if="isUploading"
-            class="absolute inset-0 z-50 bg-white/85 dark:bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-center p-8 border border-slate-200 dark:border-slate-800 shadow-2xl animate-fade-in"
-          >
-            <!-- 핀테크 감성 그라데이션 회전 링 -->
-            <div class="w-14 h-14 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-indigo-500 dark:border-t-indigo-400 animate-spin mb-4"></div>
-            <h3 class="font-outfit text-slate-900 dark:text-slate-100 font-semibold text-lg mb-1">영수증 분석 중...</h3>
-            <p class="text-slate-500 dark:text-slate-400 text-xs tracking-wide">HTML5 Canvas 압축 및 AI OCR 파이프라인 가동 중</p>
+          <!-- 카드 헤더 및 접기 토글 -->
+          <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800 mb-4 cursor-pointer select-none" @click="isUploadExpanded = !isUploadExpanded">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="w-4 h-4 text-indigo-500">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <span class="text-xs font-black text-slate-700 dark:text-slate-200 tracking-tight">새로운 영수증 등록 및 AI 분석</span>
+            </div>
+            <button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+              <svg v-if="isUploadExpanded" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+              </svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
           </div>
 
-          <!-- 드롭존 -->
-          <Dropzone 
-            v-if="!currentFile"
-            @file-detected="onFileDetected"
-            @validation-error="onValidationError"
-          />
+          <!-- 아코디언 콘텐츠 -->
+          <transition name="expand">
+            <div v-show="isUploadExpanded" class="relative">
+              <!-- 업로드 진행 중 로딩 인디케이터 오버레이 -->
+              <div 
+                v-if="isUploading"
+                class="absolute inset-0 z-50 bg-white/85 dark:bg-slate-950/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-center p-8 border border-slate-200 dark:border-slate-800 shadow-2xl animate-fade-in"
+              >
+                <!-- 핀테크 감성 그라데이션 회전 링 -->
+                <div class="w-14 h-14 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-indigo-500 dark:border-t-indigo-400 animate-spin mb-4"></div>
+                <h3 class="font-outfit text-slate-900 dark:text-slate-100 font-semibold text-lg mb-1">영수증 분석 중...</h3>
+                <p class="text-slate-500 dark:text-slate-400 text-xs tracking-wide">HTML5 Canvas 압축 및 AI OCR 파이프라인 가동 중</p>
+              </div>
 
-          <!-- 영수증 결과물 목록 및 분석된 가계부 명세 피드백 -->
-          <ReceiptList 
-            v-else
-            :file="currentFile"
-            :parsed-data="parsedData"
-            :polling-status="pollingStatus"
-            @file-removed="onFileRemoved"
-          />
+              <!-- 드롭존 -->
+              <Dropzone 
+                v-if="!currentFile"
+                @file-detected="onFileDetected"
+                @validation-error="onValidationError"
+              />
+
+              <!-- 영수증 결과물 목록 및 분석된 가계부 명세 피드백 -->
+              <ReceiptList 
+                v-else
+                :file="currentFile"
+                :parsed-data="parsedData"
+                :polling-status="pollingStatus"
+                @file-removed="onFileRemoved"
+              />
+            </div>
+          </transition>
         </div>
 
-        <!-- 우측 열: 가계부 리스트 뷰 영역 (US1 MVP) -->
+        <!-- 2. 가계부 리스트/캘린더 뷰 영역 (US1 MVP) -->
         <section 
-          class="w-full max-w-md mx-auto md:mx-0 md:max-w-none p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between h-full md:block"
-          :class="currentTab === 'stats' ? 'block' : 'hidden'"
+          class="w-full p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between h-full transition-all duration-300"
+          :class="currentTab === 'stats' ? 'block' : 'hidden md:block'"
         >
           <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-2 select-none">
@@ -124,30 +147,84 @@
                 </svg>
               </button>
             </div>
-            <span class="text-indigo-600 dark:text-indigo-400 font-bold font-outfit text-sm">{{ formattedMonthlyTotal }} 원</span>
+
+            <!-- 목록 / 달력 토글 버튼 스위치 -->
+            <div class="flex items-center gap-2.5">
+              <div class="flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200 dark:border-slate-800 text-3xs sm:text-2xs font-bold select-none">
+                <button 
+                  @click="viewMode = 'list'"
+                  class="px-2 py-1 rounded-md transition-all cursor-pointer"
+                  :class="viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
+                >
+                  목록
+                </button>
+                <button 
+                  @click="viewMode = 'calendar'"
+                  class="px-2 py-1 rounded-md transition-all cursor-pointer"
+                  :class="viewMode === 'calendar' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
+                >
+                  달력
+                </button>
+              </div>
+              <span class="text-indigo-600 dark:text-indigo-400 font-bold font-outfit text-sm hidden sm:inline-block">
+                {{ viewMode === 'list' ? formattedMonthlyTotal : calendarMonthlyTotal.toLocaleString() }} 원
+              </span>
+            </div>
           </div>
 
-          <!-- 빈 화면 대응 -->
-          <div v-if="ledgerList.length === 0 && pendingJobs.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-500 text-xs">
-            선택하신 달의 가계부 지출 내역이 없습니다.
+          <!-- 필터 토글 버튼 및 상세 필터 패널 (제안 1) -->
+          <div class="mb-5 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+            <button 
+              @click="isFilterExpanded = !isFilterExpanded"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-3xs sm:text-2xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-850 transition-all cursor-pointer select-none"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="w-3.5 h-3.5 text-indigo-500">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+              </svg>
+              <span>상세 검색 필터 {{ isFilterExpanded ? '접기' : '펼치기' }}</span>
+            </button>
+            
+            <transition name="expand">
+              <div v-show="isFilterExpanded" class="mt-4">
+                <FilterPanel @filter-change="onFilterChange" />
+              </div>
+            </transition>
           </div>
 
-          <!-- 가계부 카드 목록 (데스크톱 반응형 가변 높이 적용) -->
-          <div v-else class="space-y-3 max-h-96 md:max-h-[500px] lg:max-h-[640px] overflow-y-auto pr-1">
-            <!-- 비동기 분석 대기중인 스켈레톤 로더 -->
-            <LedgerShimmer
-              v-for="job in pendingJobs"
-              :key="job.id"
-              :job="job"
-              class="mb-3 animate-fade-in"
-            />
+          <!-- 1. 목록 뷰 모드 -->
+          <div v-if="viewMode === 'list'">
+            <!-- 빈 화면 대응 -->
+            <div v-if="ledgerList.length === 0 && pendingJobs.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-500 text-xs">
+              선택하신 달의 가계부 지출 내역이 없습니다.
+            </div>
 
-            <LedgerListItem 
-              v-for="ledger in ledgerList" 
-              :key="ledger.id"
-              :ledger="ledger"
-              @edit="openEditModal"
-              @delete="openDeleteModal"
+            <!-- 가계부 카드 목록 (데스크톱 반응형 가변 높이 적용) -->
+            <div v-else class="space-y-3 max-h-96 md:max-h-[500px] lg:max-h-[640px] overflow-y-auto pr-1">
+              <!-- 비동기 분석 대기중인 스켈레톤 로더 -->
+              <LedgerShimmer
+                v-for="job in pendingJobs"
+                :key="job.id"
+                :job="job"
+                class="mb-3 animate-fade-in"
+              />
+
+              <LedgerListItem 
+                v-for="ledger in ledgerList" 
+                :key="ledger.id"
+                :ledger="ledger"
+                @edit="openEditModal"
+                @delete="openDeleteModal"
+              />
+            </div>
+          </div>
+
+          <!-- 2. 캘린더 뷰 모드 -->
+          <div v-else-if="viewMode === 'calendar'" class="animate-fade-in">
+            <CalendarView 
+              :year="selectedYear" 
+              :month="selectedMonth" 
+              :daily-summaries="calendarSummaries"
+              @date-click="onCalendarDateClick"
             />
           </div>
         </section>
@@ -179,7 +256,10 @@
           :class="currentTab === 'stats' ? 'block' : 'hidden'"
         >
           <div class="flex justify-between items-center mb-6">
-            <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">월별 지출 추이</h3>
+            <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              월별 지출 추이
+              <span class="text-slate-400 dark:text-slate-500 text-3xs font-medium lowercase ml-1.5">(단위: 만원)</span>
+            </h3>
             
             <!-- 기간 필터 버튼 그룹 -->
             <div class="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
@@ -272,6 +352,95 @@
       @close="isDeleteModalOpen = false"
       @confirm="handleDeleteConfirm"
     />
+
+    <!-- 일자별 상세 조회 모달 팝업 -->
+    <transition name="fade">
+      <div 
+        v-if="isDateDetailModalOpen" 
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm"
+        @click.self="isDateDetailModalOpen = false"
+      >
+        <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl animate-fade-in max-h-[85vh] flex flex-col">
+          <!-- 모달 헤더 -->
+          <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 select-none">
+            <div>
+              <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 font-mono">
+                {{ selectedDateForDetail }}
+              </h3>
+              <p class="text-4xs text-slate-400 mt-0.5">선택하신 날짜에 작성된 상세 지출 명세 목록입니다.</p>
+            </div>
+            <button 
+              @click="isDateDetailModalOpen = false"
+              class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- 상세 리스트 -->
+          <div class="overflow-y-auto flex-1 space-y-3 pr-1 py-1">
+            <div v-if="dateDetailLedgers.length === 0" class="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+              해당 날짜의 가계부 내역이 존재하지 않습니다.
+            </div>
+            <div 
+              v-for="ledger in dateDetailLedgers" 
+              :key="ledger.id"
+              class="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 rounded-xl flex items-center justify-between gap-3 group transition-all"
+            >
+              <div class="min-w-0 flex-1">
+                <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100 tracking-tight truncate">{{ ledger.vendor_name }}</h4>
+                <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                  <span class="text-4xs font-bold px-1.5 py-0.5 rounded bg-slate-200/50 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    {{ ledger.category }}
+                  </span>
+                  <span v-if="ledger.transaction_date" class="text-4xs text-slate-400 dark:text-slate-500 font-mono">
+                    {{ ledger.transaction_date.substring(11, 16) }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 flex-shrink-0">
+                <span class="text-xs font-black text-slate-900 dark:text-indigo-400">
+                  {{ Number(ledger.total_amount).toLocaleString() }}원
+                </span>
+                <!-- 편집제어 액션 버튼들 -->
+                <div class="flex gap-1">
+                  <button 
+                    @click="openEditModal(ledger)"
+                    class="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:border-indigo-200 transition-all cursor-pointer"
+                    title="수정"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                    </svg>
+                  </button>
+                  <button 
+                    @click="openDeleteModal(ledger)"
+                    class="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all cursor-pointer"
+                    title="삭제"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.244 2.244 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 모달 푸터 -->
+          <div class="border-t border-slate-100 dark:border-slate-800 pt-3 mt-4 flex justify-end select-none">
+            <button 
+              @click="isDateDetailModalOpen = false"
+              class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-all cursor-pointer"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </main>
 </template>
 
@@ -287,10 +456,13 @@ import PieChart from './PieChart.vue';
 import BarChart from './BarChart.vue';
 import BudgetGauge from './BudgetGauge.vue';
 import TopMerchants from './TopMerchants.vue';
+import CalendarView from './CalendarView.vue';
+import FilterPanel from './FilterPanel.vue';
 import { compressImage, uploadReceiptApi } from '../services/uploadService';
-import { fetchLedgerList } from '../services/ledgerService';
+import { fetchLedgerList, fetchLedgerCalendar } from '../services/ledgerService';
 import { fetchDashboardStatistics } from '../services/dashboardService';
 import { VirtualPollingManager } from '../services/pollingService';
+import { fetchUserTimezone } from '../services/accountService';
 import { logout } from '../services/authService';
 import LedgerEditModal from './LedgerEditModal.vue';
 import LedgerDeleteModal from './LedgerDeleteModal.vue';
@@ -308,7 +480,9 @@ export default {
     PieChart,
     BarChart,
     BudgetGauge,
-    TopMerchants
+    TopMerchants,
+    CalendarView,
+    FilterPanel
   },
   setup() {
     const router = useRouter();
@@ -317,10 +491,50 @@ export default {
     const parsedData = ref(null);
     const isUploading = ref(false);
     const errorMessage = ref(null);
+    let errorTimeout = null;
     const ledgerList = ref([]);
     const pendingJobs = ref([]);
     const pollingStatus = ref(null);
-    let errorTimeout = null;
+    // 캘린더 및 다차원 복합 필터 모드 관련 상태
+    const viewMode = ref('list'); // 'list' | 'calendar'
+    const isUploadExpanded = ref(true);
+    const isFilterExpanded = ref(false);
+    const userTimezone = ref('Asia/Seoul');
+    const calendarSummaries = ref({});
+    const calendarMonthlyTotal = ref(0);
+    const activeFilters = ref({
+      q: '',
+      categories: '',
+      min_amount: '',
+      max_amount: ''
+    });
+
+    // 캘린더 일자 클릭 시 상세 내역 모달 관련 상태
+    const isDateDetailModalOpen = ref(false);
+    const selectedDateForDetail = ref('');
+    const dateDetailLedgers = computed(() => {
+      if (!selectedDateForDetail.value) return [];
+      const tz = userTimezone.value && userTimezone.value.trim() ? userTimezone.value : 'Asia/Seoul';
+      const filtered = ledgerList.value.filter(item => {
+        if (!item.transaction_date) return false;
+        try {
+          const date = new Date(item.transaction_date);
+          // 'sv-SE' 로캘은 타임존이 적용된 YYYY-MM-DD 문자열을 직접 반환하므로 추가 가공 없이 매칭하기 위해 사용합니다.
+          const formatter = new Intl.DateTimeFormat('sv-SE', {
+            timeZone: tz,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          });
+          return formatter.format(date) === selectedDateForDetail.value;
+        } catch (e) {
+          console.error('Failed to convert timezone date for detail filtering', e);
+          return item.transaction_date.substring(0, 10) === selectedDateForDetail.value;
+        }
+      });
+      console.log(`[DateClickDetail] Filtered items for date ${selectedDateForDetail.value} (timezone: ${tz}):`, filtered.length, 'items found from total', ledgerList.value.length);
+      return filtered;
+    });
 
     // 테마 및 모바일 탭 상태
     const isDarkMode = ref(true);
@@ -409,6 +623,7 @@ export default {
         document.documentElement.classList.add('dark');
       }
 
+      loadUserTimezone();
       loadLedgerList();
       loadDashboardData();
       const sessionData = sessionStorage.getItem('ai_ledger_auth_session');
@@ -424,13 +639,48 @@ export default {
       }
     });
 
+    const loadUserTimezone = async () => {
+      try {
+        const response = await fetchUserTimezone();
+        if (response && response.data && response.data.timezone) {
+          userTimezone.value = response.data.timezone;
+        }
+      } catch (err) {
+        console.error('Failed to load user timezone in Dashboard', err);
+      }
+    };
+
     const loadLedgerList = async () => {
       try {
-        const data = await fetchLedgerList(selectedYear.value, selectedMonth.value);
+        const data = await fetchLedgerList(selectedYear.value, selectedMonth.value, activeFilters.value);
         ledgerList.value = data;
+        loadCalendarData();
       } catch (err) {
         console.error('Failed to load ledger list', err);
       }
+    };
+
+    const onFilterChange = (newFilters) => {
+      activeFilters.value = newFilters;
+      loadLedgerList();
+    };
+
+    const loadCalendarData = async () => {
+      try {
+        const response = await fetchLedgerCalendar(selectedYear.value, selectedMonth.value, activeFilters.value);
+        if (response && response.status === 'success') {
+          calendarSummaries.value = response.data.daily_summaries;
+          calendarMonthlyTotal.value = response.data.monthly_total;
+        }
+      } catch (err) {
+        console.error('Failed to load calendar data', err);
+      }
+    };
+
+    const onCalendarDateClick = (dateStr) => {
+      console.log(`[CalendarDateClick] User clicked date: ${dateStr}`);
+      selectedDateForDetail.value = dateStr;
+      isDateDetailModalOpen.value = true;
     };
 
     const loadDashboardData = async () => {
@@ -503,6 +753,7 @@ export default {
 
     // 영수증 파일 감지 성공 시 호출 (비동기 업로드 E2E 구동)
     const onFileDetected = async (file) => {
+      isUploadExpanded.value = true;
       clearError();
       isUploading.value = true;
       pollingStatus.value = null;
@@ -677,7 +928,20 @@ export default {
       onFileRemoved,
       onValidationError,
       changeMonth,
-      updateMonthsFilter
+      updateMonthsFilter,
+      viewMode,
+      userTimezone,
+      isUploadExpanded,
+      isFilterExpanded,
+      calendarSummaries,
+      calendarMonthlyTotal,
+      activeFilters,
+      isDateDetailModalOpen,
+      selectedDateForDetail,
+      dateDetailLedgers,
+      loadCalendarData,
+      onCalendarDateClick,
+      onFilterChange
     };
   }
 };

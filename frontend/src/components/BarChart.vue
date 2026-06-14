@@ -1,9 +1,5 @@
 <template>
   <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
-    <!-- y축 단위 라벨 가이드 -->
-    <div class="absolute -top-5 right-2 text-3xs font-semibold text-slate-400 dark:text-slate-500 font-pretendard select-none">
-      (단위: 만원)
-    </div>
     <Bar :data="processedChartData" :options="options" />
   </div>
 </template>

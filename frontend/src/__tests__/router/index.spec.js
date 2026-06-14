@@ -4,7 +4,7 @@ import router from '../../router/index';
 
 describe('Router Navigation Guards', () => {
   beforeEach(async () => {
-    localStorage.clear();
+    sessionStorage.clear();
     await router.push('/');
     await flushPromises();
   });
@@ -22,7 +22,7 @@ describe('Router Navigation Guards', () => {
       username: '테스터',
       loginTimestamp: Date.now()
     };
-    localStorage.setItem('ai_ledger_auth_session', JSON.stringify(mockSession));
+    sessionStorage.setItem('ai_ledger_auth_session', JSON.stringify(mockSession));
 
     await router.push('/dashboard');
     await flushPromises();
@@ -36,7 +36,7 @@ describe('Router Navigation Guards', () => {
       username: '테스터',
       loginTimestamp: Date.now()
     };
-    localStorage.setItem('ai_ledger_auth_session', JSON.stringify(mockSession));
+    sessionStorage.setItem('ai_ledger_auth_session', JSON.stringify(mockSession));
 
     // 1. 유효 세션이 있는 상태에서 우선 /dashboard에 진입해 둔다
     await router.push('/dashboard');

@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import transaction
 from rest_framework import generics, status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
@@ -103,3 +103,39 @@ class UserTokenRefreshView(TokenRefreshView):
                 path="/api/auth/",
             )
         return response
+
+
+class UserTimezoneUpdateView(APIView):
+    """
+    [T010] 사용자 선호 타임존 환경설정 갱신 API 뷰 (PATCH /api/v1/accounts/timezone/)
+    - 요청 본문에서 timezone 문자열을 전달받아 유효성을 검증하고 저장합니다.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        [US3] 사용자 선호 타임존 조회 API 뷰 (GET /api/v1/accounts/timezone/)
+        """
+        return Response({"status": "success", "data": {"timezone": request.user.timezone}}, status=status.HTTP_200_OK)
+
+    @transaction.atomic
+    def patch(self, request, *args, **kwargs):
+        from .utils import is_valid_timezone
+
+        timezone_name = request.data.get("timezone")
+        if not timezone_name or not is_valid_timezone(timezone_name):
+            return Response(
+                {
+                    "status": "error",
+                    "code": "INVALID_TIMEZONE",
+                    "message": "제시된 타임존 명칭이 표준 IANA 규격에 유효하지 않습니다.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+        user.timezone = timezone_name
+        user.save()
+
+        return Response({"status": "success", "data": {"timezone": user.timezone}}, status=status.HTTP_200_OK)

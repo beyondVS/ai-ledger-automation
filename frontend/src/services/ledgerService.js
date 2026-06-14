@@ -8,15 +8,41 @@ const BASE_URL = '/api/v1/receipts';
    * @param {number} [month] - 조회할 월
    * @returns {Promise<Array>} - 가계부 목록 배열
    */
-export async function fetchLedgerList(year, month) {
+export async function fetchLedgerList(year, month, filters = {}) {
   const headers = {
     'Content-Type': 'application/json',
     ...getAuthHeader() // Authorization: Bearer <token> 자동 바인딩
   };
 
   let url = `${BASE_URL}/`;
-  if (year && month) {
-    url += `?year=${year}&month=${month}`;
+  const hasCustomDate = filters.start_date || filters.end_date;
+  const queryParams = [];
+
+  if (!hasCustomDate && year && month) {
+    queryParams.push(`year=${year}`);
+    queryParams.push(`month=${month}`);
+  }
+
+  // 추가 다차원 검색 필터 결합
+  if (filters.q) {
+    queryParams.push(`q=${encodeURIComponent(filters.q)}`);
+  }
+  if (filters.categories) {
+    queryParams.push(`categories=${encodeURIComponent(filters.categories)}`);
+  }
+  if (filters.min_amount !== undefined && filters.min_amount !== null && filters.min_amount !== '') {
+    queryParams.push(`min_amount=${filters.min_amount}`);
+  }
+  if (filters.max_amount !== undefined && filters.max_amount !== null && filters.max_amount !== '') {
+    queryParams.push(`max_amount=${filters.max_amount}`);
+  }
+  if (hasCustomDate) {
+    if (filters.start_date) queryParams.push(`start_date=${filters.start_date}`);
+    if (filters.end_date) queryParams.push(`end_date=${filters.end_date}`);
+  }
+
+  if (queryParams.length > 0) {
+    url += `?${queryParams.join('&')}`;
   }
 
   const response = await fetch(url, {
@@ -156,4 +182,52 @@ export async function deleteMyTemplate(templateId) {
     const errorMessage = errorData.message || errorData.detail || '템플릿 초기화에 실패했습니다.';
     throw new Error(errorMessage);
   }
+}
+
+/**
+ * 사용자 선호 시간대 기준 일자별 지출 총액 및 건수 집계 요약 정보 조회 (GET)
+ * @param {number} year - 조회할 연도
+ * @param {number} month - 조회할 월
+ * @param {object} [filters] - 추가 검색 조건 필터 (q, categories, min_amount, max_amount)
+ * @returns {Promise<object>} - { status: "success", data: { year, month, daily_summaries, monthly_total } }
+ */
+export async function fetchLedgerCalendar(year, month, filters = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...getAuthHeader()
+  };
+
+  let url = `/api/v1/ledgers/calendar/?year=${year}&month=${month}`;
+  
+  if (filters.q) {
+    url += `&q=${encodeURIComponent(filters.q)}`;
+  }
+  if (filters.categories) {
+    url += `&categories=${encodeURIComponent(filters.categories)}`;
+  }
+  if (filters.min_amount !== undefined && filters.min_amount !== null && filters.min_amount !== '') {
+    url += `&min_amount=${filters.min_amount}`;
+  }
+  if (filters.max_amount !== undefined && filters.max_amount !== null && filters.max_amount !== '') {
+    url += `&max_amount=${filters.max_amount}`;
+  }
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers
+  });
+
+  if (response.status === 401) {
+    sessionStorage.removeItem('ai_ledger_auth_session');
+    window.location.hash = '/login';
+    throw new Error('인증 세션이 만료되었습니다. 다시 로그인해주세요.');
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.message || errorData.detail || '캘린더 지출 요약을 불러오는데 실패했습니다.';
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
 }

@@ -7,6 +7,7 @@ import DashboardView from '../components/DashboardView.vue';
 import TemplateList from '../pages/admin/TemplateList.vue';
 import TemplateDetail from '../pages/admin/TemplateDetail.vue';
 import MyTemplateList from '../pages/MyTemplateList.vue';
+import Settings from '../pages/Settings.vue';
 
 const routes = [
   {
@@ -31,6 +32,12 @@ const routes = [
     path: '/my/templates',
     name: 'MyTemplateList',
     component: MyTemplateList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
     meta: { requiresAuth: true }
   },
   {

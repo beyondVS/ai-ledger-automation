@@ -44,6 +44,15 @@
           템플릿 관리
         </router-link>
         <router-link
+          to="/settings"
+          class="px-3 py-1.5 rounded-lg transition-all duration-200 cursor-pointer"
+          :class="isActiveRoute('/settings') 
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/15' 
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+        >
+          설정
+        </router-link>
+        <router-link
           v-if="isStaff"
           to="/admin/templates"
           class="px-3 py-1.5 rounded-lg transition-all duration-200 cursor-pointer"

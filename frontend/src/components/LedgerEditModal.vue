@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div v-if="isOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
     <!-- Backdrop with blur -->
     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity modal-backdrop" @click="$emit('close')"></div>
 
@@ -164,8 +164,11 @@ watch(
     if (newVal && props.ledger) {
       form.vendor_name = props.ledger.vendor_name || '';
       if (props.ledger.transaction_date) {
-        // datetime-local 바인딩을 위해 "2026-05-26T00:47:00Z" -> "2026-05-26T00:47" 슬라이싱
-        form.transaction_date = props.ledger.transaction_date.substring(0, 16);
+        let dateVal = props.ledger.transaction_date;
+        if (dateVal.length <= 10) {
+          dateVal += 'T00:00';
+        }
+        form.transaction_date = dateVal.substring(0, 16);
       } else {
         form.transaction_date = '';
       }

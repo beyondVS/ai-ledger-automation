@@ -1,5 +1,6 @@
 from apps.ledgers.views import (
     DashboardStatisticsView,
+    LedgerCalendarView,
     LedgerIngestView,
     LedgerListView,
     MonthlyBudgetView,
@@ -13,6 +14,8 @@ from django.urls import path
 # app_name = "ledgers"
 
 urlpatterns = [
+    # [US1] 캘린더 뷰 전용 월별 지출 합산 및 건수 요약 집계 API
+    path("calendar/", LedgerCalendarView.as_view(), name="ledger-calendar"),
     # [T023] 가계부 리스트 조회 API
     path("", LedgerListView.as_view(), name="ledger-list"),
     # [T011] 영수증 비동기 업로드 API
