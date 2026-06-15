@@ -231,37 +231,6 @@ class TestReceiptIntegration(TestCase):
         # 이 테스트 시나리오는 폐기되어 스킵 처리합니다.
         self.skipTest("BypassParser propose_new_template does not verify regex layout at proposal phase.")
 
-    def test_admin_template_verification_api(self):
-        # Given: is_verified=False 상태의 템플릿 준비
-        template = MerchantTemplate.objects.create(
-            vendor_registration_number="7776655443",
-            vendor_name="임시 어드민 가맹점",
-            parsing_rules={
-                "amount_pattern": r"합계:\s*([0-9,]+)",
-                "date_pattern": r"날짜:\s*([0-9\-]{10})",
-            },
-            is_verified=False,
-        )
-
-        # When: 어드민 승인 API POST 호출
-        from django.urls import reverse
-
-        url = reverse("admin-merchant-template-verify", kwargs={"template_id": template.id})
-
-        # API 테스트 클라이언트를 사용하여 POST 요청 전송
-        from rest_framework.test import APIClient
-
-        client = APIClient()
-        client.force_authenticate(user=self.user)
-        response = client.post(url)
-
-        # Then: response status = 200 이고, DB의 is_verified = True 인지 검증
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.data.get("is_verified"))
-
-        template.refresh_from_db()
-        self.assertTrue(template.is_verified)
-
     @skip("Regex tasks are deprecated in v1.20")
     def test_verify_proposed_regex_task_success(self):
         # Given: 미검증 템플릿 생성

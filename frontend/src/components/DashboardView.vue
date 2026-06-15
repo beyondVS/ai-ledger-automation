@@ -310,15 +310,6 @@
           <span class="text-3xs uppercase tracking-wide">내역/통계</span>
         </button>
 
-        <button 
-          @click="goToMyTemplates"
-          class="flex flex-col items-center gap-0.5 text-slate-500 dark:text-slate-400 cursor-pointer"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-          </svg>
-          <span class="text-3xs uppercase tracking-wide">템플릿</span>
-        </button>
 
         <button 
           @click="handleLogout"
@@ -743,13 +734,6 @@ export default {
       }
     };
 
-    const goToMyTemplates = () => {
-      if (router) {
-        router.push({ name: 'MyTemplateList' });
-      } else {
-        window.location.hash = '/my/templates';
-      }
-    };
 
     // 영수증 파일 감지 성공 시 호출 (비동기 업로드 E2E 구동)
     const onFileDetected = async (file) => {
@@ -923,7 +907,6 @@ export default {
       handleDeleteConfirm,
       onBudgetUpdated,
       handleLogout,
-      goToMyTemplates,
       onFileDetected,
       onFileRemoved,
       onValidationError,

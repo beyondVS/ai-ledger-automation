@@ -4,9 +4,6 @@ import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../components/auth/LoginView.vue';
 import RegisterView from '../components/auth/RegisterView.vue';
 import DashboardView from '../components/DashboardView.vue';
-import TemplateList from '../pages/admin/TemplateList.vue';
-import TemplateDetail from '../pages/admin/TemplateDetail.vue';
-import MyTemplateList from '../pages/MyTemplateList.vue';
 import Settings from '../pages/Settings.vue';
 
 const routes = [
@@ -29,28 +26,10 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/my/templates',
-    name: 'MyTemplateList',
-    component: MyTemplateList,
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/settings',
     name: 'Settings',
     component: Settings,
     meta: { requiresAuth: true }
-  },
-  {
-    path: '/admin/templates',
-    name: 'AdminTemplateList',
-    component: TemplateList,
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/templates/:id',
-    name: 'AdminTemplateDetail',
-    component: TemplateDetail,
-    meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/',

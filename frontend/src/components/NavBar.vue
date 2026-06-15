@@ -35,15 +35,6 @@
           대시보드
         </router-link>
         <router-link
-          to="/my/templates"
-          class="px-3 py-1.5 rounded-lg transition-all duration-200 cursor-pointer"
-          :class="isActiveRoute('/my/templates') 
-            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/15' 
-            : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
-        >
-          템플릿 관리
-        </router-link>
-        <router-link
           to="/settings"
           class="px-3 py-1.5 rounded-lg transition-all duration-200 cursor-pointer"
           :class="isActiveRoute('/settings') 
@@ -51,16 +42,6 @@
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
         >
           설정
-        </router-link>
-        <router-link
-          v-if="isStaff"
-          to="/admin/templates"
-          class="px-3 py-1.5 rounded-lg transition-all duration-200 cursor-pointer"
-          :class="isActiveRoute('/admin/templates') 
-            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/15' 
-            : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
-        >
-          어드민 템플릿
         </router-link>
       </div>
 
@@ -189,9 +170,6 @@ export default {
 
     const isActiveRoute = (path) => {
       if (!route) return false;
-      if (path === '/admin/templates') {
-        return route.path.startsWith('/admin/templates');
-      }
       return route.path === path;
     };
 
