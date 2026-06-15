@@ -45,13 +45,36 @@ class ReceiptUploadAPITestCase(TestCase):
         self.client.force_authenticate(user=self.user)
 
     @patch("fitz.open")
-    def test_receipt_upload_success_and_db_persistence(self, mock_fitz_open):
+    @patch("utils.llm_client.ReceiptLLMClient.parse_receipt_local")
+    @patch("utils.llm_client.ReceiptLLMClient.parse_receipt_cloud_text")
+    @patch("utils.llm_client.ReceiptLLMClient.parse_receipt_cloud_vision")
+    def test_receipt_upload_success_and_db_persistence(
+        self, mock_parse_vision, mock_parse_text, mock_parse_local, mock_fitz_open
+    ):
         # Given: fitz.open().page.get_text() 모킹
         mock_doc = MagicMock()
         mock_page = MagicMock()
         mock_page.get_text.return_value = "스타벅스 역삼역점\n사업자번호: 120-86-12345\n합계 15000\n날짜: 2026-06-11"
         mock_doc.__iter__.return_value = [mock_page]
         mock_fitz_open.return_value = mock_doc
+
+        # 1/2/3단계 통합 모킹 응답 DTO 구성
+        from utils.llm_client import ReceiptItemSchema, ReceiptSchema
+
+        mock_response = ReceiptSchema(
+            vendor_name="스타벅스 역삼역점",
+            vendor_registration_number="1208612345",
+            transaction_date="2026-06-11T12:00:00",
+            total_amount=15000.0,
+            category="식비",
+            items=[
+                ReceiptItemSchema(item_name="아이스 아메리카노", quantity=2, unit_price=5000.0, total_price=10000.0),
+                ReceiptItemSchema(item_name="초콜릿 칩 스콘", quantity=1, unit_price=5000.0, total_price=5000.0),
+            ],
+        )
+        mock_parse_local.return_value = mock_response
+        mock_parse_text.return_value = mock_response
+        mock_parse_vision.return_value = mock_response
 
         # 1. 가상 영수증 PDF 데이터 생성
         dummy_image_bytes = b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"

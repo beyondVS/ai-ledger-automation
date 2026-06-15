@@ -127,64 +127,6 @@ export async function deleteLedgerEntry(id) {
 }
 
 /**
- * 로그인한 사용자의 가계부에 해당하는 템플릿 목록 조회 (GET)
- * @returns {Promise<Array>}
- */
-export async function fetchMyTemplates() {
-  const headers = {
-    'Content-Type': 'application/json',
-    ...getAuthHeader()
-  };
-
-  const response = await fetch('/api/v1/ledgers/my-templates/', {
-    method: 'GET',
-    headers
-  });
-
-  if (response.status === 401) {
-    localStorage.removeItem('ai_ledger_auth_session');
-    window.location.hash = '/login';
-    throw new Error('인증 세션이 만료되었습니다. 다시 로그인해주세요.');
-  }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const errorMessage = errorData.message || errorData.detail || '템플릿 목록을 불러오는 데 실패했습니다.';
-    throw new Error(errorMessage);
-  }
-
-  return response.json();
-}
-
-/**
- * 일반 사용자의 개인 템플릿 초기화 (DELETE)
- * @param {string} templateId - 템플릿 UUID
- * @returns {Promise<void>}
- */
-export async function deleteMyTemplate(templateId) {
-  const headers = {
-    ...getAuthHeader()
-  };
-
-  const response = await fetch(`/api/v1/ledgers/my-templates/${templateId}/`, {
-    method: 'DELETE',
-    headers
-  });
-
-  if (response.status === 401) {
-    localStorage.removeItem('ai_ledger_auth_session');
-    window.location.hash = '/login';
-    throw new Error('인증 세션이 만료되었습니다. 다시 로그인해주세요.');
-  }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const errorMessage = errorData.message || errorData.detail || '템플릿 초기화에 실패했습니다.';
-    throw new Error(errorMessage);
-  }
-}
-
-/**
  * 사용자 선호 시간대 기준 일자별 지출 총액 및 건수 집계 요약 정보 조회 (GET)
  * @param {number} year - 조회할 연도
  * @param {number} month - 조회할 월

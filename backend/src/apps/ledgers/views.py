@@ -127,7 +127,12 @@ class ReceiptStatusView(APIView):
             if job.status == "COMPLETED" and job.ledger:
                 ledger_data = Ledger.objects.prefetch_related("items").get(id=job.ledger.id)
 
-            response_payload = {"job_id": job.id, "status": job.status, "ledger": ledger_data}
+            response_payload = {
+                "job_id": job.id,
+                "status": job.status,
+                "ledger": ledger_data,
+                "failure_reason": job.failure_reason,
+            }
             serializer = ReceiptUploadResponseSerializer(response_payload)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -296,22 +301,6 @@ class ReceiptDetailView(APIView):
                             "after": ledger.transaction_date.isoformat(),
                         }
                     )
-
-                if corrected_diff and ledger.vendor_registration_number != "0000000000":
-                    from apps.ledgers.models import MerchantTemplate
-                    from apps.ledgers.services.promotion import demote_template
-
-                    template = MerchantTemplate.objects.filter(
-                        vendor_registration_number=ledger.vendor_registration_number
-                    ).first()
-                    if template and template.is_verified:
-                        demote_template(
-                            template=template,
-                            ledger=ledger,
-                            error_message="User manual correction triggered demotion.",
-                            corrected_diff=corrected_diff,
-                        )
-
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"ReceiptDetailView PATCH Exception: {str(e)}", exc_info=True)
@@ -391,94 +380,6 @@ class LedgerIngestView(APIView):
             logger.error(f"LedgerIngestView Server Error: {str(e)}", exc_info=True)
             return Response(
                 {"status": "FAILED", "error_code": "SERVER_ERROR", "message": "Internal server error occurred."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-
-class MyTemplateListView(APIView):
-    """
-    일반 사용자용 개인 가맹점 템플릿 관리 API 뷰
-    - 로그인한 사용자 본인의 가계부 내역에 연동된 템플릿만 조회(GET)하고 초기화/삭제(DELETE)합니다.
-    """
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        try:
-            from apps.ledgers.models import MerchantTemplate
-
-            # 1. 로그인 유저의 Ledger에서 distinct한 사업자번호 추출 (0000000000 제외)
-            vendor_numbers = (
-                Ledger.objects.filter(user=request.user)
-                .exclude(vendor_registration_number="0000000000")
-                .values_list("vendor_registration_number", flat=True)
-                .distinct()
-            )
-
-            # 2. 이에 해당하는 MerchantTemplate 조회
-            templates = MerchantTemplate.objects.filter(vendor_registration_number__in=vendor_numbers).order_by(
-                "-updated_at"
-            )
-
-            # 3. 간단한 JSON Response 직렬화 반환
-            data = []
-            for t in templates:
-                data.append(
-                    {
-                        "id": str(t.id),
-                        "vendor_registration_number": t.vendor_registration_number,
-                        "vendor_name": t.vendor_name,
-                        "is_verified": t.is_verified,
-                        "is_auto_verified": t.is_auto_verified,
-                        "consistency_count": t.consistency_count,
-                        "self_healing_attempts": t.self_healing_attempts,
-                        "is_blacklisted": t.is_blacklisted,
-                        "last_healing_at": t.last_healing_at.isoformat() if t.last_healing_at else None,
-                        "updated_at": t.updated_at.isoformat(),
-                    }
-                )
-
-            return Response(data, status=status.HTTP_200_OK)
-        except Exception as e:
-            logger.error(f"MyTemplateListView GET Exception: {str(e)}", exc_info=True)
-            return Response(
-                {"error": "SYSTEM_ERROR", "message": "조회 중 서버 에러가 발생했습니다."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    def delete(self, request, template_id, *args, **kwargs):
-        try:
-            from apps.ledgers.models import MerchantTemplate
-
-            # 1. 대상 템플릿 조회
-            try:
-                template = MerchantTemplate.objects.get(id=template_id)
-            except MerchantTemplate.DoesNotExist:
-                return Response(
-                    {"error": "NOT_FOUND", "message": "해당 템플릿을 찾을 수 없습니다."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-
-            # 2. 소유권/권증 체크: 로그인한 사용자의 Ledger 내역에 해당 템플릿의 사업자번호가 존재하는지 확인
-            has_ledger = Ledger.objects.filter(
-                user=request.user, vendor_registration_number=template.vendor_registration_number
-            ).exists()
-
-            if not has_ledger and not request.user.is_staff:
-                return Response(
-                    {"error": "FORBIDDEN", "message": "해당 템플릿에 대한 권한이 없습니다."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-            # 3. 템플릿 삭제 (초기화)
-            with transaction.atomic():
-                template.delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            logger.error(f"MyTemplateListView DELETE Exception: {str(e)}", exc_info=True)
-            return Response(
-                {"error": "SYSTEM_ERROR", "message": "삭제 중 서버 에러가 발생했습니다."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -857,3 +758,169 @@ class LedgerCalendarView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class DuplicateSuspectsView(APIView):
+    """
+    동일 금액 & 5분(300초) 이내의 시차를 지닌 중복 의심 지출 쌍(Pairs)을 조회합니다.
+    """
+
+    permission_classes = [AllowAny] if settings.DEBUG else [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        from apps.accounts.models import User
+
+        user = request.user if request.user.is_authenticated else User.objects.first()
+
+        if not user:
+            return Response({"status": "error", "message": "User not found."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # items를 prefetch하여 1+N 쿼리 문제 방지
+        ledgers = list(
+            Ledger.objects.filter(user=user, ignore_duplicate_check=False)
+            .prefetch_related("items")
+            .order_by("transaction_date")
+        )
+
+        pairs = []
+        used_ids = set()
+        for i in range(len(ledgers)):
+            if ledgers[i].id in used_ids:
+                continue
+            for j in range(i + 1, len(ledgers)):
+                if ledgers[j].id in used_ids:
+                    continue
+
+                # 시간 오차 계산 (정렬되어 있으므로 차이가 300초 초과 시 루프 중단 가능)
+                time_diff = abs((ledgers[i].transaction_date - ledgers[j].transaction_date).total_seconds())
+                if time_diff > 300:
+                    break
+
+                if ledgers[i].total_amount == ledgers[j].total_amount:
+                    pairs.append(
+                        {
+                            "id1": str(ledgers[i].id),
+                            "id2": str(ledgers[j].id),
+                            "ledger_1": self._serialize_ledger(ledgers[i]),
+                            "ledger_2": self._serialize_ledger(ledgers[j]),
+                        }
+                    )
+                    used_ids.add(ledgers[i].id)
+                    used_ids.add(ledgers[j].id)
+                    break
+
+        return Response({"status": "success", "data": pairs}, status=status.HTTP_200_OK)
+
+    def _serialize_ledger(self, ledger):
+        return {
+            "id": str(ledger.id),
+            "vendor_name": ledger.vendor_name,
+            "vendor_registration_number": ledger.vendor_registration_number,
+            "transaction_date": ledger.transaction_date.isoformat(),
+            "total_amount": float(ledger.total_amount),
+            "supply_value": float(ledger.supply_value),
+            "vat_amount": float(ledger.vat_amount),
+            "category": ledger.category,
+            "approval_number": ledger.approval_number,
+            "order_id": ledger.order_id,
+            "items": [
+                {
+                    "item_name": item.item_name,
+                    "quantity": item.quantity,
+                    "unit_price": float(item.unit_price),
+                    "total_price": float(item.total_price),
+                }
+                for item in ledger.items.all()
+            ],
+        }
+
+
+class LedgerMergeView(APIView):
+    """
+    사용자가 선택한 두 지출 건을 하나로 안전하게 병합하고, 중복 건은 삭제 처리합니다.
+    """
+
+    permission_classes = [AllowAny] if settings.DEBUG else [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        from apps.accounts.models import User
+
+        user = request.user if request.user.is_authenticated else User.objects.first()
+
+        keep_id = request.data.get("keep_ledger_id")
+        delete_id = request.data.get("delete_ledger_id")
+
+        if not keep_id or not delete_id:
+            return Response(
+                {"status": "error", "message": "Both keep_ledger_id and delete_ledger_id are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            keep_ledger = Ledger.objects.get(id=keep_id, user=user)
+            delete_ledger = Ledger.objects.get(id=delete_id, user=user)
+        except Ledger.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "One or both ledgers do not exist or unauthorized."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            with transaction.atomic():
+                # 1. 정보 병합 (승인번호, 주문 ID 등이 비어있을 때 교차 보완)
+                if not keep_ledger.approval_number and delete_ledger.approval_number:
+                    keep_ledger.approval_number = delete_ledger.approval_number
+                if not keep_ledger.order_id and delete_ledger.order_id:
+                    keep_ledger.order_id = delete_ledger.order_id
+                if not keep_ledger.raw_text_hash and delete_ledger.raw_text_hash:
+                    keep_ledger.raw_text_hash = delete_ledger.raw_text_hash
+
+                # 가맹점명 지능형 교체 (보존할 가맹점이 PG사이고 삭제할 가맹점이 스토어 등 구체적 상호라면 가맹점명 업데이트)
+                PG_KEYWORDS = ["이니시스", "토스페이먼츠", "다날", "kcp", "nice", "모빌리언스", "카카오페이"]
+                is_keep_pg = any(kw in keep_ledger.vendor_name.lower() for kw in PG_KEYWORDS)
+                is_del_pg = any(kw in delete_ledger.vendor_name.lower() for kw in PG_KEYWORDS)
+
+                if is_keep_pg and not is_del_pg:
+                    keep_ledger.vendor_name = delete_ledger.vendor_name
+                    keep_ledger.vendor_registration_number = delete_ledger.vendor_registration_number
+
+                keep_ledger.save()
+
+                # 2. ReceiptUploadJob 연관관계 병합
+                if hasattr(delete_ledger, "upload_job") and delete_ledger.upload_job:
+                    job = delete_ledger.upload_job
+                    job.ledger = keep_ledger
+                    job.save()
+
+                # 3. TemplateExecutionHistory 연관관계 병합
+                delete_ledger.template_histories.update(ledger=keep_ledger)
+
+                # 4. 삭제 대상 Ledger 제거 (종속된 LedgerItem들은 CASCADE에 의해 자동 삭제됨)
+                delete_ledger.delete()
+
+            return Response({"status": "success", "message": "Ledgers merged successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error merging ledgers: {str(e)}")
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LedgerIgnoreSuspectView(APIView):
+    """
+    해당 거래쌍을 중복 검사 대상에서 무시 처리(ignore_duplicate_check = True)합니다.
+    """
+
+    permission_classes = [AllowAny] if settings.DEBUG else [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        from apps.accounts.models import User
+
+        user = request.user if request.user.is_authenticated else User.objects.first()
+
+        ledger_ids = request.data.get("ledger_ids", [])
+        if not ledger_ids:
+            return Response(
+                {"status": "error", "message": "ledger_ids list is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        Ledger.objects.filter(id__in=ledger_ids, user=user).update(ignore_duplicate_check=True)
+        return Response({"status": "success", "message": "Suspect status ignored."}, status=status.HTTP_200_OK)

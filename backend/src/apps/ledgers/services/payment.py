@@ -24,6 +24,8 @@ def ingest_payment_data(user, data) -> Ledger:
     vat_amount = data.get("vat_amount", 0.00)
     category = data.get("category", "미분류")
     items_data = data.get("items", [])
+    order_id = data.get("order_id")
+    raw_text_hash = data.get("raw_text_hash")
 
     # 사업자번호 기본 방어
     if not vendor_registration_number or vendor_registration_number.strip() == "":
@@ -60,7 +62,26 @@ def ingest_payment_data(user, data) -> Ledger:
         if approval_number == "":
             approval_number = None
 
-    # 1. 중복 체크 선행 (승인번호 및 60초 임계 시간 대조)
+    # 1. 중복 체크 선행 (완전 해시 일치 또는 고유 식별자 일치)
+    if raw_text_hash is not None:
+        raw_text_hash = str(raw_text_hash).strip()
+        if raw_text_hash == "":
+            raw_text_hash = None
+
+    if order_id is not None:
+        order_id = str(order_id).strip()
+        if order_id == "":
+            order_id = None
+
+    # 1-1. raw_text_hash 대조 (100% 동일 파일)
+    if raw_text_hash:
+        existing_by_hash = Ledger.objects.filter(user=user, raw_text_hash=raw_text_hash).first()
+        if existing_by_hash:
+            raise DuplicatePaymentError(
+                detail=f"Duplicate payment detected by raw text hash. Existing ID: {existing_by_hash.id}"
+            )
+
+    # 1-2. 60초 임계 시각 및 식별자 기반 자동 차단
     existing_ledgers = Ledger.objects.filter(
         user=user, vendor_registration_number=vendor_registration_number, total_amount=total_amount
     ).order_by("-transaction_date")
@@ -77,32 +98,36 @@ def ingest_payment_data(user, data) -> Ledger:
         # 거래 시각 오차 비교 (초 단위)
         time_diff_seconds = abs((tx_datetime - ext_time).total_seconds())
 
-        ext_app_num = existing.approval_number
-        if ext_app_num is not None:
-            ext_app_num = str(ext_app_num).strip()
-            if ext_app_num == "":
-                ext_app_num = None
+        # 60초 이내인 건에 대해서만 자동 중복 판정 수행
+        if time_diff_seconds <= 60:
+            ext_app_num = existing.approval_number
+            ext_ord_id = existing.order_id
 
-        if approval_number is not None and ext_app_num is not None:
-            if approval_number != ext_app_num:
-                # 승인번호가 명시적으로 다른 경우 개별 거래 인정 -> 계속 대조
-                continue
-            else:
-                # 승인번호가 동일하고 1분 이내이면 중복 처리
-                if time_diff_seconds <= 60:
+            has_new_ids = (approval_number is not None) or (order_id is not None)
+            has_ext_ids = (ext_app_num is not None) or (ext_ord_id is not None)
+
+            if has_new_ids and has_ext_ids:
+                is_dup = False
+                if approval_number is not None and ext_app_num is not None:
+                    if approval_number == ext_app_num:
+                        is_dup = True
+                if order_id is not None and ext_ord_id is not None:
+                    if order_id == ext_ord_id:
+                        is_dup = True
+
+                if is_dup:
                     raise DuplicatePaymentError(
-                        detail=f"Duplicate payment detected; bypassed without creating redundant records. Existing ID: {existing.id}"
+                        detail=f"Duplicate payment detected by identifiers within 60s. Existing ID: {existing.id}"
                     )
-        else:
-            # 양쪽 혹은 한쪽 승인번호가 없는 경우 1분 이내이면 중복 처리
-            if time_diff_seconds <= 60:
+            else:
+                # 한쪽이라도 식별자가 부재하는 경우: 오탐 방지를 위한 60초 보수적 긴급 자동 차단
                 raise DuplicatePaymentError(
-                    detail=f"Duplicate payment detected; bypassed without creating redundant records. Existing ID: {existing.id}"
+                    detail=f"Duplicate payment detected within 60s (missing identifier check). Existing ID: {existing.id}"
                 )
 
     try:
         with transaction.atomic():
-            # 2. 마스터 Ledger 적재 (승인번호 추가 저장 및 DateTime 저장)
+            # 2. 마스터 Ledger 적재 (승인번호, 주문 ID, 해시 추가 저장 및 DateTime 저장)
             ledger = Ledger.objects.create(
                 user=user,
                 vendor_registration_number=vendor_registration_number,
@@ -113,6 +138,8 @@ def ingest_payment_data(user, data) -> Ledger:
                 vat_amount=vat_amount,
                 category=category,
                 approval_number=approval_number,
+                order_id=order_id,
+                raw_text_hash=raw_text_hash,
             )
 
             # 3. 품목 리스트 루프 적재

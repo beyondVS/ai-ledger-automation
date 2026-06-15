@@ -17,6 +17,9 @@ class Ledger(models.Model):
     vendor_name = models.CharField(max_length=255)
     transaction_date = models.DateTimeField()
     approval_number = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    order_id = models.CharField(max_length=100, null=True, blank=True, db_index=True)
+    raw_text_hash = models.CharField(max_length=64, null=True, blank=True, db_index=True)
+    ignore_duplicate_check = models.BooleanField(default=False, db_index=True)
 
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     supply_value = models.DecimalField(max_digits=12, decimal_places=2)

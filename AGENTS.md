@@ -84,7 +84,7 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
   - 영수증 1장 적재 시 `ledgers` 마스터 레코드와 `ledger_items` 상세품목 데이터 생성/수정 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리되어야 하며 장애 시 전격 롤백 보장 필수.
 - **비직관적 비즈니스 로직**:
   - 3단계 하이브리드 영수증 파싱 파이프라인에서 1단계 로컬 파싱이 실패하면 2단계 초저비용 텍스트 전송(Gemini-2.5-Flash Text-only)을 기동하고, 최종 실패 시에만 3단계 Gemini 비전 폴백을 수행하도록 설계함.
-  - 기존에 구현되었던 템플릿 정적 바이패스 및 자동 승격/자가 치유 알고리즘은 오작동 방지 및 백엔드 복잡성 제거를 위해 4주차 22일차 계획에 따라 코드베이스에서 비활성화 및 완전 청소 처리됨.
+  - 기존에 구현되었던 템플릿 정적 바이패스 및 자동 승격/자가 치유 알고리즘은 오작동 방지 및 백엔드 복잡성 제거를 위해 4주차 22일차 계획에 따라 코드베이스에서 비활성화 및 완전 청소 처리됨. 이에 따라 LLM 클라이언트 스키마(ReceiptSchema) 내의 proposed_date_pattern, proposed_amount_pattern 필드 및 프롬프트 조립용 LOCAL_TEXT_PROMPT_EXTENSION 상수도 완전히 영구 삭제됨.
   - 실제 수동 분석 및 개발 디버깅에 활용되는 실제 영수증 예제 파일들은 `docs/receipt-example/` 폴더 내에 저장할 수 있으나, 이 디렉토리 내의 영수증 본 파일들은 `.gitignore`에 의해 완벽하게 무시되어 Git 저장소에 절대 커밋 및 푸시되지 않도록 통제해야 함. 폴더 유지를 위해 `.gitkeep`만 예외적으로 추적됨.
   - 가계부 수동 수정 화면에서 결제일자 입력 폼은 단순 `date`가 아닌 `datetime-local` 타입으로 바인딩하며, 로드 시 `substring(0, 16)`으로 포맷팅하고 전송 시 `Z` 타임존을 강제 조립하여 타임존 유실 및 날짜 깨짐 버그를 방어함.
   - 이메일 유입 시 SPF 및 DKIM 전자서명 대조 정합성을 검증하고, 사용자당 사전에 등록된 최대 3개의 화이트리스트 메일 발송인 정보와 100% 일치할 경우에만 비동기 Celery 태스크 적재를 허용 (※ 4주 로드맵에서 제외되어 차후 확장 백로그로 이관됨. 현재 단계에서는 구현하지 않음).
@@ -137,5 +137,5 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/021-ledger-calendar-timezone/plan.md)
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/022-receipt-hybrid-pipeline/plan.md)
 <!-- SPECKIT END -->

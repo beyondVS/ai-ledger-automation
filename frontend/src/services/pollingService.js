@@ -56,7 +56,7 @@ export class VirtualPollingManager {
           onSuccess(response.data);
         } else if (response.status === 'FAILED') {
           this.stopPolling(jobId);
-          onError(new Error('영수증 분석 처리 중 백엔드 에러가 발생했습니다.'));
+          onError(new Error(response.failure_reason || '영수증 분석 처리 중 백엔드 에러가 발생했습니다.'));
         }
         // PENDING, PROCESSING 상태일 때는 다음 인터벌을 대기
       } catch (err) {

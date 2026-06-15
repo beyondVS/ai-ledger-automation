@@ -45,33 +45,35 @@ class CeleryTasksTests(TestCase):
         )
 
         # OCR 및 LLM 파서 모듈을 모킹하여 성공적인 분석 결과 데이터가 반환되도록 설정
-        mock_parsed_data = {
-            "vendor_name": "테스트 편의점",
-            "vendor_registration_number": "1234567890",
-            "transaction_date": "2026-06-08",
-            "total_amount": 5000.00,
-            "supply_value": 4545.45,
-            "vat_amount": 454.55,
-            "category": "식비",
-            "items": [
-                {
-                    "item_name": "삼각김밥",
-                    "quantity": 2,
-                    "unit_price": 1500.00,
-                    "total_price": 3000.00,
-                },
-                {
-                    "item_name": "생수",
-                    "quantity": 1,
-                    "unit_price": 2000.00,
-                    "total_price": 2000.00,
-                },
+        from utils.llm_client import ReceiptItemSchema, ReceiptSchema
+
+        mock_parsed_data = ReceiptSchema(
+            vendor_name="테스트 편의점",
+            vendor_registration_number="1234567890",
+            transaction_date="2026-06-08",
+            total_amount=5000.00,
+            supply_value=4545.45,
+            vat_amount=454.55,
+            category="식비",
+            items=[
+                ReceiptItemSchema(
+                    item_name="삼각김밥",
+                    quantity=2,
+                    unit_price=1500.00,
+                    total_price=3000.00,
+                ),
+                ReceiptItemSchema(
+                    item_name="생수",
+                    quantity=1,
+                    unit_price=2000.00,
+                    total_price=2000.00,
+                ),
             ],
-        }
+        )
 
         # 실제 tasks.py 내의 LLM 클라이언트 모듈(예: ReceiptLLMClient 또는 litellm 연동 부)을 모킹하여
         # 고정된 mock_parsed_data를 던지게끔 패치합니다.
-        with patch("utils.llm_client.ReceiptLLMClient.parse_receipt", return_value=mock_parsed_data):
+        with patch("utils.llm_client.ReceiptLLMClient.parse_receipt_cloud_vision", return_value=mock_parsed_data):
             # 태스크 직접 호출 (eager 모드이므로 동기 실행됨)
             extract_receipt_text_task(str(job.id), fake_file_path)
 
