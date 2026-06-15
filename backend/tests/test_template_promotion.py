@@ -1,8 +1,11 @@
+from unittest import skip
+
 from apps.ledgers.models import MerchantTemplate
 from apps.ledgers.services.promotion import promote_template_if_consistent
 from django.test import TestCase
 
 
+@skip("Template promotion is deprecated in v1.20")
 class TemplatePromotionTestCase(TestCase):
     """
     [T008] TemplatePromotionTestCase

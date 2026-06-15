@@ -12,7 +12,7 @@
 
 **Purpose**: 프로젝트 환경 설정 및 패키지 의존성 최신화
 
-- [ ] T001 `backend/pyproject.toml` 및 `pyproject.toml` 설정 파일에 fitz(PyMuPDF), pytesseract 등 로컬 OCR에 필요한 의존성 유무를 확인하고 락 파일 갱신 및 가상환경 동기화 (`uv sync`)
+- [X] T001 `backend/pyproject.toml` 및 `pyproject.toml` 설정 파일에 fitz(PyMuPDF), pytesseract 등 로컬 OCR에 필요한 의존성 유무를 확인하고 락 파일 갱신 및 가상환경 동기화 (`uv sync`)
 
 ---
 
@@ -20,7 +20,7 @@
 
 **Purpose**: 본격적인 파이프라인 개발 전에 완료되어야 하는 로컬 인프라 환경 검증
 
-- [ ] T002 [P] 로컬 개발 환경에서 Ollama 서비스 실행 상태 및 gemma4:e4b 모델 존재 여부를 사전 확인하기 위한 헬퍼 스크립트 작성 (`scripts/check_ollama.ps1` 및 `scripts/check_ollama.sh`)
+- [X] T002 [P] 로컬 개발 환경에서 Ollama 서비스 실행 상태 및 gemma4:e4b 모델 존재 여부를 사전 확인하기 위한 헬퍼 스크립트 작성 (`scripts/check_ollama.ps1` 및 `scripts/check_ollama.sh`)
 
 ---
 
@@ -32,12 +32,12 @@
 
 ### Tests for User Story 4
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
-- [ ] T003 [P] [US4] `backend/tests/unit/test_bypass_parser.py` 및 `backend/tests/test_template_promotion.py`, `backend/tests/test_template_self_healing.py` 경로 내의 레거시 바이패스/승격/자가치유 테스트들을 주석 처리하거나 안전하게 우회하도록 테스트 코드 수정
+- [X] T003 [P] [US4] `backend/tests/unit/test_bypass_parser.py` 및 `backend/tests/test_template_promotion.py`, `backend/tests/test_template_self_healing.py` 경로 내의 레거시 바이패스/승격/자가치유 테스트들을 주석 처리하거나 안전하게 우회하도록 테스트 코드 수정
 
 ### Implementation for User Story 4
-- [ ] T004 [P] [US4] `backend/src/utils/bypass_parser.py` 경로 내의 `BypassParser` 클래스 내 `try_bypass_parsing` 및 `propose_new_template`이 항상 `None`을 반환하도록 로직 비활성화 및 무력화
-- [ ] T005 [P] [US4] `backend/src/apps/ledgers/services/promotion.py` 경로의 `promote_template_if_consistent` 및 `demote_template`, `trigger_self_healing` 함수들을 비활성화하고 무력화
-- [ ] T006 [US4] `backend/src/apps/tasks/tasks.py` 경로에 정의된 `verify_proposed_regex_task` 및 `self_heal_template_task` Celery 비동기 태스크의 내부 구동 로직 비활성화 및 주석 처리
+- [X] T004 [P] [US4] `backend/src/utils/bypass_parser.py` 경로 내의 `BypassParser` 클래스 내 `try_bypass_parsing` 및 `propose_new_template`이 항상 `None`을 반환하도록 로직 비활성화 및 무력화
+- [X] T005 [P] [US4] `backend/src/apps/ledgers/services/promotion.py` 경로의 `promote_template_if_consistent` 및 `demote_template`, `trigger_self_healing` 함수들을 비활성화하고 무력화
+- [X] T006 [US4] `backend/src/apps/tasks/tasks.py` 경로에 정의된 `verify_proposed_regex_task` 및 `self_heal_template_task` Celery 비동기 태스크의 내부 구동 로직 비활성화 및 주석 처리
 
 ---
 
@@ -49,14 +49,14 @@
 
 ### Tests for User Story 1
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
-- [ ] T007 [P] [US1] Tesseract/PyMuPDF 로컬 OCR 문자 추출 기능에 대한 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/unit/test_local_ocr.py` 생성)
-- [ ] T008 [P] [US1] 로컬 Ollama `gemma4:e4b` JSON 스키마 구조화 및 상세 품목 금액 합산 정합성(`sum(item.total_price) == total_amount`) 검증 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/unit/test_ollama_parser.py` 생성)
-- [ ] T009 [US1] `ingest_receipt` 메서드의 1단계 로컬 파싱 및 DB 적재 E2E 성공 시나리오에 대한 통합 테스트를 작성하고 pytest로 실패 확인 (`backend/tests/integration/test_receipt_integration.py` 수정)
+- [X] T007 [P] [US1] Tesseract/PyMuPDF 로컬 OCR 문자 추출 기능에 대한 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/unit/test_local_ocr.py` 생성)
+- [X] T008 [P] [US1] 로컬 Ollama `gemma4:e4b` JSON 스키마 구조화 및 상세 품목 금액 합산 정합성(`sum(item.total_price) == total_amount`) 검증 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/unit/test_ollama_parser.py` 생성)
+- [X] T009 [US1] `ingest_receipt` 메서드의 1단계 로컬 파싱 및 DB 적재 E2E 성공 시나리오에 대한 통합 테스트를 작성하고 pytest로 실패 확인 (`backend/tests/integration/test_receipt_integration.py` 수정)
 
 ### Implementation for User Story 1
-- [ ] T010 [P] [US1] `backend/src/apps/ledgers/services/__init__.py` 내 fitz(PyMuPDF) 및 Tesseract OCR 호출 부분의 리팩토링 및 예외 복구(0글자 추출) 처리 구현
-- [ ] T011 [P] [US1] `backend/src/utils/llm_client.py` 내 로컬 Ollama 텍스트 기반 JSON 구조화 메서드(`parse_receipt_local`) 구현
-- [ ] T012 [US1] `backend/src/apps/ledgers/services/__init__.py` 내의 `ingest_receipt`에서 로컬 OCR 문자 추출 후 1단계 로컬 파서(`parse_receipt_local`)를 호출하고 상세 품목 합산 검증(`sum(item.total_price) == total_amount`)을 처리하는 1단계 파이프라인 흐름 및 트랜잭션 적재 구현
+- [X] T010 [P] [US1] `backend/src/apps/ledgers/services/__init__.py` 내 fitz(PyMuPDF) 및 Tesseract OCR 호출 부분의 리팩토링 및 예외 복구(0글자 추출) 처리 구현
+- [X] T011 [P] [US1] `backend/src/utils/llm_client.py` 내 로컬 Ollama 텍스트 기반 JSON 구조화 메서드(`parse_receipt_local`) 구현
+- [X] T012 [US1] `backend/src/apps/ledgers/services/__init__.py` 내의 `ingest_receipt`에서 로컬 OCR 문자 추출 후 1단계 로컬 파서(`parse_receipt_local`)를 호출하고 상세 품목 합산 검증(`sum(item.total_price) == total_amount`)을 처리하는 1단계 파이프라인 흐름 및 트랜잭션 적재 구현
 
 ---
 
@@ -68,12 +68,12 @@
 
 ### Tests for User Story 2
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
-- [ ] T013 [P] [US2] Gemini-2.5-Flash Text-only API 호출을 통한 텍스트 기반 구조화 기능의 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/unit/test_gemini_text_parser.py` 생성)
-- [ ] T014 [US2] 1단계 금액 정합성 실패 시 2단계 Gemini Text-only로 정상 폴백 및 금액 정합성 통과 시 최종 완료되는 흐름의 통합 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/integration/test_receipt_integration.py` 수정)
+- [X] T013 [P] [US2] Gemini-2.5-Flash Text-only API 호출을 통한 텍스트 기반 구조화 기능의 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/unit/test_gemini_text_parser.py` 생성)
+- [X] T014 [US2] 1단계 금액 정합성 실패 시 2단계 Gemini Text-only로 정상 폴백 및 금액 정합성 통과 시 최종 완료되는 흐름의 통합 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/integration/test_receipt_integration.py` 수정)
 
 ### Implementation for User Story 2
-- [ ] T015 [P] [US2] `backend/src/utils/llm_client.py` 내 Gemini-2.5-Flash Text-only 구조화 호출 메서드 (`parse_receipt_cloud_text`) 구현
-- [ ] T016 [US2] `backend/src/apps/ledgers/services/__init__.py` 내의 `ingest_receipt`에서 1단계 로컬 파싱 실패/검증 실패 시, 2단계 클라우드 텍스트 파서(`parse_receipt_cloud_text`)를 가동하고 금액 정합성을 검증하는 2단계 폴백 파이프라인 제어 흐름 구현
+- [X] T015 [P] [US2] `backend/src/utils/llm_client.py` 내 Gemini-2.5-Flash Text-only 구조화 호출 메서드 (`parse_receipt_cloud_text`) 구현
+- [X] T016 [US2] `backend/src/apps/ledgers/services/__init__.py` 내의 `ingest_receipt`에서 1단계 로컬 파싱 실패/검증 실패 시, 2단계 클라우드 텍스트 파서(`parse_receipt_cloud_text`)를 가동하고 금액 정합성을 검증하는 2단계 폴백 파이프라인 제어 흐름 구현
 
 ---
 
@@ -85,12 +85,12 @@
 
 ### Tests for User Story 3
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
-- [ ] T017 [P] [US3] Gemini-2.5-Flash Vision API 멀티모달(WebP 및 PDF 원본 바이트 전달) 구조화 기능의 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/unit/test_gemini_vision_parser.py` 생성)
-- [ ] T018 [US3] 1/2단계 실패 시 최후의 보루로 3단계 Gemini Vision으로 폴백하여 파싱을 성공 완료하는 통합 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/integration/test_receipt_integration.py` 수정)
+- [X] T017 [P] [US3] Gemini-2.5-Flash Vision API 멀티모달(WebP 및 PDF 원본 바이트 전달) 구조화 기능의 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/unit/test_gemini_vision_parser.py` 생성)
+- [X] T018 [US3] 1/2단계 실패 시 최후의 보루로 3단계 Gemini Vision으로 폴백하여 파싱을 성공 완료하는 통합 테스트 코드를 작성하고 pytest로 실패 확인 (`backend/tests/integration/test_receipt_integration.py` 수정)
 
 ### Implementation for User Story 3
-- [ ] T019 [P] [US3] `backend/src/utils/llm_client.py` 내 Gemini-2.5-Flash Vision 호출 메서드(`parse_receipt_cloud_vision`) 구현 및 PDF 파일 유입 시 이미지 변환을 우회하는 바이패스 분기 구현
-- [ ] T020 [US3] `backend/src/apps/ledgers/services/__init__.py` 내의 `ingest_receipt`에서 1, 2단계 최종 실패 혹은 OCR 추출 실패 시, 3단계 비전 폴백 파서(`parse_receipt_cloud_vision`)를 호출해 최종 완결 짓고 실패 시 FAILED 처리하는 3단계 폴백 파이프라인 흐름 완성
+- [X] T019 [P] [US3] `backend/src/utils/llm_client.py` 내 Gemini-2.5-Flash Vision 호출 메서드(`parse_receipt_cloud_vision`) 구현 및 PDF 파일 유입 시 이미지 변환을 우회하는 바이패스 분기 구현
+- [X] T020 [US3] `backend/src/apps/ledgers/services/__init__.py` 내의 `ingest_receipt`에서 1, 2단계 최종 실패 혹은 OCR 추출 실패 시, 3단계 비전 폴백 파서(`parse_receipt_cloud_vision`)를 호출해 최종 완결 짓고 실패 시 FAILED 처리하는 3단계 폴백 파이프라인 흐름 완성
 
 ---
 
@@ -98,9 +98,9 @@
 
 **Purpose**: 프로젝트 전체 기능 조율, 린팅, E2E 검증 및 수동 테스트 통과 확인
 
-- [ ] T021 [P] `docs/` 및 `quickstart.md`에 정의된 3가지 수동 검증 시나리오에 따라 로컬 수동 테스트 확인 및 기록
-- [ ] T022 [P] Ruff 린터 및 포매터 가드를 통해 전체 파일에 린팅 및 스타일 가이드 정합성 준수 증명 (`uv run ruff check` 및 `uv run ruff format`)
-- [ ] T023 전체 pytest 테스트 스위트를 실행하여 작성한 모든 TDD 유닛/통합 테스트 코드(T007, T008, T009, T013, T014, T017, T018)의 100% 통과(Pass) 입증
+- [X] T021 [P] `docs/` 및 `quickstart.md`에 정의된 3가지 수동 검증 시나리오에 따라 로컬 수동 테스트 확인 및 기록
+- [X] T022 [P] Ruff 린터 및 포매터 가드를 통해 전체 파일에 린팅 및 스타일 가이드 정합성 준수 증명 (`uv run ruff check` 및 `uv run ruff format`)
+- [X] T023 전체 pytest 테스트 스위트를 실행하여 작성한 모든 TDD 유닛/통합 테스트 코드(T007, T008, T009, T013, T014, T017, T018)의 100% 통과(Pass) 입증
 
 ---
 

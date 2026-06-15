@@ -1,48 +1,16 @@
 import logging
 
-from apps.ledgers.models import Ledger, MerchantTemplate, TemplateExecutionHistory
-from django.db import transaction
+from apps.ledgers.models import Ledger, MerchantTemplate
 
 logger = logging.getLogger(__name__)
 
 
 def promote_template_if_consistent(template: MerchantTemplate, proposed_rules: dict) -> bool:
     """
-    [T009] promote_template_if_consistent
-    동일한 정규식 규칙이 3회 연속 일치하여 도출되는지 판별하고,
-    조건 만족 시 해당 가맹점 템플릿을 자동으로 승격시킵니다.
+    [v1.20 비활성화] 템플릿 자동 승격은 비활성화되었습니다.
     """
-    # 1. 템플릿의 기존 parsing_rules와 제안된 proposed_rules 비교
-    # 상세 품목(default_items)이나 카테고리(default_category)는 거래마다 동적으로 달라질 수 있으므로,
-    # 템플릿의 자동 승격은 오직 핵심 정규식 패턴(date_pattern, amount_pattern)의 일치 여부만 판별합니다.
-    is_matching = template.parsing_rules.get("date_pattern") == proposed_rules.get(
-        "date_pattern"
-    ) and template.parsing_rules.get("amount_pattern") == proposed_rules.get("amount_pattern")
-
-    with transaction.atomic():
-        # lock을 걸어 안전하게 카운터 증가 및 정합성을 지킵니다.
-        t_obj = MerchantTemplate.objects.select_for_update().get(id=template.id)
-
-        if is_matching:
-            t_obj.consistency_count += 1
-            if t_obj.consistency_count >= 3:
-                t_obj.is_verified = True
-                t_obj.is_blacklisted = False
-                t_obj.self_healing_attempts = 0
-                t_obj.consistency_count = 0
-                t_obj.save()
-
-                # 원본 템플릿 오브젝트 상태 동기화
-                template.is_verified = t_obj.is_verified
-                template.is_blacklisted = t_obj.is_blacklisted
-                template.consistency_count = t_obj.consistency_count
-                return True
-        else:
-            t_obj.consistency_count = 0
-
-        t_obj.save()
-        template.consistency_count = t_obj.consistency_count
-        return False
+    _ = (template, proposed_rules)
+    return False
 
 
 def demote_template(
@@ -53,59 +21,17 @@ def demote_template(
     ocr_text: str = None,
 ) -> bool:
     """
-    [T015] demote_template
-    파싱 에러 또는 사용자 수동 정정 시 해당 가맹점 템플릿을 즉각 강등 처리하고
-    TemplateExecutionHistory에 이력을 남깁니다.
+    [v1.20 비활성화] 템플릿 강등은 비활성화되었습니다.
     """
-    with transaction.atomic():
-        t_obj = MerchantTemplate.objects.select_for_update().get(id=template.id)
-        t_obj.is_verified = False
-        t_obj.self_healing_attempts += 1
-
-        # 3회 초과 에러/정정 발생 시 블랙리스트 차단 가동
-        if t_obj.self_healing_attempts >= 3:
-            t_obj.is_blacklisted = True
-
-        t_obj.save()
-
-        # 원본 템플릿 상태 동기화
-        template.is_verified = t_obj.is_verified
-        template.is_blacklisted = t_obj.is_blacklisted
-        template.self_healing_attempts = t_obj.self_healing_attempts
-
-        # 실행 이력(TemplateExecutionHistory) 적재
-        TemplateExecutionHistory.objects.create(
-            template=t_obj,
-            ledger=ledger,
-            parsing_mode="BYPASS",
-            is_success=(error_message is None),
-            user_corrected=(corrected_diff is not None),
-            corrected_diff=corrected_diff,
-            error_message=error_message,
-        )
-
-    # 블랙리스트에 걸리지 않았고 정정 데이터가 주어지면 자가 치유 기동
-    if not template.is_blacklisted and corrected_diff and ledger:
-        trigger_self_healing(template, ledger, corrected_diff, ocr_text=ocr_text)
-
-    return True
+    _ = (template, ledger, error_message, corrected_diff, ocr_text)
+    return False
 
 
 def trigger_self_healing(
     template: MerchantTemplate, ledger: Ledger, corrected_diff: list, ocr_text: str = None
 ) -> bool:
     """
-    [T016] trigger_self_healing
-    강등된 템플릿에 대해 수동 정정 데이터를 기반으로 규칙을 자율 재생성하는
-    비동기 Celery 태스크를 트리거합니다.
+    [v1.20 비활성화] 자가 치유 트리거는 비활성화되었습니다.
     """
-    try:
-        from apps.tasks.tasks import self_heal_template_task
-
-        self_heal_template_task.delay(
-            template_id=str(template.id), ledger_id=str(ledger.id), corrected_diff=corrected_diff, ocr_text=ocr_text
-        )
-        return True
-    except Exception as e:
-        logger.error(f"Failed to trigger self-healing Celery task: {str(e)}")
-        return False
+    _ = (template, ledger, corrected_diff, ocr_text)
+    return False

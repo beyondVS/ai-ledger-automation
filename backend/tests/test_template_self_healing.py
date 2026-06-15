@@ -1,3 +1,4 @@
+from unittest import skip
 from unittest.mock import patch
 
 from apps.ledgers.models import Ledger, MerchantTemplate, TemplateExecutionHistory
@@ -5,6 +6,7 @@ from apps.ledgers.services.promotion import demote_template
 from django.test import TestCase
 
 
+@skip("Self healing is deprecated in v1.20")
 class TemplateSelfHealingTestCase(TestCase):
     """
     [T014] TemplateSelfHealingTestCase

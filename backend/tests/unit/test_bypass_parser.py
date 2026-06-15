@@ -1,8 +1,11 @@
+from unittest import skip
+
 from apps.ledgers.models import MerchantTemplate
 from django.test import TestCase
 from utils.bypass_parser import BypassParser
 
 
+@skip("BypassParser is deprecated in v1.20")
 class BypassParserTestCase(TestCase):
     """
     [T009] BypassParser 비즈니스 로직 테스트 케이스

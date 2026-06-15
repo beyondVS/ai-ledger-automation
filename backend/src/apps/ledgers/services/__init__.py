@@ -183,13 +183,14 @@ class LedgerService:
     def ingest_receipt(self, user, image_file, existing_job=None):
         import re
 
+        from apps.ledgers.exceptions import DuplicatePaymentError
         from apps.ledgers.models import Ledger, ReceiptUploadJob
-        from utils.bypass_parser import BypassParser
+        from apps.ledgers.services.ocr import extract_text_from_image, extract_text_from_pdf
         from utils.image_processor import ImageProcessor
 
-        raw_ocr_text = None
+        raw_ocr_text = ""
 
-        # 1. 3주차 호환 작업 추적 Job 생성 또는 기존 Job 재사용
+        # 1. 작업 추적 Job 생성 또는 기존 Job 재사용
         if existing_job:
             job = existing_job
             if getattr(image_file, "name", None):
@@ -200,92 +201,79 @@ class LedgerService:
                 user=user, status="PENDING", raw_file_name=getattr(image_file, "name", "unknown_receipt.jpg")
             )
 
+        job.status = "PROCESSING"
+        job.save()
+
         try:
             parsed_data = None
-            used_bypass = False
             file_name = getattr(image_file, "name", "").lower()
+            is_pdf = file_name.endswith(".pdf")
 
-            # 0. PDF인 경우 선행적으로 내부 텍스트 추출 수행 (바이패스용 raw_ocr_text 확보)
-            if file_name.endswith(".pdf"):
-                try:
-                    import fitz
-
-                    image_file.seek(0)
-                    pdf_bytes = image_file.read()
-                    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-                    extracted_text = ""
-                    for page in doc:
-                        extracted_text += page.get_text()
-                    if extracted_text.strip():
-                        raw_ocr_text = extracted_text
-                except Exception as pdf_err:
-                    logger.warning(f"PDF 텍스트 추출 중 에러 발생: {str(pdf_err)}")
+            # ----------------------------------------------------
+            # 1단계: Local OCR + 로컬 Ollama 파싱
+            # ----------------------------------------------------
+            # 1-1. OCR 텍스트 추출
+            if is_pdf:
+                raw_ocr_text = extract_text_from_pdf(image_file)
             else:
-                try:
-                    import pytesseract
-                    from PIL import Image
+                raw_ocr_text = extract_text_from_image(image_file)
 
-                    image_file.seek(0)
-                    img = Image.open(image_file)
-                    extracted_text = pytesseract.image_to_string(img, lang="kor+eng")
-                    if extracted_text and extracted_text.strip():
-                        raw_ocr_text = extracted_text
-                except Exception as img_err:
-                    logger.warning(f"이미지 OCR 텍스트 추출 중 에러 발생 (Tesseract 미설치 시 무시됨): {str(img_err)}")
+            # 1-2. 텍스트가 확보된 경우 로컬 Ollama 파싱 시도
+            if raw_ocr_text and raw_ocr_text.strip():
+                logger.info("1단계: 로컬 OCR 텍스트 확보 성공, Ollama 파싱을 시도합니다.")
+                parsed_data = self.llm_client.parse_receipt_local(raw_ocr_text)
 
-            # 2. 1차 로컬 바이패스 파싱 시도 (OCR 텍스트 및 10자리 사업자등록번호 감지 시)
-            should_demote_template = None
-            demote_reason = None
+            # 1-3. 로컬 Ollama 파싱 성공 시 DB 적재 및 종료
+            if parsed_data:
+                logger.info("1단계 로컬 Ollama 파싱 성공. DB 적재를 시작합니다.")
+            else:
+                # ----------------------------------------------------
+                # 2단계: Cloud Text-only Fallback
+                # ----------------------------------------------------
+                if raw_ocr_text and raw_ocr_text.strip():
+                    logger.info("2단계: 1단계 실패로 인해 Gemini Text-only 폴백을 시도합니다.")
+                    parsed_data = self.llm_client.parse_receipt_cloud_text(raw_ocr_text)
 
-            if raw_ocr_text:
-                biz_num_match = re.search(r"\d{10}", raw_ocr_text.replace("-", ""))
-                if biz_num_match:
-                    biz_num = biz_num_match.group(0)
+            # 1단계 혹은 2단계 파싱 성공 시 DB 적재 및 종료
+            if parsed_data:
+                logger.info("1/2단계 텍스트 파싱 성공. DB 적재를 시작합니다.")
+                raw_biz_num = parsed_data.vendor_registration_number
+                clean_biz_num = re.sub(r"\D", "", str(raw_biz_num))[:10]
+                parsed_data.vendor_registration_number = clean_biz_num or "0000000000"
 
-                    # T018: 검증 완료된 기존 템플릿이 바이패스 대상인지 사전 확인
-                    from apps.ledgers.models import MerchantTemplate
+                res = create_ledger_transactional(
+                    user_id=str(user.id),
+                    receipt_data=parsed_data,
+                    user_timezone=user.timezone,
+                    raw_llm_response=parsed_data.model_dump(),
+                )
 
-                    existing_verified_template = MerchantTemplate.verified_objects.get_bypass_rule(biz_num)
+                ledger = Ledger.objects.prefetch_related("items").get(id=res["ledger_id"])
+                job.ledger = ledger
+                job.status = "COMPLETED"
+                job.save()
 
-                    try:
-                        parsed_data = BypassParser.try_bypass_parsing(
-                            raw_ocr_text, biz_num, user_timezone=user.timezone
-                        )
-                    except Exception as parse_err:
-                        parsed_data = None
-                        logger.warning(f"Bypass parsing exception occurred: {str(parse_err)}")
-                        demote_reason = f"Bypass parsing exception: {str(parse_err)}"
+                return {"status": "COMPLETED", "job_id": None, "ledger": ledger}
 
-                    # 기존에 승인된 템플릿이 있었으나 바이패스 파싱에 실패한 경우 강등 대상으로 지정
-                    if existing_verified_template and not parsed_data:
-                        should_demote_template = existing_verified_template
-                        if not demote_reason:
-                            demote_reason = (
-                                "Bypass parser returned None (likely regex match failure or validation error)."
-                            )
+            # ----------------------------------------------------
+            # 1/2단계 모두 실패 시 3단계 Gemini Vision 폴백 가동
+            # ----------------------------------------------------
+            logger.info("1/2단계 파싱 실패 또는 텍스트 없음. 3단계 Gemini Vision 폴백을 시도합니다.")
+            if is_pdf:
+                import io
 
-                    if parsed_data:
-                        used_bypass = True
+                image_file.seek(0)
+                file_buffer = io.BytesIO(image_file.read())
+                mime_type = "application/pdf"
+            else:
+                file_buffer = ImageProcessor.process_image_to_webp(image_file, quality=80)
+                mime_type = "image/webp"
 
-            # 3. 로컬 바이패스 실패 시 2차 Pillow WebP 이미지 변환 및 Gemini API 폴백 가동
+            parsed_data = self.llm_client.parse_receipt_cloud_vision(file_buffer, mime_type=mime_type)
+
             if not parsed_data:
-                if file_name.endswith(".pdf"):
-                    import io
+                raise ValueError("Gemini Vision API 영수증 분석 결과 획득 실패")
 
-                    image_file.seek(0)
-                    pdf_buffer = io.BytesIO(image_file.read())
-                    parsed_data = self.llm_client.parse_receipt(pdf_buffer, mime_type="application/pdf")
-                else:
-                    webp_buffer = ImageProcessor.process_image_to_webp(image_file, quality=80)
-                    parsed_data = self.llm_client.parse_receipt(webp_buffer, mime_type="image/webp")
-
-                if not parsed_data:
-                    raise ValueError("Gemini API 영수증 분석 결과 획득 실패")
-
-            if isinstance(parsed_data, dict):
-                parsed_data = ReceiptSchema(**parsed_data)
-
-            # 5. 원자적 트랜잭션 함수 호출 (안전한 적재 및 롤백 보장)
             raw_biz_num = parsed_data.vendor_registration_number
             clean_biz_num = re.sub(r"\D", "", str(raw_biz_num))[:10]
             parsed_data.vendor_registration_number = clean_biz_num or "0000000000"
@@ -294,92 +282,13 @@ class LedgerService:
                 user_id=str(user.id),
                 receipt_data=parsed_data,
                 user_timezone=user.timezone,
-                raw_llm_response=parsed_data.model_dump() if not used_bypass else None,
+                raw_llm_response=parsed_data.model_dump(),
             )
 
-            # 6. 생성 완료 인스턴스 로드 및 작업 상태 반영
             ledger = Ledger.objects.prefetch_related("items").get(id=res["ledger_id"])
             job.ledger = ledger
             job.status = "COMPLETED"
             job.save()
-
-            # T018: 파서 에러 감지 시 demote_template를 호출하여 즉시 강등 및 자가치유 트리거 연동
-            if should_demote_template:
-                from apps.ledgers.services.promotion import demote_template
-
-                # 수동 정정이 아니므로 total_amount 정보를 기반으로 자가치유에 참고할 수 있는 dummy diff를 전달합니다.
-                dummy_diff = [{"field": "total_amount", "before": 0.0, "after": float(ledger.total_amount)}]
-                demote_template(
-                    template=should_demote_template,
-                    ledger=ledger,
-                    error_message=demote_reason,
-                    corrected_diff=dummy_diff,
-                    ocr_text=raw_ocr_text,
-                )
-
-            # 7. 실행 히스토리 (TemplateExecutionHistory) 적재
-            from apps.ledgers.models import MerchantTemplate, TemplateExecutionHistory
-
-            template = MerchantTemplate.objects.filter(
-                vendor_registration_number=parsed_data.vendor_registration_number
-            ).first()
-            if template:
-                TemplateExecutionHistory.objects.create(
-                    template=template,
-                    ledger=ledger,
-                    parsing_mode="BYPASS" if used_bypass else "LLM",
-                    is_success=True,
-                    user_corrected=False,
-                    corrected_diff=None,
-                )
-
-            # 8. 신규 가맹점 캐시 템플릿 자동 제안 및 일관성 기반 승격 처리 (Bypass 미적용 시)
-            if not used_bypass:
-                # 템플릿이 이미 미검증 상태로 존재하는 경우 일관성 판단 루프 진입
-                if template:
-                    if not template.is_verified and not template.is_blacklisted:
-                        # proposed_rules 추출
-                        proposed_rules = {
-                            "date_pattern": parsed_data.proposed_date_pattern,
-                            "amount_pattern": parsed_data.proposed_amount_pattern,
-                            "default_category": parsed_data.category,
-                            "default_items": [
-                                {"name": item.item_name, "quantity": item.quantity, "price": item.unit_price}
-                                for item in parsed_data.items
-                            ],
-                        }
-                        if not proposed_rules["date_pattern"] or not proposed_rules["amount_pattern"]:
-                            proposed_rules["date_pattern"] = (
-                                r"일시:\s*([\d\-\s:]+)"
-                                if not proposed_rules["date_pattern"]
-                                else proposed_rules["date_pattern"]
-                            )
-                            proposed_rules["amount_pattern"] = (
-                                r"(?:합계|금액|결제금액|받을금액):\s*([\d,]+)"
-                                if not proposed_rules["amount_pattern"]
-                                else proposed_rules["amount_pattern"]
-                            )
-
-                        from apps.ledgers.services.promotion import promote_template_if_consistent
-
-                        promote_template_if_consistent(template, proposed_rules)
-                else:
-                    # 템플릿이 아예 존재하지 않는 경우 신규 제안 등록
-                    new_template = BypassParser.propose_new_template(
-                        vendor_registration_number=parsed_data.vendor_registration_number,
-                        vendor_name=parsed_data.vendor_name,
-                        parsed_data=parsed_data,
-                    )
-                    if new_template and raw_ocr_text:
-                        from apps.tasks.tasks import verify_proposed_regex_task
-
-                        verify_proposed_regex_task.delay(
-                            template_id=str(new_template.id),
-                            ocr_text=raw_ocr_text,
-                            expected_date_raw=parsed_data.transaction_date,
-                            expected_amount=parsed_data.total_amount,
-                            user_timezone=user.timezone,
-                        )
 
             return {"status": "COMPLETED", "job_id": None, "ledger": ledger}
 
@@ -391,7 +300,6 @@ class LedgerService:
             return {"status": "FAILED", "reason": "Duplicate transaction detected"}
 
         except IntegrityError as ie:
-            # 혹시 모를 기타 DB IntegrityError 발생 시
             logger.warning(f"ingest_receipt integrity error: {str(ie)}")
             job.status = "FAILED"
             job.save()
@@ -401,5 +309,4 @@ class LedgerService:
             logger.error(f"ingest_receipt system error: {str(e)}", exc_info=True)
             job.status = "FAILED"
             job.save()
-            # 뷰 단에서 422 또는 500 처리할 수 있도록 ValueError 전파
             raise ValueError("영수증 이미지 분석 또는 데이터 파싱에 실패했습니다.") from e
