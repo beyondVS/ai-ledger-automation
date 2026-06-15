@@ -101,23 +101,3 @@ def extract_receipt_text_task(self, job_id: str, file_path: str):
                 pass
 
         raise exc
-
-
-@shared_task
-def verify_proposed_regex_task(
-    template_id: str, ocr_text: str, expected_date_raw: str, expected_amount: float, user_timezone: str = "Asia/Seoul"
-):
-    """
-    [v1.20 비활성화] 제안 정규식 검증 비동기 태스크는 비활성화되었습니다.
-    """
-    _ = (template_id, ocr_text, expected_date_raw, expected_amount, user_timezone)
-    return
-
-
-@shared_task
-def self_heal_template_task(template_id: str, ledger_id: str, corrected_diff: list, ocr_text: str = None):
-    """
-    [v1.20 비활성화] 자가 치유 비동기 태스크는 비활성화되었습니다.
-    """
-    _ = (template_id, ledger_id, corrected_diff, ocr_text)
-    return False

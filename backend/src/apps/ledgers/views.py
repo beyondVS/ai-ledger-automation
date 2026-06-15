@@ -296,22 +296,6 @@ class ReceiptDetailView(APIView):
                             "after": ledger.transaction_date.isoformat(),
                         }
                     )
-
-                if corrected_diff and ledger.vendor_registration_number != "0000000000":
-                    from apps.ledgers.models import MerchantTemplate
-                    from apps.ledgers.services.promotion import demote_template
-
-                    template = MerchantTemplate.objects.filter(
-                        vendor_registration_number=ledger.vendor_registration_number
-                    ).first()
-                    if template and template.is_verified:
-                        demote_template(
-                            template=template,
-                            ledger=ledger,
-                            error_message="User manual correction triggered demotion.",
-                            corrected_diff=corrected_diff,
-                        )
-
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"ReceiptDetailView PATCH Exception: {str(e)}", exc_info=True)
