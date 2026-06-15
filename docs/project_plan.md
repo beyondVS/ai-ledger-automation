@@ -521,7 +521,7 @@ networks:
 
 ### **6.4. 4주차: PWA 플랫폼 최적화, Web Push 및 프로덕션 배포 (22일차 \~ 29일차)**
 
-* [ ] **22일차:** 3단계 하이브리드 영수증 파싱 전략(3-Tier Hybrid Pipeline) 구축 및 기존 정규식 바이패스(Bypass) 템플릿 아키텍처 제거/정리.
+* [x] **22일차:** 3단계 하이브리드 영수증 파싱 전략(3-Tier Hybrid Pipeline) 구축 및 기존 정규식 바이패스(Bypass) 템플릿 아키텍처 제거/정리.
   * **1단계 (Local Hybrid)**: PDF(PyMuPDF) 또는 이미지(Tesseract)를 사용한 1차 로컬 OCR 문자열 획득 후, 로컬 Ollama `gemma4:e4b` 텍스트 모델을 통한 JSON 스키마 구조화 시도 (비용 0원 달성).
   * **2단계 (Cloud Text-only Fallback)**: 로컬 모델의 스키마 붕괴 또는 금액 정합성(Checksum) 검증 실패 시, 이미 확보된 로컬 OCR 문자열만 Gemini-2.5-Flash API로 전송하여 입력 이미지 토큰 비용을 95% 이상 절감하는 초저비용 구조화 시도.
   * **3단계 (Cloud Vision Fallback)**: 로컬 OCR 문자 추출 실패 또는 앞선 텍스트 파싱 오류 발생 시 최후의 보루로 영수증 원본 이미지(WebP 변환 데이터) 혹은 PDF를 Gemini-2.5-Flash 멀티모달로 송신하여 99% 파싱 무결성 수호.
