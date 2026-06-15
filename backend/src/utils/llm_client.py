@@ -36,13 +36,6 @@ COMMON_RECEIPT_PROMPT = (
     "   - 각 품목별 item_name(상세 품목명), unit_price(단가), quantity(수량, 1 이상의 정수), total_price(합계 금액, 단가 * 수량과 일치해야 함)를 정확히 누락 없이 매핑하세요."
 )
 
-LOCAL_TEXT_PROMPT_EXTENSION = (
-    "6. **동적 정규식 패턴 생성 (proposed_date_pattern, proposed_amount_pattern)**:\n"
-    "   - 제공받은 영수증 원본 텍스트 레이아웃을 기반으로, 추후 LLM 호출 없이 원본 텍스트에서 결제 일시(시간 정보가 있을 경우 가장 먼저 매칭되도록 파이프 '|' 연산자로 묶음)와 총 결제 금액을 정확히 추출해낼 수 있는 맞춤형 정규식 패턴을 지능적으로 설계하여 반환하세요.\n"
-    "   - 예 (proposed_date_pattern): `(?:날짜:\\s*\\d{4}년\\s*\\d{1,2}월\\s*\\d{1,2}일\\s*오[전후]\\s*\\d{1,2}:\\d{2}|주문일자:\\s*[0-9\\-]{10})`\n"
-    "   - 예 (proposed_amount_pattern): `(?:합계\\s*([0-9,]+)|금액:\\s*([0-9,]+))`"
-)
-
 
 class ReceiptItemSchema(BaseModel):
     item_name: str = Field(description="상세 품목명")
@@ -58,14 +51,6 @@ class ReceiptSchema(BaseModel):
     total_amount: float = Field(description="총 결제 금액")
     category: str = Field(description="지출 카테고리 (예: 식비, 생활용품, 쇼핑, 문화/여가, 교통, 기타 등)")
     items: list[ReceiptItemSchema] = Field(description="상세 품목 리스트")
-    proposed_date_pattern: str = Field(
-        default="",
-        description="제공된 영수증 원본 텍스트 내에서 본 결제 일시(이메일 시각 등 상세 시간 포함 구절 최우선 매칭)를 가장 정확히 캡처할 수 있는 정적 정규식 패턴",
-    )
-    proposed_amount_pattern: str = Field(
-        default="",
-        description="제공된 영수증 원본 텍스트 내에서 총 결제 금액을 가장 정확히 캡처할 수 있는 정적 정규식 패턴",
-    )
     approval_number: str | None = Field(default=None, description="결제 승인번호 (카드 승인번호 등, 없을 시 null)")
     order_id: str | None = Field(default=None, description="주문번호 또는 인보이스 ID, 없을 시 null")
 
@@ -157,11 +142,7 @@ class ReceiptLLMClient:
             is_ollama_target = not (gemini_enabled and gemini_api_key)
             target_model = "ollama-fallback" if not is_ollama_target else "receipt-analyzer"
 
-            prompt = (
-                COMMON_RECEIPT_PROMPT + "\n\n"
-                f"### OCR 텍스트:\n{raw_ocr_text}\n\n"
-                f"### 추가 포맷 규칙:\n{LOCAL_TEXT_PROMPT_EXTENSION}"
-            )
+            prompt = COMMON_RECEIPT_PROMPT + f"\n\n### OCR 텍스트:\n{raw_ocr_text}"
 
             messages = [
                 {
@@ -218,11 +199,7 @@ class ReceiptLLMClient:
                 )
                 return None
 
-            prompt = (
-                COMMON_RECEIPT_PROMPT + "\n\n"
-                f"### OCR 텍스트:\n{raw_ocr_text}\n\n"
-                f"### 추가 포맷 규칙:\n{LOCAL_TEXT_PROMPT_EXTENSION}"
-            )
+            prompt = COMMON_RECEIPT_PROMPT + f"\n\n### OCR 텍스트:\n{raw_ocr_text}"
 
             messages = [
                 {
