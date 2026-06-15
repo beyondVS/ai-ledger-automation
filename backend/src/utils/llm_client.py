@@ -10,6 +10,40 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
+COMMON_RECEIPT_PROMPT = (
+    "제공된 영수증 정보로부터 가맹점명, 사업자등록번호, 결제 일시, "
+    "총 결제 금액, 카테고리, 세부 품목 목록을 정확히 추출하여 지정된 JSON 스키마에 맞춰 반환해주세요.\n\n"
+    "### 반드시 준수해야 할 데이터 포맷 규칙:\n"
+    "1. **사업자등록번호 (vendor_registration_number)**:\n"
+    "   - 하이픈(-)이나 공백 등 일체의 구분기호를 생략하고 오직 '10자리의 순수한 숫자 문자열'만 출력하세요. (예: '1208612345')\n"
+    "   - **중요**: 해외 및 국외 상점(예: Epic Games, Apple, Steam 등)의 인보이스/영수증 본문이나 최하단에 표기된 'VAT Registration Number', 'VAT Reg No', 'VAT ID', 'Tax ID', 'GSTIN' 형식의 10자리 번호(예: '502-80-25057' 또는 'CHE-502.802.505' 등의 유사 패턴) 역시 국외 가맹점 사업자등록번호로 완벽하게 인식하고, 문자만 골라내어 10자리 숫자(예: '5028025057')로 변환해 추출해야 합니다.\n"
+    "   - 영수증 전체 영역에서 사업자등록번호 및 해외 VAT 등록번호가 완전히 보이지 않거나 식별 불가능할 경우에만 반드시 '0000000000'으로 채우세요.\n"
+    "2. **결제 일시 (transaction_date)**:\n"
+    "   - 타임존 정보가 배제된 영수증 상의 결제 로컬 시각을 YYYY-MM-DDTHH:MM:SS 형식 문자열로 출력하세요. (예: 'YYYY-MM-DDTHH:MM:SS')\n"
+    "   - **중요**: 만약 영수증 본문에는 날짜(예: '2026-06-11' 또는 '06/11/2026')만 적혀 있고 구체적인 결제 시간 정보가 없으나, 이메일 헤더 영역에 구체적인 수신 시각(예: '날짜: 2026년 6월 11일 오후 3:45')이 명시되어 있는 경우, 영수증의 날짜와 메일 헤더의 시간 정보(오전/오후 시:분을 24시간 형식 HH:MM:SS로 변환)를 지능적으로 병합하여 최종 결제 일시를 완성하세요.\n"
+    "   - 텍스트 전체에서 상세 결제/수신 시각 정보를 전혀 식별할 수 없는 경우에만 시간 부분을 '00:00:00'으로 채우세요. 시간대(Z 또는 +09:00 등)는 절대 문자열 끝에 추가하지 마십시오.\n"
+    "3. **지출 카테고리 (category)**:\n"
+    "   - 가맹점명과 상세 품목 목록을 분석하여 한국 가계부에서 널리 쓰이는 대분류 카테고리 중 가장 적합한 하나를 매핑하십시오.\n"
+    "   - 카테고리 목록 기준: **'식비'**, **'생활용품'**, **'쇼핑'**, **'교통'**, **'문화/여가'**, **'주거/통신'**, **'의료/건강'**, **'교육'**, **'기타'** 중 정확히 하나만 반환하세요.\n"
+    "     - 예: 스타벅스/식당 등 -> '식비'\n"
+    "     - 예: 에픽게임즈/넷플릭스 등 게임, OTT 결제 -> '문화/여가'\n"
+    "     - 예: 마트/편의점 생필품 결제 -> '생활용품'\n"
+    "     - 예: 의류/뷰티 몰 등 -> '쇼핑'\n"
+    "   - **중요**: '미분류'라는 단어는 절대 사용하거나 생성하지 마십시오. 카테고리를 특정하기 곤란할 경우 반드시 **'기타'**를 반환하십시오.\n"
+    "4. **수치 데이터 (total_amount, unit_price, total_price)**:\n"
+    "   - 쉼표(,), 원화 기호(₩, 원), 달러 기호($) 등 일체의 통화 서식이나 특수문자를 배제하고 오직 '순수한 숫자(float 또는 int)'로만 출력하세요. (예: 15000.00)\n"
+    "5. **세부 품목 (items)**:\n"
+    "   - 각 품목별 item_name(상세 품목명), unit_price(단가), quantity(수량, 1 이상의 정수), total_price(합계 금액, 단가 * 수량과 일치해야 함)를 정확히 누락 없이 매핑하세요."
+)
+
+LOCAL_TEXT_PROMPT_EXTENSION = (
+    "6. **동적 정규식 패턴 생성 (proposed_date_pattern, proposed_amount_pattern)**:\n"
+    "   - 제공받은 영수증 원본 텍스트 레이아웃을 기반으로, 추후 LLM 호출 없이 원본 텍스트에서 결제 일시(시간 정보가 있을 경우 가장 먼저 매칭되도록 파이프 '|' 연산자로 묶음)와 총 결제 금액을 정확히 추출해낼 수 있는 맞춤형 정규식 패턴을 지능적으로 설계하여 반환하세요.\n"
+    "   - 예 (proposed_date_pattern): `(?:날짜:\\s*\\d{4}년\\s*\\d{1,2}월\\s*\\d{1,2}일\\s*오[전후]\\s*\\d{1,2}:\\d{2}|주문일자:\\s*[0-9\\-]{10})`\n"
+    "   - 예 (proposed_amount_pattern): `(?:합계\\s*([0-9,]+)|금액:\\s*([0-9,]+))`"
+)
+
+
 class ReceiptItemSchema(BaseModel):
     item_name: str = Field(description="상세 품목명")
     unit_price: float = Field(description="품목 단가 (음수 불가)")
@@ -107,136 +141,6 @@ class ReceiptLLMClient:
             allowed_fails=1,
         )
 
-    def parse_receipt(self, file_buffer: io.BytesIO, mime_type: str = "image/webp") -> ReceiptSchema | None:
-        """
-        LiteLLM Router를 통해 통일된 규격(base64 image_url)으로 영수증 구조화 데이터를 추출합니다.
-        """
-        try:
-            file_bytes = file_buffer.getvalue()
-            if not file_bytes:
-                logger.error("파일 버퍼 바이트가 비어 있습니다.")
-                return None
-
-            # 1. 대상 식별 (GEMINI_ENABLED 스위치 및 API KEY의 존재 여부 기준)
-            gemini_enabled = getattr(settings, "GEMINI_ENABLED", False)
-            gemini_api_key = getattr(settings, "GEMINI_API_KEY", None) or os.environ.get("GEMINI_API_KEY")
-            is_ollama_target = not (gemini_enabled and gemini_api_key)
-
-            pdf_pages_base64 = []
-            if is_ollama_target and mime_type == "application/pdf":
-                logger.info("로컬 Ollama 가동 감지: PDF 영수증을 다중 페이지 PNG 이미지들로 가상 렌더링합니다.")
-                try:
-                    import fitz  # PyMuPDF
-
-                    doc = fitz.open(stream=file_bytes, filetype="pdf")
-                    if doc.page_count > 0:
-                        for page in doc:
-                            pix = page.get_pixmap(dpi=150)
-                            png_bytes = pix.tobytes("png")
-                            pdf_pages_base64.append(base64.b64encode(png_bytes).decode("utf-8"))
-                    else:
-                        logger.error("PDF 파일에 페이지가 존재하지 않습니다.")
-                        return None
-                except Exception as e:
-                    logger.exception(f"PDF 로컬 이미지 변환 중 오류 발생: {str(e)}")
-                    return None
-            else:
-                pdf_pages_base64.append(base64.b64encode(file_bytes).decode("utf-8"))
-
-            prompt = (
-                "제공된 영수증 파일의 비주얼 정보로부터 가맹점명, 사업자등록번호, 결제 일시, "
-                "총 결제 금액, 카테고리, 세부 품목 목록을 정확히 추출하여 지정된 JSON 스키마에 맞춰 반환해주세요.\n\n"
-                "### 반드시 준수해야 할 데이터 포맷 규칙:\n"
-                "1. **사업자등록번호 (vendor_registration_number)**:\n"
-                "   - 하이픈(-)이나 공백 등 일체의 구분기호를 생략하고 오직 '10자리의 순수한 숫자 문자열'만 출력하세요. (예: '1208612345')\n"
-                "   - **중요**: 해외 및 국외 상점(예: Epic Games, Apple, Steam 등)의 인보이스/영수증 본문이나 최하단에 표기된 'VAT Registration Number', 'VAT Reg No', 'VAT ID', 'Tax ID', 'GSTIN' 형식의 10자리 번호(예: '502-80-25057' 또는 'CHE-502.802.505' 등의 유사 패턴) 역시 국외 가맹점 사업자등록번호로 완벽하게 인식하고, 문자만 골라내어 10자리 숫자(예: '5028025057')로 변환해 추출해야 합니다.\n"
-                "   - 영수증 전체 영역에서 사업자등록번호 및 해외 VAT 등록번호가 완전히 보이지 않거나 식별 불가능할 경우에만 반드시 '0000000000'으로 채우세요.\n"
-                "2. **결제 일시 (transaction_date)**:\n"
-                "   - 타임존 정보가 배제된 영수증 상의 결제 로컬 시각을 YYYY-MM-DDTHH:MM:SS 형식 문자열로 출력하세요. (예: 'YYYY-MM-DDTHH:MM:SS')\n"
-                "   - **중요**: 만약 영수증 본문에는 날짜(예: '2026-06-11' 또는 '06/11/2026')만 적혀 있고 구체적인 결제 시간 정보가 없으나, 이메일 헤더 영역에 구체적인 수신 시각(예: '날짜: 2026년 6월 11일 오후 3:45')이 명시되어 있는 경우, 영수증의 날짜와 메일 헤더의 시간 정보(오전/오후 시:분을 24시간 형식 HH:MM:SS로 변환)를 지능적으로 병합하여 최종 결제 일시를 완성하세요.\n"
-                "   - 텍스트 전체에서 상세 결제/수신 시각 정보를 전혀 식별할 수 없는 경우에만 시간 부분을 '00:00:00'으로 채우세요. 시간대(Z 또는 +09:00 등)는 절대 문자열 끝에 추가하지 마십시오.\n"
-                "3. **지출 카테고리 (category)**:\n"
-                "   - 가맹점명과 상세 품목 목록을 분석하여 한국 가계부에서 널리 쓰이는 대분류 카테고리 중 가장 적합한 하나를 매핑하십시오.\n"
-                "   - 카테고리 목록 기준: **'식비'**, **'생활용품'**, **'쇼핑'**, **'교통'**, **'문화/여가'**, **'주거/통신'**, **'의료/건강'**, **'교육'**, **'기타'** 중 정확히 하나만 반환하세요.\n"
-                "     - 예: 스타벅스/식당 등 -> '식비'\n"
-                "     - 예: 에픽게임즈/넷플릭스 등 게임, OTT 결제 -> '문화/여가'\n"
-                "     - 예: 마트/편의점 생필품 결제 -> '생활용품'\n"
-                "     - 예: 의류/뷰티 몰 등 -> '쇼핑'\n"
-                "   - **중요**: '미분류'라는 단어는 절대 사용하거나 생성하지 마십시오. 카테고리를 특정하기 곤란할 경우 반드시 **'기타'**를 반환하십시오.\n"
-                "4. **수치 데이터 (total_amount, unit_price, total_price)**:\n"
-                "   - 쉼표(,), 원화 기호(₩, 원), 달러 기호($) 등 일체의 통화 서식이나 특수문자를 배제하고 오직 '순수한 숫자(float 또는 int)'로만 출력하세요. (예: 15000.00)\n"
-                "5. **세부 품목 (items)**:\n"
-                "   - 각 품목별 item_name(상세 품목명), unit_price(단가), quantity(수량, 1 이상의 정수), total_price(합계 금액, 단가 * 수량과 일치해야 함)를 정확히 누락 없이 매핑하세요.\n"
-                "6. **동적 정규식 패턴 생성 (proposed_date_pattern, proposed_amount_pattern)**:\n"
-                "   - 제공받은 영수증 원본 텍스트 레이아웃을 기반으로, 추후 LLM 호출 없이 원본 텍스트에서 결제 일시(시간 정보가 있을 경우 가장 먼저 매칭되도록 파이프 '|' 연산자로 묶음)와 총 결제 금액을 정확히 추출해낼 수 있는 맞춤형 정규식 패턴을 지능적으로 설계하여 반환하세요.\n"
-                "   - 예 (proposed_date_pattern): `(?:날짜:\\s*\\d{4}년\\s*\\d{1,2}월\\s*\\d{1,2}일\\s*오[전후]\\s*\\d{1,2}:\\d{2}|주문일자:\\s*[0-9\\-]{10})`\n"
-                "   - 예 (proposed_amount_pattern): `(?:합계\\s*([0-9,]+)|금액:\\s*([0-9,]+))`"
-            )
-
-            # 2. Gemini가 활성화된 경우 우선 시도
-            if not is_ollama_target:
-                image_url_value = f"data:{mime_type};base64,{pdf_pages_base64[0]}"
-                messages = [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": image_url_value}},
-                        ],
-                    }
-                ]
-                try:
-                    logger.info("Gemini API를 통해 영수증 분석 시도 중...")
-                    response = self.router.completion(
-                        model="receipt-analyzer",
-                        messages=messages,
-                        response_format=ReceiptSchema,
-                        temperature=0.1,
-                    )
-                    response_text = response.choices[0].message.content
-                    if response_text:
-                        parsed_data = ReceiptSchema.model_validate_json(response_text)
-                        logger.info(f"Gemini 영수증 파싱 성공: {parsed_data.vendor_name}")
-                        return parsed_data
-                except Exception as gemini_err:
-                    logger.warning(f"Gemini API 분석 실패로 로컬 Ollama 폴백을 기동합니다. 사유: {str(gemini_err)}")
-
-            # 3. 로컬 Ollama 단독 기동 혹은 Gemini 실패 시의 폴백 기동
-            # Ollama는 접두사(prefix)가 없어야 디코딩 오류가 발생하지 않습니다.
-            content_list = [{"type": "text", "text": prompt}]
-            for img_b64 in pdf_pages_base64:
-                content_list.append({"type": "image_url", "image_url": {"url": img_b64}})
-
-            messages = [
-                {
-                    "role": "user",
-                    "content": content_list,
-                }
-            ]
-
-            target_model = "ollama-fallback" if not is_ollama_target else "receipt-analyzer"
-            logger.info(f"Ollama API ({target_model})를 통해 영수증 분석 시도 중...")
-
-            response = self.router.completion(
-                model=target_model,
-                messages=messages,
-                response_format=ReceiptSchema,
-                temperature=0.1,
-            )
-
-            response_text = response.choices[0].message.content
-            if not response_text:
-                logger.error("API가 빈 응답을 반환했습니다.")
-                return None
-
-            parsed_data = ReceiptSchema.model_validate_json(response_text)
-            logger.info(f"Ollama 영수증 파싱 성공: {parsed_data.vendor_name}")
-            return parsed_data
-
-        except Exception as e:
-            logger.exception(f"영수증 분석 중 오류 발생: {str(e)}")
-            return None
-
     def parse_receipt_local(self, raw_ocr_text: str) -> ReceiptSchema | None:
         """
         로컬 OCR 텍스트를 입력받아 로컬 Ollama 모델(gemma4:e4b)을 호출해 JSON 스키마로 구조화하고,
@@ -254,23 +158,9 @@ class ReceiptLLMClient:
             target_model = "ollama-fallback" if not is_ollama_target else "receipt-analyzer"
 
             prompt = (
-                "제공된 영수증의 OCR 텍스트로부터 가맹점명, 사업자등록번호, 결제 일시, "
-                "총 결제 금액, 카테고리, 세부 품목 목록을 정확히 추출하여 지정된 JSON 스키마에 맞춰 반환해주세요.\n\n"
+                COMMON_RECEIPT_PROMPT + "\n\n"
                 f"### OCR 텍스트:\n{raw_ocr_text}\n\n"
-                "### 반드시 준수해야 할 데이터 포맷 규칙:\n"
-                "1. **사업자등록번호 (vendor_registration_number)**:\n"
-                "   - 하이픈(-)이나 공백 등 일체의 구분기호를 생략하고 오직 '10자리의 순수한 숫자 문자열'만 출력하세요. (예: '1208612345')\n"
-                "   - 사업자등록번호가 보이지 않거나 식별 불가능할 경우 반드시 '0000000000'으로 채우세요.\n"
-                "2. **결제 일시 (transaction_date)**:\n"
-                "   - 타임존 정보가 배제된 영수증 상의 결제 로컬 시각을 YYYY-MM-DDTHH:MM:SS 형식 문자열로 출력하세요. (예: 'YYYY-MM-DDTHH:MM:SS')\n"
-                "   - 텍스트 전체에서 상세 결제 시각 정보를 전혀 식별할 수 없는 경우에만 시간 부분을 '00:00:00'으로 채우세요.\n"
-                "3. **지출 카테고리 (category)**:\n"
-                "   - 가맹점명과 상세 품목 목록을 분석하여 한국 가계부에서 널리 쓰이는 대분류 카테고리 중 가장 적합한 하나를 매핑하십시오.\n"
-                "   - 카테고리 목록 기준: '식비', '생활용품', '쇼핑', '교통', '문화/여가', '주거/통신', '의료/건강', '교육', '기타' 중 정확히 하나만 반환하세요. '미분류'는 금지되며 식별 불가능 시 '기타'를 사용하세요.\n"
-                "4. **수치 데이터 (total_amount, unit_price, total_price)**:\n"
-                "   - 쉼표(,), 원화 기호(₩, 원), 달러 기호($) 등 일체의 통화 서식이나 특수문자를 배제하고 오직 '순수한 숫자(float 또는 int)'로만 출력하세요.\n"
-                "5. **세부 품목 (items)**:\n"
-                "   - 각 품목별 item_name(상세 품목명), unit_price(단가), quantity(수량, 1 이상의 정수), total_price(합계 금액, 단가 * 수량과 일치해야 함)를 정확히 누락 없이 매핑하세요."
+                f"### 추가 포맷 규칙:\n{LOCAL_TEXT_PROMPT_EXTENSION}"
             )
 
             messages = [
@@ -329,23 +219,9 @@ class ReceiptLLMClient:
                 return None
 
             prompt = (
-                "제공된 영수증의 OCR 텍스트로부터 가맹점명, 사업자등록번호, 결제 일시, "
-                "총 결제 금액, 카테고리, 세부 품목 목록을 정확히 추출하여 지정된 JSON 스키마에 맞춰 반환해주세요.\n\n"
+                COMMON_RECEIPT_PROMPT + "\n\n"
                 f"### OCR 텍스트:\n{raw_ocr_text}\n\n"
-                "### 반드시 준수해야 할 데이터 포맷 규칙:\n"
-                "1. **사업자등록번호 (vendor_registration_number)**:\n"
-                "   - 하이픈(-)이나 공백 등 일체의 구분기호를 생략하고 오직 '10자리의 순수한 숫자 문자열'만 출력하세요. (예: '1208612345')\n"
-                "   - 사업자등록번호가 보이지 않거나 식별 불가능할 경우 반드시 '0000000000'으로 채우세요.\n"
-                "2. **결제 일시 (transaction_date)**:\n"
-                "   - 타임존 정보가 배제된 영수증 상의 결제 로컬 시각을 YYYY-MM-DDTHH:MM:SS 형식 문자열로 출력하세요. (예: 'YYYY-MM-DDTHH:MM:SS')\n"
-                "   - 텍스트 전체에서 상세 결제 시각 정보를 전혀 식별할 수 없는 경우에만 시간 부분을 '00:00:00'으로 채우세요.\n"
-                "3. **지출 카테고리 (category)**:\n"
-                "   - 가맹점명과 상세 품목 목록을 분석하여 한국 가계부에서 널리 쓰이는 대분류 카테고리 중 가장 적합한 하나를 매핑하십시오.\n"
-                "   - 카테고리 목록 기준: '식비', '생활용품', '쇼핑', '교통', '문화/여가', '주거/통신', '의료/건강', '교육', '기타' 중 정확히 하나만 반환하세요. '미분류'는 금지되며 식별 불가능 시 '기타'를 사용하세요.\n"
-                "4. **수치 데이터 (total_amount, unit_price, total_price)**:\n"
-                "   - 쉼표(,), 원화 기호(₩, 원), 달러 기호($) 등 일체의 통화 서식이나 특수문자를 배제하고 오직 '순수한 숫자(float 또는 int)'로만 출력하세요.\n"
-                "5. **세부 품목 (items)**:\n"
-                "   - 각 품목별 item_name(상세 품목명), unit_price(단가), quantity(수량, 1 이상의 정수), total_price(합계 금액, 단가 * 수량과 일치해야 함)를 정확히 누락 없이 매핑하세요."
+                f"### 추가 포맷 규칙:\n{LOCAL_TEXT_PROMPT_EXTENSION}"
             )
 
             messages = [
@@ -391,16 +267,6 @@ class ReceiptLLMClient:
         Gemini-2.5-Flash Vision API를 호출해 JSON 스키마로 구조화하고,
         금액 검증 통과 시 결과를 반환합니다. PDF인 경우 이미지 변환 없이 그대로 API로 전송합니다.
         """
-        # [하위 호환성 수호] 테스트 환경에서 parse_receipt가 mock으로 패치되어 있는 경우 mock을 호출해 호환성을 보장합니다.
-        import unittest.mock
-
-        if isinstance(self.parse_receipt, unittest.mock.Mock):
-            logger.info("테스트 모킹 감지: parse_receipt mock을 대신 호출하여 하위 호환성을 보장합니다.")
-            mock_res = self.parse_receipt(file_buffer, mime_type)
-            if mock_res and isinstance(mock_res, dict):
-                return ReceiptSchema(**mock_res)
-            return mock_res
-
         try:
             file_bytes = file_buffer.getvalue()
             if not file_bytes:
@@ -409,72 +275,81 @@ class ReceiptLLMClient:
 
             gemini_enabled = getattr(settings, "GEMINI_ENABLED", False)
             gemini_api_key = getattr(settings, "GEMINI_API_KEY", None) or os.environ.get("GEMINI_API_KEY")
-            if not gemini_enabled or not gemini_api_key:
-                logger.warning(
-                    "Gemini API가 활성화되어 있지 않거나 API 키가 없어 3단계 클라우드 비전 파싱을 건너뜁니다."
-                )
-                return None
+
+            prompt = COMMON_RECEIPT_PROMPT
+            parsed_data = None
 
             # base64 인코딩
             base64_data = base64.b64encode(file_bytes).decode("utf-8")
 
-            prompt = (
-                "제공된 영수증 파일의 비주얼 정보로부터 가맹점명, 사업자등록번호, 결제 일시, "
-                "총 결제 금액, 카테고리, 세부 품목 목록을 정확히 추출하여 지정된 JSON 스키마에 맞춰 반환해주세요.\n\n"
-                "### 반드시 준수해야 할 데이터 포맷 규칙:\n"
-                "1. **사업자등록번호 (vendor_registration_number)**:\n"
-                "   - 하이픈(-)이나 공백 등 일체의 구분기호를 생략하고 오직 '10자리의 순수한 숫자 문자열'만 출력하세요. (예: '1208612345')\n"
-                "   - 사업자등록번호가 보이지 않거나 식별 불가능할 경우 반드시 '0000000000'으로 채우세요.\n"
-                "2. **결제 일시 (transaction_date)**:\n"
-                "   - 타임존 정보가 배제된 영수증 상의 결제 로컬 시각을 YYYY-MM-DDTHH:MM:SS 형식 문자열로 출력하세요. (예: 'YYYY-MM-DDTHH:MM:SS')\n"
-                "   - 텍스트 전체에서 상세 결제 시각 정보를 전혀 식별할 수 없는 경우에만 시간 부분을 '00:00:00'으로 채우세요. 시간대(Z 또는 +09:00 등)는 절대 문자열 끝에 추가하지 마십시오.\n"
-                "3. **지출 카테고리 (category)**:\n"
-                "   - 가맹점명과 상세 품목 목록을 분석하여 한국 가계부에서 널리 쓰이는 대분류 카테고리 중 가장 적합한 하나를 매핑하십시오.\n"
-                "   - 카테고리 목록 기준: '식비', '생활용품', '쇼핑', '교통', '문화/여가', '주거/통신', '의료/건강', '교육', '기타' 중 정확히 하나만 반환하세요. '미분류'는 금지되며 식별 불가능 시 '기타'를 사용하세요.\n"
-                "4. **수치 데이터 (total_amount, unit_price, total_price)**:\n"
-                "   - 쉼표(,), 원화 기호(₩, 원), 달러 기호($) 등 일체의 통화 서식이나 특수문자를 배제하고 오직 '순수한 숫자(float 또는 int)'로만 출력하세요.\n"
-                "5. **세부 품목 (items)**:\n"
-                "   - 각 품목별 item_name(상세 품목명), unit_price(단가), quantity(수량, 1 이상의 정수), total_price(합계 금액, 단가 * 수량과 일치해야 함)를 정확히 누락 없이 매핑하세요."
-            )
+            # 1. Gemini가 활성화된 경우 우선 시도 (접두사 포함하여 송신)
+            if gemini_enabled and gemini_api_key:
+                image_url_value = f"data:{mime_type};base64,{base64_data}"
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": image_url_value}},
+                        ],
+                    }
+                ]
+                try:
+                    logger.info("Gemini API (Vision)를 통해 멀티모달 영수증 분석 시도 중...")
+                    response = self.router.completion(
+                        model="receipt-analyzer",
+                        messages=messages,
+                        response_format=ReceiptSchema,
+                        temperature=0.1,
+                    )
+                    response_text = response.choices[0].message.content
+                    if response_text:
+                        parsed_data = ReceiptSchema.model_validate_json(response_text)
+                        logger.info(f"Gemini Vision 영수증 파싱 성공: {parsed_data.vendor_name}")
+                except Exception as gemini_err:
+                    logger.warning(
+                        f"Gemini Vision API 분석 실패로 로컬 Ollama 폴백을 기동합니다. 사유: {str(gemini_err)}"
+                    )
 
-            # litellm multi-modal input format
-            image_url_value = f"data:{mime_type};base64,{base64_data}"
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": image_url_value}},
-                    ],
-                }
-            ]
+            # 2. 로컬 Ollama 단독 기동 혹은 Gemini 실패 시의 폴백 기동 (접두사 제거하여 송신)
+            if not parsed_data:
+                # Ollama는 접두사(prefix)가 없어야 디코딩 오류가 발생하지 않습니다.
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": base64_data}},
+                        ],
+                    }
+                ]
+                target_model = "ollama-fallback" if (gemini_enabled and gemini_api_key) else "receipt-analyzer"
+                logger.info(f"Ollama API ({target_model})를 통해 멀티모달 영수증 분석 시도 중...")
+                response = self.router.completion(
+                    model=target_model,
+                    messages=messages,
+                    response_format=ReceiptSchema,
+                    temperature=0.1,
+                )
+                response_text = response.choices[0].message.content
+                if response_text:
+                    parsed_data = ReceiptSchema.model_validate_json(response_text)
+                    logger.info(f"Ollama Vision 영수증 파싱 성공: {parsed_data.vendor_name}")
 
-            logger.info("Gemini API (Vision)를 통해 멀티모달 영수증 분석 시도 중...")
-            response = self.router.completion(
-                model="receipt-analyzer",
-                messages=messages,
-                response_format=ReceiptSchema,
-                temperature=0.1,
-            )
-
-            response_text = response.choices[0].message.content
-            if not response_text:
-                logger.error("Gemini API가 빈 응답을 반환했습니다.")
+            if not parsed_data:
+                logger.error("비전 분석 결과 획득 실패")
                 return None
-
-            parsed_data = ReceiptSchema.model_validate_json(response_text)
 
             # 상세 품목의 합산 금액 정합성(오차 0원) 검증
             items_sum = sum(item.total_price for item in parsed_data.items)
             if round(items_sum, 2) != round(parsed_data.total_amount, 2):
                 logger.warning(
-                    f"Gemini Vision 파싱 실패: 상세 품목 합산 금액({items_sum})과 총액({parsed_data.total_amount})이 일치하지 않습니다."
+                    f"비전 파싱 실패: 상세 품목 합산 금액({items_sum})과 총액({parsed_data.total_amount})이 일치하지 않습니다."
                 )
                 return None
 
-            logger.info(f"Gemini Vision 영수증 파싱 성공: {parsed_data.vendor_name}")
             return parsed_data
 
         except Exception as e:
-            logger.exception(f"Gemini Vision 영수증 분석 중 오류 발생: {str(e)}")
+            logger.exception(f"비전 영수증 분석 중 오류 발생: {str(e)}")
             return None

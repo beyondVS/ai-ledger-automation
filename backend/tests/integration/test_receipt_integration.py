@@ -114,7 +114,7 @@ class TestReceiptIntegration(TestCase):
         # Mock LLM Client 응답 주입
         from utils.llm_client import ReceiptItemSchema, ReceiptSchema
 
-        service.llm_client.parse_receipt = lambda buf, mime_type: ReceiptSchema(
+        service.llm_client.parse_receipt_local = lambda raw_text: ReceiptSchema(
             vendor_registration_number="2208112345",
             vendor_name="이마트 역삼점",
             transaction_date="2026-06-11",
@@ -208,7 +208,7 @@ class TestReceiptIntegration(TestCase):
         # Mock LLM Client 응답 주입
         from utils.llm_client import ReceiptSchema
 
-        service.llm_client.parse_receipt = lambda buf, mime_type: ReceiptSchema(
+        service.llm_client.parse_receipt_local = lambda raw_text: ReceiptSchema(
             vendor_registration_number="9998877766",
             vendor_name="새로운마트 역삼점",
             transaction_date="2026-06-11",
