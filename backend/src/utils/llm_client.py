@@ -32,6 +32,8 @@ class ReceiptSchema(BaseModel):
         default="",
         description="제공된 영수증 원본 텍스트 내에서 총 결제 금액을 가장 정확히 캡처할 수 있는 정적 정규식 패턴",
     )
+    approval_number: str | None = Field(default=None, description="결제 승인번호 (카드 승인번호 등, 없을 시 null)")
+    order_id: str | None = Field(default=None, description="주문번호 또는 인보이스 ID, 없을 시 null")
 
 
 class ReceiptLLMClient:

@@ -85,7 +85,11 @@ def _normalize_datetime_string(datetime_str: str, user_timezone: str = "Asia/Seo
 
 
 def create_ledger_transactional(
-    user_id: str, receipt_data: ReceiptSchema, user_timezone: str = "Asia/Seoul", raw_llm_response: dict = None
+    user_id: str,
+    receipt_data: ReceiptSchema,
+    user_timezone: str = "Asia/Seoul",
+    raw_llm_response: dict = None,
+    raw_text_hash: str = None,
 ) -> dict:
     """
     [T011, T015] create_ledger_transactional 서비스 함수
@@ -148,6 +152,10 @@ def create_ledger_transactional(
                 vat_amount=vat_amount,
                 category=receipt_data.category or "미분류",
                 raw_llm_response=raw_llm_response,
+                approval_number=receipt_data.approval_number,
+                order_id=receipt_data.order_id,
+                raw_text_hash=raw_text_hash,
+                ignore_duplicate_check=False,
             )
 
             # 3. LedgerItem 상세 자식 레코드 벌크(bulk_create) 삽입
@@ -305,11 +313,16 @@ class LedgerService:
                 clean_biz_num = re.sub(r"\D", "", str(raw_biz_num))[:10]
                 parsed_data.vendor_registration_number = clean_biz_num or "0000000000"
 
+                import hashlib
+
+                raw_text_hash = hashlib.sha256(raw_ocr_text.encode("utf-8")).hexdigest() if raw_ocr_text else None
+
                 res = create_ledger_transactional(
                     user_id=str(user.id),
                     receipt_data=parsed_data,
                     user_timezone=user.timezone,
                     raw_llm_response=parsed_data.model_dump(),
+                    raw_text_hash=raw_text_hash,
                 )
 
                 ledger = Ledger.objects.prefetch_related("items").get(id=res["ledger_id"])
@@ -342,11 +355,17 @@ class LedgerService:
             clean_biz_num = re.sub(r"\D", "", str(raw_biz_num))[:10]
             parsed_data.vendor_registration_number = clean_biz_num or "0000000000"
 
+            import hashlib
+
+            file_buffer.seek(0)
+            raw_text_hash = hashlib.sha256(file_buffer.read()).hexdigest()
+
             res = create_ledger_transactional(
                 user_id=str(user.id),
                 receipt_data=parsed_data,
                 user_timezone=user.timezone,
                 raw_llm_response=parsed_data.model_dump(),
+                raw_text_hash=raw_text_hash,
             )
 
             ledger = Ledger.objects.prefetch_related("items").get(id=res["ledger_id"])
