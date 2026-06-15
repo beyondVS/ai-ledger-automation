@@ -1,8 +1,11 @@
 from apps.ledgers.views import (
     DashboardStatisticsView,
+    DuplicateSuspectsView,
     LedgerCalendarView,
+    LedgerIgnoreSuspectView,
     LedgerIngestView,
     LedgerListView,
+    LedgerMergeView,
     MonthlyBudgetView,
     ReceiptDetailView,
     ReceiptStatusView,
@@ -23,6 +26,10 @@ urlpatterns = [
     path("status/<uuid:job_id>/", ReceiptStatusView.as_view(), name="receipt-status"),
     # [T012, T013] 영수증 비동기 상태 폴링 API
     path("jobs/<uuid:job_id>/", ReceiptStatusView.as_view(), name="receipt-job-status"),
+    # 중복 의심 지출 조회, 병합, 무시 API
+    path("duplicate-suspects/", DuplicateSuspectsView.as_view(), name="duplicate-suspects"),
+    path("merge/", LedgerMergeView.as_view(), name="ledger-merge"),
+    path("ignore-suspect/", LedgerIgnoreSuspectView.as_view(), name="ledger-ignore-suspect"),
     # [T005, T010, T017] 영수증 수동 수정(PATCH) 및 삭제(DELETE) API (UUID pk 매핑)
     path("<uuid:pk>/", ReceiptDetailView.as_view(), name="receipt-detail"),
     # [T008] [US1] 결제 데이터 인입 및 중복 방어 API

@@ -758,3 +758,169 @@ class LedgerCalendarView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class DuplicateSuspectsView(APIView):
+    """
+    동일 금액 & 5분(300초) 이내의 시차를 지닌 중복 의심 지출 쌍(Pairs)을 조회합니다.
+    """
+
+    permission_classes = [AllowAny] if settings.DEBUG else [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        from apps.accounts.models import User
+
+        user = request.user if request.user.is_authenticated else User.objects.first()
+
+        if not user:
+            return Response({"status": "error", "message": "User not found."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # items를 prefetch하여 1+N 쿼리 문제 방지
+        ledgers = list(
+            Ledger.objects.filter(user=user, ignore_duplicate_check=False)
+            .prefetch_related("items")
+            .order_by("transaction_date")
+        )
+
+        pairs = []
+        used_ids = set()
+        for i in range(len(ledgers)):
+            if ledgers[i].id in used_ids:
+                continue
+            for j in range(i + 1, len(ledgers)):
+                if ledgers[j].id in used_ids:
+                    continue
+
+                # 시간 오차 계산 (정렬되어 있으므로 차이가 300초 초과 시 루프 중단 가능)
+                time_diff = abs((ledgers[i].transaction_date - ledgers[j].transaction_date).total_seconds())
+                if time_diff > 300:
+                    break
+
+                if ledgers[i].total_amount == ledgers[j].total_amount:
+                    pairs.append(
+                        {
+                            "id1": str(ledgers[i].id),
+                            "id2": str(ledgers[j].id),
+                            "ledger_1": self._serialize_ledger(ledgers[i]),
+                            "ledger_2": self._serialize_ledger(ledgers[j]),
+                        }
+                    )
+                    used_ids.add(ledgers[i].id)
+                    used_ids.add(ledgers[j].id)
+                    break
+
+        return Response({"status": "success", "data": pairs}, status=status.HTTP_200_OK)
+
+    def _serialize_ledger(self, ledger):
+        return {
+            "id": str(ledger.id),
+            "vendor_name": ledger.vendor_name,
+            "vendor_registration_number": ledger.vendor_registration_number,
+            "transaction_date": ledger.transaction_date.isoformat(),
+            "total_amount": float(ledger.total_amount),
+            "supply_value": float(ledger.supply_value),
+            "vat_amount": float(ledger.vat_amount),
+            "category": ledger.category,
+            "approval_number": ledger.approval_number,
+            "order_id": ledger.order_id,
+            "items": [
+                {
+                    "item_name": item.item_name,
+                    "quantity": item.quantity,
+                    "unit_price": float(item.unit_price),
+                    "total_price": float(item.total_price),
+                }
+                for item in ledger.items.all()
+            ],
+        }
+
+
+class LedgerMergeView(APIView):
+    """
+    사용자가 선택한 두 지출 건을 하나로 안전하게 병합하고, 중복 건은 삭제 처리합니다.
+    """
+
+    permission_classes = [AllowAny] if settings.DEBUG else [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        from apps.accounts.models import User
+
+        user = request.user if request.user.is_authenticated else User.objects.first()
+
+        keep_id = request.data.get("keep_ledger_id")
+        delete_id = request.data.get("delete_ledger_id")
+
+        if not keep_id or not delete_id:
+            return Response(
+                {"status": "error", "message": "Both keep_ledger_id and delete_ledger_id are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            keep_ledger = Ledger.objects.get(id=keep_id, user=user)
+            delete_ledger = Ledger.objects.get(id=delete_id, user=user)
+        except Ledger.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "One or both ledgers do not exist or unauthorized."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            with transaction.atomic():
+                # 1. 정보 병합 (승인번호, 주문 ID 등이 비어있을 때 교차 보완)
+                if not keep_ledger.approval_number and delete_ledger.approval_number:
+                    keep_ledger.approval_number = delete_ledger.approval_number
+                if not keep_ledger.order_id and delete_ledger.order_id:
+                    keep_ledger.order_id = delete_ledger.order_id
+                if not keep_ledger.raw_text_hash and delete_ledger.raw_text_hash:
+                    keep_ledger.raw_text_hash = delete_ledger.raw_text_hash
+
+                # 가맹점명 지능형 교체 (보존할 가맹점이 PG사이고 삭제할 가맹점이 스토어 등 구체적 상호라면 가맹점명 업데이트)
+                PG_KEYWORDS = ["이니시스", "토스페이먼츠", "다날", "kcp", "nice", "모빌리언스", "카카오페이"]
+                is_keep_pg = any(kw in keep_ledger.vendor_name.lower() for kw in PG_KEYWORDS)
+                is_del_pg = any(kw in delete_ledger.vendor_name.lower() for kw in PG_KEYWORDS)
+
+                if is_keep_pg and not is_del_pg:
+                    keep_ledger.vendor_name = delete_ledger.vendor_name
+                    keep_ledger.vendor_registration_number = delete_ledger.vendor_registration_number
+
+                keep_ledger.save()
+
+                # 2. ReceiptUploadJob 연관관계 병합
+                if hasattr(delete_ledger, "upload_job") and delete_ledger.upload_job:
+                    job = delete_ledger.upload_job
+                    job.ledger = keep_ledger
+                    job.save()
+
+                # 3. TemplateExecutionHistory 연관관계 병합
+                delete_ledger.template_histories.update(ledger=keep_ledger)
+
+                # 4. 삭제 대상 Ledger 제거 (종속된 LedgerItem들은 CASCADE에 의해 자동 삭제됨)
+                delete_ledger.delete()
+
+            return Response({"status": "success", "message": "Ledgers merged successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error merging ledgers: {str(e)}")
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LedgerIgnoreSuspectView(APIView):
+    """
+    해당 거래쌍을 중복 검사 대상에서 무시 처리(ignore_duplicate_check = True)합니다.
+    """
+
+    permission_classes = [AllowAny] if settings.DEBUG else [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        from apps.accounts.models import User
+
+        user = request.user if request.user.is_authenticated else User.objects.first()
+
+        ledger_ids = request.data.get("ledger_ids", [])
+        if not ledger_ids:
+            return Response(
+                {"status": "error", "message": "ledger_ids list is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        Ledger.objects.filter(id__in=ledger_ids, user=user).update(ignore_duplicate_check=True)
+        return Response({"status": "success", "message": "Suspect status ignored."}, status=status.HTTP_200_OK)
