@@ -114,6 +114,7 @@
                 :file="currentFile"
                 :parsed-data="parsedData"
                 :polling-status="pollingStatus"
+                :failure-reason="failureReason"
                 @file-removed="onFileRemoved"
               />
             </div>
@@ -486,6 +487,7 @@ export default {
     const ledgerList = ref([]);
     const pendingJobs = ref([]);
     const pollingStatus = ref(null);
+    const failureReason = ref(null);
     // 캘린더 및 다차원 복합 필터 모드 관련 상태
     const viewMode = ref('list'); // 'list' | 'calendar'
     const isUploadExpanded = ref(true);
@@ -800,6 +802,7 @@ export default {
         (error) => {
           onValidationError(error.message || '비동기 폴링 상태 조회에 실패했습니다.');
           pollingStatus.value = 'FAILED';
+          failureReason.value = error.message || '비동기 폴링 상태 조회에 실패했습니다.';
           pendingJobs.value = pendingJobs.value.filter(j => j.id !== jobId);
         },
         (newStatus) => {
@@ -819,6 +822,7 @@ export default {
       currentFile.value = null;
       parsedData.value = null;
       pollingStatus.value = null;
+      failureReason.value = null;
       clearError();
     };
 
@@ -890,6 +894,7 @@ export default {
       isUploading,
       errorMessage,
       pollingStatus,
+      failureReason,
       isEditModalOpen,
       selectedLedgerForEdit,
       isDeleteModalOpen,

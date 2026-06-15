@@ -78,6 +78,7 @@ class ReceiptUploadResponseSerializer(serializers.Serializer):
     status = serializers.CharField()
     ledger = LedgerListSerializer(allow_null=True)
     data = LedgerDetailResponseSerializer(source="ledger", allow_null=True, required=False)
+    failure_reason = serializers.CharField(allow_null=True, required=False)
 
 
 class MonthlyBudgetSerializer(serializers.ModelSerializer):

@@ -127,7 +127,12 @@ class ReceiptStatusView(APIView):
             if job.status == "COMPLETED" and job.ledger:
                 ledger_data = Ledger.objects.prefetch_related("items").get(id=job.ledger.id)
 
-            response_payload = {"job_id": job.id, "status": job.status, "ledger": ledger_data}
+            response_payload = {
+                "job_id": job.id,
+                "status": job.status,
+                "ledger": ledger_data,
+                "failure_reason": job.failure_reason,
+            }
             serializer = ReceiptUploadResponseSerializer(response_payload)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
