@@ -1,0 +1,40 @@
+# AI 기반 가계부 자동화 (AI-Powered Ledger Automation)
+
+> 영수증 분석과 가계부 등록을 Celery 비동기 시스템과 비용 최적화된 3단계 하이브리드 LLM 파이프라인으로 자동화하는 Vision-First PWA 서비스입니다.
+
+## 시스템 개요 및 아키텍처 (System Overview & Architecture)
+
+본 저장소는 백엔드 `uv` (Python/Django) 및 프론트엔드 `npm` (Vue.js 3)으로 구성된 모노레포 워크스페이스입니다.
+
+### 핵심 구성 요소
+- **프론트엔드 (Frontend)**: Vue.js 3 PWA (서비스 워커 캐싱, iOS/Android 홈 화면 추가(A2HS), Canvas API 기반 이미지 1.5MB 이하 압축 전송 지원).
+- **백엔드 API (Backend API)**: JWT 인증 검증, 파일 업로드 엔드포인트 제공 및 파싱 결과 조율을 처리하는 Django REST Framework.
+- **비동기 워커 및 큐 (Worker & Queue)**: Redis 브로커를 활용하여 OCR 비동기 처리, LLM 추론 및 DB 트랜잭션 적재를 분산 실행하는 Celery 시스템.
+- **데이터베이스 (Storage)**: 시계열 성능 극대화를 위한 Native UUIDv7 기반 PostgreSQL v18+ 및 미정형 백업용 JSONB 필드 결합.
+
+## 필수 제약 조건 및 규칙 (Constraints & Rules)
+
+상세 비즈니스 로직과 제약은 [constitution.md](file:///.specify/memory/constitution.md) 및 [AGENTS.md](file:///AGENTS.md)를 참조하십시오.
+
+### 1. 데이터베이스 및 트랜잭션 무결성
+- 영수증 1장 적재 시 `ledgers` 및 `ledger_items` 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리 및 롤백이 보장되어야 합니다.
+- 가용 커넥션 풀 크기는 API 서버 최대 5개, Celery 워커 최대 3개, 전체 합산 최대 8개 커넥션 이하로 엄격히 제약됩니다.
+- 중복 적재 방지를 위해 `UNIQUE (user_id, vendor_registration_number, transaction_date, total_amount)` 복합 고유 제약조건이 DB에 강력히 강제됩니다.
+- 60초 임계 시각 윈도우 기반 연속 결제 방어 및 카드 승인번호 매칭 고유 필터링 알고리즘을 적용합니다.
+
+### 2. 3단계 하이브리드 영수증 파싱 파이프라인 (3-Tier Hybrid Pipeline)
+- **1단계 (로컬 하이브리드)**: PDF(PyMuPDF) 또는 이미지(Tesseract) 로컬 OCR 텍스트 추출 -> 로컬 Ollama `gemma4:e4b` JSON 스키마 구조화 시도 (비용 0원).
+- **2단계 (클라우드 텍스트 폴백)**: 1단계 실패 시, 이미 확보한 로컬 OCR 텍스트만 Gemini-2.5-Flash API로 전송하여 이미지 토큰 비용 절감 (최대 95% 비용 최적화).
+- **3단계 (클라우드 비전 폴백)**: 2단계까지 실패 시 최후의 보루로 영수증 이미지 원본을 Gemini-2.5-Flash 멀티모달 API로 전송하여 99% 파싱 무결성 수호.
+
+### 3. PWA 및 디바이스 연동 규격
+- **로컬 개발 서버**: SSL 핸드셰이크 프로토콜/암호화 협상 에러(ERR_SSL_VERSION_OR_CIPHER_MISMATCH) 방지를 위해 일반 HTTP(`http://localhost:5173`)로 기동합니다. 단, `localhost`는 브라우저가 안전한 보안 컨텍스트로 인정하므로 PWA 설치 및 카메라 연동은 정상 지원됩니다.
+- **서비스 워커 예외 방어**: `sw.js` fetch 리스너 진입부에서 크롬 확장 프로그램 스킴(`chrome-extension://`) 등 비-HTTP 스키마 요청을 사전에 차단/우회시켜 `TypeError: Request scheme is unsupported` 오류를 방어합니다.
+- **PWA 가용성**: `<meta name="mobile-web-app-capable" content="yes">` 표준 태그 및 `manifest.webmanifest` 정합성을 수호합니다.
+
+## 디렉토리 지도 및 참조 링크
+- [.specify/memory/constitution.md](file:///.specify/memory/constitution.md) - 프로젝트 헌법 및 데이터 무결성 9대 원칙
+- [AGENTS.md](file:///AGENTS.md) - 개발 에이전트 행동 지침 및 비직관적 도메인 지식
+- [README.md](file:///README.md) - 개발자를 위한 직관적인 퀵스타트 가이드
+- [backend/](file:///backend/) - Django Rest Framework 백엔드 소스 코드
+- [frontend/](file:///frontend/) - Vue.js 3 PWA 프론트엔드 소스 코드
