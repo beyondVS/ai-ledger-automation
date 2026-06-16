@@ -32,6 +32,11 @@ self.addEventListener("activate", (event) => {
 
 // fetch 이벤트: Stale-While-Revalidate 캐싱 전략 적용
 self.addEventListener("fetch", (event) => {
+  // http, https 프로토콜만 캐싱을 허용 (chrome-extension 등 외부 스킴 차단)
+  if (!event.request.url.startsWith("http://") && !event.request.url.startsWith("https://")) {
+    return;
+  }
+
   // API 요청 및 GET이 아닌 메소드는 가로채지 않고 통과시킴
   if (event.request.url.includes("/api/") || event.request.method !== "GET") {
     return;
