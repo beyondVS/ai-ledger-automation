@@ -12,6 +12,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from .payment import ingest_payment_data as ingest_payment_data
+from .reporter import ReceiptLoadTestReporter as ReceiptLoadTestReporter
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +252,155 @@ class LedgerService:
         from utils.llm_client import ReceiptLLMClient
 
         self.llm_client = ReceiptLLMClient()
+
+    def ingest_receipt_task(self, user, image_file, existing_task=None):
+        import re
+
+        from apps.ledgers.exceptions import DuplicatePaymentError
+        from apps.ledgers.models import Ledger, ReceiptTask
+        from apps.ledgers.services.ocr import extract_text_from_image, extract_text_from_pdf
+        from utils.image_processor import ImageProcessor
+
+        raw_ocr_text = ""
+
+        # 1. 작업 추적 Task 생성 또는 기존 Task 사용
+        if existing_task:
+            task = existing_task
+        else:
+            task = ReceiptTask.objects.create(
+                user=user, status="PENDING", file_name=getattr(image_file, "name", "unknown_receipt.jpg"), file_path=""
+            )
+
+        task.status = "PROCESSING"
+        task.save()
+
+        try:
+            parsed_data = None
+            file_name = getattr(image_file, "name", "").lower()
+            is_pdf = file_name.endswith(".pdf")
+            stage = "NONE"
+
+            # ----------------------------------------------------
+            # 1단계: Local OCR + 로컬 Ollama 파싱
+            # ----------------------------------------------------
+            if is_pdf:
+                raw_ocr_text = extract_text_from_pdf(image_file)
+            else:
+                raw_ocr_text = extract_text_from_image(image_file)
+
+            if raw_ocr_text and raw_ocr_text.strip():
+                logger.info("1단계: 로컬 OCR 텍스트 확보 성공, Ollama 파싱을 시도합니다.")
+                try:
+                    parsed_data = self.llm_client.parse_receipt_local(raw_ocr_text)
+                    if parsed_data:
+                        stage = "OLLAMA"
+                except Exception as ollama_err:
+                    logger.warning(f"Ollama parsing exception, falling back: {str(ollama_err)}")
+                    parsed_data = None
+
+            if not parsed_data:
+                # ----------------------------------------------------
+                # 2단계: Cloud Text-only Fallback
+                # ----------------------------------------------------
+                if raw_ocr_text and raw_ocr_text.strip():
+                    logger.info("2단계: 1단계 실패로 인해 Gemini Text-only 폴백을 시도합니다.")
+                    parsed_data = self.llm_client.parse_receipt_cloud_text(raw_ocr_text)
+                    if parsed_data:
+                        stage = "GEMINI_TEXT"
+
+            # 1단계 혹은 2단계 파싱 성공 시 DB 적재 및 종료
+            if parsed_data:
+                logger.info(f"1/2단계 텍스트 파싱 성공 ({stage}). DB 적재를 시작합니다.")
+                raw_biz_num = parsed_data.vendor_registration_number
+                clean_biz_num = re.sub(r"\D", "", str(raw_biz_num))[:10]
+                parsed_data.vendor_registration_number = clean_biz_num or "0000000000"
+
+                import hashlib
+
+                raw_text_hash = hashlib.sha256(raw_ocr_text.encode("utf-8")).hexdigest() if raw_ocr_text else None
+
+                res = create_ledger_transactional(
+                    user_id=str(user.id),
+                    receipt_data=parsed_data,
+                    user_timezone=user.timezone,
+                    raw_llm_response=parsed_data.model_dump(),
+                    raw_text_hash=raw_text_hash,
+                )
+
+                ledger = Ledger.objects.prefetch_related("items").get(id=res["ledger_id"])
+                task.ledger = ledger
+                task.status = "COMPLETED"
+                task.parser_stage = stage
+                task.save()
+
+                return {"status": "COMPLETED", "task_id": str(task.id), "ledger": ledger}
+
+            # ----------------------------------------------------
+            # 3단계: Cloud Vision Fallback
+            # ----------------------------------------------------
+            logger.info("1/2단계 파싱 실패. 3단계 Gemini Vision 폴백을 시도합니다.")
+            if is_pdf:
+                import io
+
+                image_file.seek(0)
+                file_buffer = io.BytesIO(image_file.read())
+                mime_type = "application/pdf"
+            else:
+                file_buffer = ImageProcessor.process_image_to_webp(image_file, quality=80)
+                mime_type = "image/webp"
+
+            parsed_data = self.llm_client.parse_receipt_cloud_vision(file_buffer, mime_type=mime_type)
+            if not parsed_data:
+                raise ValueError("Gemini Vision API 영수증 분석 결과 획득 실패")
+
+            stage = "GEMINI_VISION"
+            raw_biz_num = parsed_data.vendor_registration_number
+            clean_biz_num = re.sub(r"\D", "", str(raw_biz_num))[:10]
+            parsed_data.vendor_registration_number = clean_biz_num or "0000000000"
+
+            import hashlib
+
+            file_buffer.seek(0)
+            raw_text_hash = hashlib.sha256(file_buffer.read()).hexdigest()
+
+            res = create_ledger_transactional(
+                user_id=str(user.id),
+                receipt_data=parsed_data,
+                user_timezone=user.timezone,
+                raw_llm_response=parsed_data.model_dump(),
+                raw_text_hash=raw_text_hash,
+            )
+
+            ledger = Ledger.objects.prefetch_related("items").get(id=res["ledger_id"])
+            task.ledger = ledger
+            task.status = "COMPLETED"
+            task.parser_stage = stage
+            task.save()
+
+            return {"status": "COMPLETED", "task_id": str(task.id), "ledger": ledger}
+
+        except DuplicatePaymentError as dpe:
+            logger.info(f"ingest_receipt_task duplicate error: {str(dpe)}")
+            task.status = "FAILED"
+            task.error_message = "이미 등록된 중복 영수증입니다."
+            task.save()
+            return {"status": "FAILED", "reason": "Duplicate transaction detected"}
+
+        except IntegrityError as ie:
+            logger.warning(f"ingest_receipt_task integrity error: {str(ie)}")
+            task.status = "FAILED"
+            task.error_message = f"IntegrityError: {str(ie)}"
+            task.save()
+            raise ie
+
+        except Exception as e:
+            logger.error(f"ingest_receipt_task system error: {str(e)}", exc_info=True)
+            task.status = "FAILED"
+            import traceback
+
+            task.error_message = f"{str(e)}\n{traceback.format_exc()[:500]}"
+            task.save()
+            raise ValueError("영수증 이미지 분석 또는 데이터 파싱에 실패했습니다.") from e
 
     def ingest_receipt(self, user, image_file, existing_job=None):
         import re

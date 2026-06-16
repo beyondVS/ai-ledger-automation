@@ -924,3 +924,98 @@ class LedgerIgnoreSuspectView(APIView):
 
         Ledger.objects.filter(id__in=ledger_ids, user=user).update(ignore_duplicate_check=True)
         return Response({"status": "success", "message": "Suspect status ignored."}, status=status.HTTP_200_OK)
+
+
+class ReceiptBulkUploadView(APIView):
+    """
+    [T007] [US1] ReceiptBulkUploadView
+    - 최대 50개의 영수증 이미지/PDF 파일을 multipart로 인입받아 비동기 처리합니다.
+    - 202 Accepted 응답과 함께 ReceiptTask 정보 목록을 반환합니다.
+    """
+
+    permission_classes = [AllowAny] if settings.DEBUG else [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            image_files = request.FILES.getlist("files")
+            if not image_files:
+                return Response(
+                    {"error": "No files uploaded. Please include 'files' field in form-data."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if len(image_files) > 50:
+                return Response(
+                    {
+                        "error": f"Exceeded maximum upload limit of 50 files per request. Uploaded: {len(image_files)} files."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            from apps.accounts.models import User
+
+            current_user = request.user if request.user.is_authenticated else User.objects.first()
+
+            import os
+
+            from apps.ledgers.models import ReceiptTask
+            from apps.ledgers.tasks import extract_receipt_task
+            from django.core.files.storage import FileSystemStorage
+
+            temp_dir = os.path.join(settings.BASE_DIR, "temp_receipts")
+            os.makedirs(temp_dir, exist_ok=True)
+            fs = FileSystemStorage(location=temp_dir)
+
+            tasks_payload = []
+
+            for image_file in image_files:
+                ext = os.path.splitext(image_file.name)[1]
+
+                # ReceiptTask 인스턴스 생성 (PENDING 상태)
+                task = ReceiptTask.objects.create(
+                    user=current_user, status="PENDING", file_name=image_file.name, file_path=""
+                )
+
+                # 임시 디렉토리에 파일 업로드 저장
+                temp_filename = f"task_{task.id}{ext}"
+                saved_filename = fs.save(temp_filename, image_file)
+                file_path = fs.path(saved_filename)
+
+                task.file_path = file_path
+                task.save()
+
+                # Celery 백그라운드 태스크 기동
+                try:
+                    extract_receipt_task.delay(str(task.id), file_path)
+                except Exception as queue_err:
+                    if os.path.exists(file_path):
+                        try:
+                            os.remove(file_path)
+                        except OSError:
+                            pass
+                    task.status = "FAILED"
+                    task.error_message = f"메시지 큐 적재 장애: {str(queue_err)}"
+                    task.save()
+                    raise queue_err
+
+                # 계약서(upload-api.md) 응답 구조 반영
+                tasks_payload.append(
+                    {
+                        "task_id": str(task.id),
+                        "file_name": task.file_name,
+                        "status": "PENDING",
+                        "created_at": task.created_at.isoformat(),
+                    }
+                )
+
+            return Response(
+                {
+                    "message": f"{len(image_files)} receipts accepted and successfully queued for asynchronous processing.",
+                    "tasks": tasks_payload,
+                },
+                status=status.HTTP_202_ACCEPTED,
+            )
+
+        except Exception as e:
+            logger.error(f"ReceiptBulkUploadView Server Error: {str(e)}", exc_info=True)
+            return Response({"error": "Internal server error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

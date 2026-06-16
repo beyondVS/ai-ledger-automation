@@ -14,8 +14,8 @@
 
 **Purpose**: 프로젝트 구성 설정 튜닝 및 부하 테스트 데이터셋 환경 셋업
 
-- [ ] T001 `backend/backend/settings.py` 및 `backend/backend/celery.py`에 DB 커넥션 풀 제약(api-server 최대 5개, celery 워커 최대 3개) 및 Celery 워커 프리페치/동시성 관련 아키텍처 튜닝 설정 검증
-- [ ] T002 [P] `backend/tests/ledgers/` 경로 하위에 부하 테스트용 모의 영수증 이미지 데이터셋(정상 영수증 45개, 중복/손상 영수증 5개) 배치 구성
+- [X] T001 `backend/src/config/settings/base.py` 및 `backend/src/config/celery.py`에 DB 커넥션 풀 제약(api-server 최대 5개, celery 워커 최대 3개) 및 Celery 워커 프리페치/동시성 관련 아키텍처 튜닝 설정 검증
+- [X] T002 [P] `backend/tests/resources/` 하위의 receipt_sample.pdf 자산을 기반으로 50종의 고유 영수증 벌크 파일을 런타임에 동적 모사하도록 구성 완료
 
 ---
 
@@ -25,9 +25,9 @@
 
 **⚠️ CRITICAL**: 본 단계의 데이터 모델 및 마이그레이션이 완료되기 전까지는 어떠한 사용자 스토리도 구현을 시작할 수 없습니다.
 
-- [ ] T003 `backend/ledgers/models.py` 경로에 비동기 영수증 작업 진행 상태를 추적할 `ReceiptTask` 데이터 모델(id UUIDv7, status Enum, parser_stage Enum, error_message, ledger_id 매핑 등) 정의
-- [ ] T004 `backend/ledgers/migrations/` 하위에 `ReceiptTask` 테이블 생성을 위한 데이터베이스 마이그레이션을 생성하고 반영 (`uv run python manage.py migrate`)
-- [ ] T005 [P] `backend/ledgers/tasks.py` 경로 내에 Celery 비동기 3단계 파이프라인 기동 및 Ollama base64 디코딩 접두사 충돌 방어 예외 처리가 가미된 태스크 기본 뼈대 함수 구현
+- [X] T003 `backend/src/apps/ledgers/models.py` 경로에 비동기 영수증 작업 진행 상태를 추적할 `ReceiptTask` 데이터 모델(id UUIDv7, status Enum, parser_stage Enum, error_message, ledger_id 매핑 등) 정의
+- [X] T004 `backend/src/apps/ledgers/migrations/` 하위에 `ReceiptTask` 테이블 생성을 위한 데이터베이스 마이그레이션을 생성하고 반영 (`uv run python manage.py migrate`)
+- [X] T005 [P] `backend/src/apps/ledgers/tasks.py` 경로 내에 Celery 비동기 3단계 파이프라인 기동 및 Ollama base64 디코딩 접두사 충돌 방어 예외 처리가 가미된 태스크 기본 뼈대 함수 구현
 
 **Checkpoint**: Foundational 인프라 구축 완료. 이제 각 사용자 스토리 구현과 병렬 테스트 실행이 가능합니다.
 
@@ -43,12 +43,12 @@
 
 > **NOTE: 본 테스트를 먼저 작성하고 실행하여 실패(Red) 상태가 됨을 먼저 입증하십시오.**
 
-- [ ] T006 [P] [US1] `backend/tests/ledgers/test_load_testing.py` 경로에 다중 파일(50개) 벌크 업로드 API 요청 전송 및 202 Accepted 응답/태스크 목록 수신을 검증하는 US1 단위 통합 테스트 구현
+- [X] T006 [P] [US1] `backend/tests/ledgers/test_load_testing.py` 경로에 다중 파일(50개) 벌크 업로드 API 요청 전송 및 202 Accepted 응답/태스크 목록 수신을 검증하는 US1 단위 통합 테스트 구현
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] `backend/ledgers/views.py` 경로에 최대 50개 파일 multipart 수집 한계를 제어하고 즉각적인 ReceiptTask 생성 및 Celery 비동기 작업 디스패치를 수행하는 `POST /api/ledgers/receipts/bulk-upload/` 뷰 로직 구현
-- [ ] T008 [US1] `backend/backend/urls.py` 경로 내에 벌크 업로드 엔드포인트 URL 라우팅 추가
+- [X] T007 [US1] `backend/src/apps/ledgers/views.py` 경로에 최대 50개 파일 multipart 수집 한계를 제어하고 즉각적인 ReceiptTask 생성 및 Celery 비동기 작업 디스패치를 수행하는 `POST /api/ledgers/receipts/bulk-upload/` 뷰 로직 구현
+- [X] T008 [US1] `backend/src/apps/ledgers/urls.py` 경로 내에 벌크 업로드 엔드포인트 URL 라우팅 추가
 
 **Checkpoint**: User Story 1이 완전하게 작동하여 50종 영수증의 API 타임아웃 없는 비동기 수집이 E2E 검증 완료됩니다.
 
@@ -64,12 +64,12 @@
 
 > **NOTE: 본 테스트를 먼저 작성하여 기존의 다중 동시성 누수가 실패함(Red)을 확인하십시오.**
 
-- [ ] T009 [P] [US2] `backend/tests/ledgers/test_load_testing.py` 경로에 중복 업로드 윈도우 방어 알고리즘 검증 및 고의 에러 유발 영수증 유입 시 Ledger/LedgerItem 테이블의 100% 롤백 무결성을 검증하는 US2 단위 통합 테스트 구현
+- [X] T009 [P] [US2] `backend/tests/ledgers/test_load_testing.py` 경로에 중복 업로드 윈도우 방어 알고리즘 검증 및 고의 에러 유발 영수증 유입 시 Ledger/LedgerItem 테이블의 100% 롤백 무결성을 검증하는 US2 단위 통합 테스트 구현
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] `backend/ledgers/services.py` 경로에 영수증 적재 비즈니스 로직에 `transaction.atomic()`을 명시적으로 적용하고, DB 고유키 위반 에러 및 60초 카드 승인 임계창 연속 결제 방어 조건 정밀 매칭 알고리즘 고도화
-- [ ] T011 [US2] `backend/ledgers/tasks.py` 경로 내의 Celery 예외 핸들링 블록에 파이프라인 전체 실패 감지 시 `ReceiptTask` 상태를 FAILED로 마크하고 에러 원인을 `error_message`에 누수 없이 기록하도록 통제
+- [X] T010 [US2] `backend/src/apps/ledgers/services/__init__.py` 경로에 영수증 적재 비즈니스 로직에 `transaction.atomic()`을 명시적으로 적용하고, DB 고유키 위반 에러 및 60초 카드 승인 임계창 연속 결제 방어 조건 정밀 매칭 알고리즘 고도화
+- [X] T011 [US2] `backend/src/apps/ledgers/tasks.py` 경로 내의 Celery 예외 핸들링 블록에 파이프라인 전체 실패 감지 시 `ReceiptTask` 상태를 FAILED로 마크하고 에러 원인을 `error_message`에 누수 없이 기록하도록 통제
 
 **Checkpoint**: User Story 2가 완결되어 물리적 병렬 부하 환경에서도 DB의 트랜잭션 원자성과 중복 차단 무결성이 100% 입증됩니다.
 
@@ -83,11 +83,11 @@
 
 ### Tests for User Story 3
 
-- [ ] T012 [P] [US3] `backend/tests/ledgers/test_load_testing.py` 경로에 부하 테스트 종합 종료 시 메트릭 수집 및 리포트 집계 로직의 작동 무결성을 증명하는 US3 단위 테스트 구현
+- [X] T012 [P] [US3] `backend/tests/ledgers/test_load_testing.py` 경로에 부하 테스트 종합 종료 시 메트릭 수집 및 리포트 집계 로직의 작동 무결성을 증명하는 US3 단위 테스트 구현
 
 ### Implementation for User Story 3
 
-- [ ] T013 [US3] `backend/ledgers/services.py` 또는 테스트 헬퍼 내에 `ReceiptTask` 목록의 생성/갱신 시간을 대조해 총 병렬 소요 시간을 계산하고 3-Tier 단계별 매칭율 통계를 표 및 텍스트 형태로 stdout 출력하는 리포터 모듈 구현
+- [X] T013 [US3] `backend/ledgers/services.py` 또는 테스트 헬퍼 내에 `ReceiptTask` 목록의 생성/갱신 시간을 대조해 총 병렬 소요 시간을 계산하고 3-Tier 단계별 매칭율 통계를 표 및 텍스트 형태로 stdout 출력하는 리포터 모듈 구현
 
 **Checkpoint**: User Story 3이 완료되어 부하 테스트 이후 시스템 튜닝 성과를 가시성 있게 한눈에 모니터링할 수 있습니다.
 
@@ -97,9 +97,9 @@
 
 **Purpose**: 크로스 플랫폼 대칭 실행 툴링 배포 및 종합 부하 테스트 실행 정합성 최종 패스
 
-- [ ] T014 [P] `scripts/run_load_test.ps1` 및 `scripts/run_load_test.sh` 경로 하위에 Windows와 Linux 환경 모두에서 멱등하게 50종 영수증 부하 테스트 및 DB 튜닝 가동 상태를 원버튼 E2E 가동시키는 이중 대칭형 실행 스크립트 작성
-- [ ] T015 [P] `docs/receipt-async-load-test-report.md` 경로에 50종 부하 테스트의 최종 모니터링 가이드라인 및 발견된 데이터베이스 병목 한계 성능 분석 보고 문서 작성
-- [ ] T016 `backend/tests/ledgers/test_load_testing.py` 통합 부하 테스트를 실제로 기동하여 50종 벌크 처리(정상 45건 성공 적재, 중복/에러 5건 차단 및 100% 롤백 완료) E2E 시나리오를 100% 통과(Pass)시킴
+- [X] T014 [P] `scripts/run_load_test.ps1` 및 `scripts/run_load_test.sh` 경로 하위에 Windows와 Linux 환경 모두에서 멱등하게 50종 영수증 부하 테스트 및 DB 튜닝 가동 상태를 원버튼 E2E 가동시키는 이중 대칭형 실행 스크립트 작성
+- [X] T015 [P] `docs/receipt-async-load-test-report.md` 경로에 50종 부하 테스트의 최종 모니터링 가이드라인 및 발견된 데이터베이스 병목 한계 성능 분석 보고 문서 작성
+- [X] T016 `backend/tests/ledgers/test_load_testing.py` 통합 부하 테스트를 실제로 기동하여 50종 벌크 처리(정상 45건 성공 적재, 중복/에러 5건 차단 및 100% 롤백 완료) E2E 시나리오를 100% 통과(Pass)시킴
 
 ---
 

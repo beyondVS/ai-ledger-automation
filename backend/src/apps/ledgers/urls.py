@@ -7,6 +7,7 @@ from apps.ledgers.views import (
     LedgerListView,
     LedgerMergeView,
     MonthlyBudgetView,
+    ReceiptBulkUploadView,
     ReceiptDetailView,
     ReceiptStatusView,
     ReceiptUploadView,
@@ -38,4 +39,6 @@ urlpatterns = [
     path("dashboard/", DashboardStatisticsView.as_view(), name="dashboard-statistics"),
     # [T016] 월별 예산 API
     path("budgets/", MonthlyBudgetView.as_view(), name="monthly-budget-list"),
+    # [T008] [US1] 벌크 업로드 API
+    path("receipts/bulk-upload/", ReceiptBulkUploadView.as_view(), name="receipts-bulk-upload"),
 ]

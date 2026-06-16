@@ -167,6 +167,7 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 태스크 타임아웃 30분 제한
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # 헌법 제II조 수호: 워커 선점 방지
 
 # Django/pytest 테스트 구동 시 Celery 태스크를 Eager(동기) 모드로 실행하여 테스트 격리 및 외부 Redis 의존성 차단
 import sys
