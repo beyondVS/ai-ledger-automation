@@ -25,41 +25,41 @@
 graph TD
     %% 클라이언트 및 외부 유입 영역
     subgraph External [PWA 하이브리드 클라이언트]
-        UI[PWA Vue App: Manifest/SW 탑재]
-        Camera[Mobile Native Camera: 촬영 가공]
-        Email[이메일 서버 SendGrid/Mailgun (차후 확장 백로그)]
+        UI["PWA Vue App: Manifest/SW 탑재"]
+        Camera["Mobile Native Camera: 촬영 가공"]
+        Email["이메일 서버 SendGrid/Mailgun (차후 확장 백로그)"]
     end
 
     %% API 게이트웨이 및 인입 서버 영역
     subgraph API_Server [API 인입 서버]
-        UploadRouter[업로드 라우터: 크기 제한]
-        EmailRouter[이메일 웹훅 라우터: SPF/DKIM 및 화이트리스트 필터 (차후 확장 백로그)]
-        AuthRouter[인증 라우터: JWT httpOnly 쿠키 인증 및 sessionStorage 세션 관리]
+        UploadRouter["업로드 라우터: 크기 제한"]
+        EmailRouter["이메일 웹훅 라우터: SPF/DKIM 및 화이트리스트 필터 (차후 확장 백로그)"]
+        AuthRouter["인증 라우터: JWT httpOnly 쿠키 인증 및 sessionStorage 세션 관리"]
     end
 
     %% 메시지 브로커 영역
     subgraph Message_Broker [이벤트 브로커]
-        RedisQueue[(Redis Task Queue: Celery)]
+        RedisQueue[("Redis Task Queue: Celery")]
     end
 
     %% 백그라운드 워커 영역
     subgraph Worker_System [비동기 워커 시스템]
-        SharpWorker[이미지 전처리 워커: Pillow 최적화]
-        LLMClient[LLM 연동 모듈: 3단계 하이브리드 파이프라인]
-        TxLoader[가계부 적재 모듈: DB 트랜잭션 수호자]
-        NotificationWorker[푸시 알림 워커: VAPID Web Push 발송]
+        SharpWorker["이미지 전처리 워커: Pillow 최적화"]
+        LLMClient["LLM 연동 모듈: 3단계 하이브리드 파이프라인"]
+        TxLoader["가계부 적재 모듈: DB 트랜잭션 수호자"]
+        NotificationWorker["푸시 알림 워커: VAPID Web Push 발송"]
     end
 
     %% 데이터 저장소 및 캐시
     subgraph Storage [데이터 레이어]
-        PostgreSQL[(PostgreSQL DB: 복합 Unique 제약 조건)]
-        RedisCache[(Redis Cache: JWT 세션 및 토큰 블랙리스트)]
+        PostgreSQL[("PostgreSQL DB: 복합 Unique 제약 조건")]
+        RedisCache[("Redis Cache: JWT 세션 및 토큰 블랙리스트")]
     end
 
     %% 외부 API 연동
     Gemini[Gemini-2.5-Flash API]
     Ollama[로컬 Ollama gemma4:e4b]
-    PushServer[OS별 푸시 발송 서버: FCM / APNs]
+    PushServer["OS별 푸시 발송 서버: FCM / APNs"]
 
     %% 데이터 흐름 맵핑
     UI -->|1. 모바일 기기 카메라 촬영 FE-01| Camera

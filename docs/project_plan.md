@@ -526,7 +526,7 @@ networks:
   * **2단계 (Cloud Text-only Fallback)**: 로컬 모델의 스키마 붕괴 또는 금액 정합성(Checksum) 검증 실패 시, 이미 확보된 로컬 OCR 문자열만 Gemini-2.5-Flash API로 전송하여 입력 이미지 토큰 비용을 95% 이상 절감하는 초저비용 구조화 시도.
   * **3단계 (Cloud Vision Fallback)**: 로컬 OCR 문자 추출 실패 또는 앞선 텍스트 파싱 오류 발생 시 최후의 보루로 영수증 원본 이미지(WebP 변환 데이터) 혹은 PDF를 Gemini-2.5-Flash 멀티모달로 송신하여 99% 파싱 무결성 수호.
   * **레거시 정리**: 기존 `BypassParser` 매칭, `promotion.py` 일관성/승격 및 `self_healing` 자가치유 Celery 태스크 등 정적 정규식 기반 캐시 파이프라인의 안전 비활성화 및 청소.
-* [ ] **23일차:** 3주차 비동기 아키텍처 튜닝 및 부하 테스트. 웹 업로드 경로로 유입되는 영수증 50종 일시 유입 부하 테스트를 통해 데이터 누락 및 트랜잭션 정합성 검증 완료.  
+* [x] **23일차:** 3주차 비동기 아키텍처 튜닝 및 부하 테스트. 웹 업로드 경로로 유입되는 영수증 50종 일시 유입 부하 테스트를 통해 데이터 누락 및 트랜잭션 정합성 검증 완료.  
 * [ ] **24일차:** PWA Manifest/Service Worker 캐시 연동 및 HTML5 Capture API 모바일 기기 카메라 연동.  
 * [ ] **25일차:** 스마트 단말기(iOS, Android)의 beforeinstallprompt 제어 배너 설계 및 사파리 수동 툴팁 A2HS 레이아웃 가이드 구현.  
 * [ ] **26일차:** 백그라운드 VAPID 표준 V2 VAPID 푸시 발송 큐(Notification Queue) 파이프라인 개설 및 FCM/APNs 연동 웹 푸시 비동기 발송 모듈 독립 기동.  
