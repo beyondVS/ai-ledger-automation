@@ -57,8 +57,6 @@ dependencies = [
     { name = "psycopg-pool" },
     { name = "pymupdf" },
     { name = "pytesseract" },
-    { name = "pytest" },
-    { name = "pytest-django" },
     { name = "redis" },
 ]
 
@@ -79,8 +77,6 @@ requires-dist = [
     { name = "psycopg-pool", specifier = ">=3.2.4" },
     { name = "pymupdf", specifier = ">=1.23.0" },
     { name = "pytesseract", specifier = ">=0.3.10" },
-    { name = "pytest", specifier = ">=8.0.0" },
-    { name = "pytest-django", specifier = ">=4.8.0" },
     { name = "redis", specifier = ">=5.0.1" },
 ]
 

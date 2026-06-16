@@ -6,7 +6,6 @@ requires-python = ">=3.13"
 dependencies = [
     "ai-ledger-backend",
 ]
-
 [dependency-groups]
 dev = [
     "djangorestframework-stubs>=3.17.0",

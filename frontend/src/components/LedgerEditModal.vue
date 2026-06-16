@@ -98,6 +98,50 @@
           </select>
         </div>
 
+        <!-- Receipt Camera Capture (T016, T017) -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">영수증 촬영 및 첨부</label>
+          <div class="flex items-center gap-3">
+            <label
+              class="flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-950 text-slate-700 dark:text-slate-300 rounded-xl cursor-pointer text-xs font-semibold transition-all select-none"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              영수증 촬영 (카메라)
+              <input
+                data-testid="receipt-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                class="hidden"
+                @change="handleReceiptFileChange"
+              />
+            </label>
+            <span class="text-3xs text-slate-400 dark:text-slate-500">카메라가 작동하지 않으면 파일 보관함에서 선택하세요.</span>
+          </div>
+
+          <!-- 썸네일 미리보기 (T017) -->
+          <div v-if="receiptPreviewUrl" class="mt-3 flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl relative group">
+            <img :src="receiptPreviewUrl" class="w-12 h-12 rounded-lg object-cover border border-slate-200 dark:border-slate-800" alt="영수증 썸네일" />
+            <div class="text-3xs leading-normal overflow-hidden flex-1">
+              <p class="font-semibold text-slate-700 dark:text-slate-300 truncate">{{ receiptFileName }}</p>
+              <p class="text-slate-400 dark:text-slate-500">{{ receiptFileSizeText }}</p>
+              <p v-if="isCompressing" class="text-indigo-500 dark:text-indigo-400 font-semibold animate-pulse">이미지 압축 가공 중...</p>
+            </div>
+            <button
+              type="button"
+              class="p-1 rounded-full text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-900 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              @click="clearReceipt"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
           <button
@@ -128,6 +172,8 @@
 <script setup>
 import { ref, watch, reactive } from 'vue';
 import { updateLedgerEntry } from '../services/ledgerService';
+import { compressImage } from '../utils/imageCompressor';
+import { uploadReceiptApi } from '../services/uploadService';
 
 const props = defineProps({
   isOpen: {
@@ -158,6 +204,47 @@ const validationErrors = reactive({
   total_amount: ''
 });
 
+// 영수증 카메라 촬영 및 압축 임시 버퍼 상태 변수들 (T017)
+const receiptPreviewUrl = ref('');
+const receiptFileName = ref('');
+const receiptFileSizeText = ref('');
+const isCompressing = ref(false);
+const compressedReceiptBlob = ref(null); // 최종 전송할 압축 Blob 바인딩
+
+const handleReceiptFileChange = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  receiptFileName.value = file.name;
+  receiptFileSizeText.value = `${(file.size / (1024 * 1024)).toFixed(2)} MB (원본)`;
+  receiptPreviewUrl.value = URL.createObjectURL(file);
+  isCompressing.value = true;
+  compressedReceiptBlob.value = null;
+
+  try {
+    // T015 이미지 압축 연동
+    const compressedBlob = await compressImage(file);
+    compressedReceiptBlob.value = compressedBlob;
+    receiptFileSizeText.value = `${(compressedBlob.size / (1024 * 1024)).toFixed(2)} MB (압축 완료)`;
+  } catch (err) {
+    console.error("영수증 압축 중 오류 발생:", err);
+    // 압축 실패 시 에러 폴백 처리: 원본 이미지 유지
+    compressedReceiptBlob.value = file;
+  } finally {
+    isCompressing.value = false;
+  }
+};
+
+const clearReceipt = () => {
+  if (receiptPreviewUrl.value) {
+    URL.revokeObjectURL(receiptPreviewUrl.value);
+  }
+  receiptPreviewUrl.value = '';
+  receiptFileName.value = '';
+  receiptFileSizeText.value = '';
+  compressedReceiptBlob.value = null;
+};
+
 watch(
   () => props.isOpen,
   (newVal) => {
@@ -183,6 +270,9 @@ watch(
       validationErrors.vendor_name = '';
       validationErrors.transaction_date = '';
       validationErrors.total_amount = '';
+      
+      // 모달 활성화 시 이전 업로드 버퍼 정리
+      clearReceipt();
     }
   },
   { immediate: true }
@@ -220,6 +310,11 @@ async function handleSubmit() {
   errorMessage.value = '';
 
   try {
+    // 촬영/첨부된 영수증이 존재하면 API 서버로 전송 기동 (T018)
+    if (compressedReceiptBlob.value) {
+      await uploadReceiptApi(compressedReceiptBlob.value, receiptFileName.value);
+    }
+
     // 카테고리 전송 누수 방지 (T014)
     const allowedCategories = ['미분류', '식비', '생활용품', '쇼핑', '교통', '문화/여가', '주거/통신', '의료/건강', '교육', '기타'];
     const finalCategory = allowedCategories.includes(form.category) ? form.category : '미분류';
