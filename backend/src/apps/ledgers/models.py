@@ -229,3 +229,47 @@ class MonthlyBudget(models.Model):
 
     def __str__(self):
         return f"{self.user.username}의 {self.budget_month.strftime('%Y-%m')} 예산: {self.amount}원"
+
+
+class ReceiptTask(models.Model):
+    """
+    [T003] ReceiptTask 데이터 모델
+    - 3주차 비동기 부하 테스트 시 각 영수증 처리 단계를 정밀하게 추적합니다.
+    """
+
+    id = models.UUIDField(primary_key=True, default=generate_uuidv7, editable=False, db_index=True)
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="receipt_tasks")
+    file_name = models.CharField(max_length=255)
+    file_path = models.CharField(max_length=1024)
+    status = models.CharField(
+        max_length=20,
+        default="PENDING",
+        choices=[
+            ("PENDING", "Pending"),
+            ("PROCESSING", "Processing"),
+            ("COMPLETED", "Completed"),
+            ("FAILED", "Failed"),
+        ],
+    )
+    parser_stage = models.CharField(
+        max_length=20,
+        default="NONE",
+        choices=[
+            ("OLLAMA", "Ollama"),
+            ("GEMINI_TEXT", "Gemini Text"),
+            ("GEMINI_VISION", "Gemini Vision"),
+            ("NONE", "None"),
+        ],
+    )
+    error_message = models.TextField(null=True, blank=True)
+    ledger = models.ForeignKey(Ledger, on_delete=models.SET_NULL, null=True, blank=True, related_name="receipt_tasks")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "receipt_tasks"
+        verbose_name = "receipt_task"
+        verbose_name_plural = "receipt_tasks"
+
+    def __str__(self):
+        return f"Task {self.id} - {self.status} ({self.parser_stage})"
