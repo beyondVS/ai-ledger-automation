@@ -34,3 +34,14 @@ class MerchantTemplateAdmin(admin.ModelAdmin):
     list_filter = ("is_verified",)
     search_fields = ("vendor_name", "vendor_registration_number")
     ordering = ("-created_at",)
+
+
+@admin.register(LedgerItem)
+class LedgerItemAdmin(admin.ModelAdmin):
+    """
+    LedgerItem 모델 어드민 단독 관리 설정
+    """
+
+    list_display = ("id", "ledger", "item_name", "quantity", "unit_price", "total_price", "created_at")
+    search_fields = ("item_name", "ledger__vendor_name")
+    ordering = ("-created_at",)
