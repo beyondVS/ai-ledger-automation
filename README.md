@@ -256,11 +256,13 @@ docker compose up -d --build
 
 ## 🔒 로컬 환경 모바일 PWA HTTPS 터널링 명세 (Debugging LAN)
 
-모바일 단말기(iOS, Android Safari/Chrome)를 사용하여 로컬 가동 개발 대역에 접속해 PWA의 A2HS 및 서비스 워커, 백그라운드 Web Push 알림을 완벽하게 디버깅하기 위해서는 HTTPS 보안 통신 터널이 의무적으로 요구됩니다.
+로컬 PC 개발 환경 및 도커 실행 환경에서는 불필요한 SSL 핸드셰이크 프로토콜/암호화 협상 에러(ERR_SSL_VERSION_OR_CIPHER_MISMATCH)를 방어하고 개발 편의성을 극대화하기 위해 Vite 개발 서버를 일반 HTTP 환경(`http://localhost:5173`)으로 기동합니다. 단, `localhost` 도메인은 안전한 보안 컨텍스트(Secure Context)로 브라우저가 예외적으로 인정하기 때문에 로컬 PC 브라우저 상의 PWA 설치 및 카메라 캡처 등 디바이스 연동은 완벽히 지원됩니다.
 
-1. 로컬 Vue 및 Django API 서버를 가동합니다.
-2. 터미널에서 `ngrok` 또는 `localtunnel`을 실행하여 포트를 퍼블릭 HTTPS SSL 가교로 통과시킵니다.
+다만, 모바일 단말기(iOS, Android Safari/Chrome)를 사용해 동일한 로컬 개발 대역에 직접 무선 접속(LAN IP 접속)하여 PWA의 A2HS 및 서비스 워커, 백그라운드 Web Push 알림을 완벽하게 디버깅하기 위해서는 HTTPS 보안 통신 터널이 의무적으로 요구됩니다.
+
+1. 로컬 Vue 및 Django API 서버를 Docker Compose로 기동합니다.
+2. 터미널에서 `ngrok` 또는 `localtunnel`을 실행하여 프론트엔드 포트(`5173`)를 퍼블릭 HTTPS SSL 가교로 터널링해 통과시킵니다:
    ```bash
-   ngrok http 8080
+   ngrok http 5173
    ```
 3. ngrok이 제공하는 공개 보안 도메인 주소(예: `https://abcd-123.ngrok-free.app`)를 사용하여 모바일 디바이스에서 무결한 네이티브 연동 및 PWA 설치/푸시 전 과정을 완벽히 검증할 수 있습니다.

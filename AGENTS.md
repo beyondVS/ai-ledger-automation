@@ -95,6 +95,9 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
   - 가계부 내역 수동 수정 모달(LedgerEditModal)의 결제일자 폼은 datetime-local 타입이므로, 데이터베이스나 목업 테스트로부터 날짜 정보만 인입되어 문자열 길이가 10자 이하(YYYY-MM-DD)일 시 브라우저 바인딩 붕괴를 예방하기 위해 'T00:00'을 강제로 덧붙여 16자(YYYY-MM-DDTHH:mm) 규격으로 정규화 처리함.
   - 캘린더 일자 클릭 시 상세 내역 조회 필터링은 userTimezone 값이 없거나 비어 있을 시 'Asia/Seoul'로 안전하게 폴백 처리하며, 대조 성공 여부 및 매칭 건수를 개발자 도구 콘솔에 실시간 출력하여 디버깅 추적성을 수호함.
   - 대시보드의 정보 탐색성(UX)을 극대화하기 위해 기존의 2열 레이아웃을 w-full 1열 flex-col 세로 통합 레이아웃 구조로 리팩토링하여 목록 뷰와 달력 뷰가 가로폭을 시원하게 사용하며, 상세 검색 필터(FilterPanel)는 기본적으로 접힘(Collapse) 상태로 가계부 카드 내에 콤팩트하게 이식함. 모바일 하위 호환을 위해 탭 분기(currentTab)는 hidden md:block 결합으로 그대로 수호함.
+  - 로컬 PC 개발 환경 및 도커 실행 환경에서의 개발 편의성을 극대화하고, 불필요한 SSL 핸드셰이크 프로토콜/암호화 협상 에러(ERR_SSL_VERSION_OR_CIPHER_MISMATCH)를 방어하기 위해 `frontend/vite.config.js` 상의 `https` 옵션을 비활성화하여 일반 HTTP(`http://localhost:5173`)로 기동함. 단, `localhost` 도메인은 안전한 보안 컨텍스트(Secure Context)로 브라우저가 인정하므로 PWA 설치 및 디바이스(카메라) 캡처 연동은 정상 작동함.
+  - 서비스 워커(`sw.js`)의 `fetch` 이벤트 리스너 상에서 크롬 확장 프로그램이 유발하는 `chrome-extension://` 등 비-HTTP/HTTPS 스키마 요청을 가로채서 캐시 스토리지(`Cache.put`)에 기록하려 할 때 발생하는 `TypeError` 예외(Request scheme is unsupported)를 차단하기 위해, fetch 리스너 진입부에 `http://` 및 `https://` 외의 스키마 요청을 사전에 우회 격리하는 방어 코드를 필수 수호함.
+  - 브라우저가 PWA 설치성(Installability)을 정상적으로 인지하여 데스크톱 및 모바일에서 설치 아이콘을 띄울 수 있도록 `index.html`에 `manifest.webmanifest` 링크를 명시하고, 비표준 경고를 해소하기 위해 표준 규격인 `<meta name="mobile-web-app-capable" content="yes">`와 iOS 호환용 `<meta name="apple-mobile-web-app-capable" content="yes">`를 병렬 탑재함.
 - **해결되지 않은 기술 부채**:
   - AWS Free tier, Supabase Free plan 등 제한된 DBMS의 최대 가용 커넥션 풀 크기 병목 고갈을 예방하기 위해, 풀 제한 크기를 api_server 컨테이너 최대 5개, Celery async_worker 최대 3개, 전체 합산 8개 이하로 엄격하게 제약 통제 필수.
 
