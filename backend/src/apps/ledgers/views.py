@@ -931,9 +931,23 @@ class ReceiptBulkUploadView(APIView):
     [T007] [US1] ReceiptBulkUploadView
     - 최대 50개의 영수증 이미지/PDF 파일을 multipart로 인입받아 비동기 처리합니다.
     - 202 Accepted 응답과 함께 ReceiptTask 정보 목록을 반환합니다.
+    - 본 API는 테스트용 하네스로서 DEBUG=True 환경에서만 접근이 허용됩니다.
     """
 
     permission_classes = [AllowAny] if settings.DEBUG else [IsAuthenticated]
+
+    def dispatch(self, request, *args, **kwargs):
+        import sys
+
+        from django.conf import settings
+        from django.http import Http404
+
+        is_testing = (
+            "test" in sys.argv or any("pytest" in arg for arg in sys.argv) or getattr(settings, "TESTING", False)
+        )
+        if not (settings.DEBUG or is_testing):
+            raise Http404("이 API는 로컬 개발 및 E2E 테스트 목적으로만 사용할 수 있습니다.")
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         try:
