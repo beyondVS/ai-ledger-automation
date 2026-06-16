@@ -74,15 +74,22 @@
       </div>
     </div>
   </nav>
+
+  <!-- iOS A2HS 수동 설치 유도 툴팁 -->
+  <iOSInstallTooltip />
 </template>
 
 <script>
 import { ref, onMounted, onBeforeMount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { logout } from '../services/authService';
+import iOSInstallTooltip from './iOSInstallTooltip.vue';
 
 export default {
   name: 'NavBar',
+  components: {
+    iOSInstallTooltip
+  },
   setup() {
     const route = useRoute();
     const router = useRouter();

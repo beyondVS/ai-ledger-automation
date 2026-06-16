@@ -1,10 +1,28 @@
 <template>
   <router-view />
+  <!-- 전역 네트워크 상태 감지 토스트 배너 -->
+  <NetworkStatusToast />
 </template>
 
 <script>
+import { onMounted, onUnmounted } from 'vue';
+import NetworkStatusToast from './components/NetworkStatusToast.vue';
+import { initNetworkMonitor, destroyNetworkMonitor } from './utils/networkMonitor';
+
 export default {
-  name: 'App'
+  name: 'App',
+  components: {
+    NetworkStatusToast
+  },
+  setup() {
+    onMounted(() => {
+      initNetworkMonitor();
+    });
+
+    onUnmounted(() => {
+      destroyNetworkMonitor();
+    });
+  }
 };
 </script>
 

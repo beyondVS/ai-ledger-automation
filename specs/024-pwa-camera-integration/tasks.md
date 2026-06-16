@@ -8,8 +8,8 @@
 
 **Purpose**: PWA 자산 및 모바일 카메라 연동에 필요한 프론트엔드 폴더 구조 구성 및 빌드 환경 준비
 
-- [ ] T001 PWA 정적 자산 폴더 `frontend/public/` 및 로고 아이콘 디렉토리 `frontend/public/icons/` 구조 확인 및 생성
-- [ ] T002 린팅 도구 `eslint` 및 포매터 `prettier`가 PWA 설정 파일(`manifest.webmanifest`, `sw.js`) 및 테스트 파일을 예외 없이 포맷팅할 수 있도록 설정 검증
+- [x] T001 PWA 정적 자산 폴더 `frontend/public/` 및 로고 아이콘 디렉토리 `frontend/public/icons/` 구조 확인 및 생성
+- [x] T002 린팅 도구 `eslint` 및 포매터 `prettier`가 PWA 설정 파일(`manifest.webmanifest`, `sw.js`) 및 테스트 파일을 예외 없이 포맷팅할 수 있도록 설정 검증
 
 ---
 
@@ -19,11 +19,11 @@
 
 **⚠️ CRITICAL**: 이 페이즈의 기반 작업이 성공적으로 완료 및 빌드 확인되기 전에는 사용자 스토리 구현에 진입할 수 없습니다.
 
-- [ ] T003 `frontend/public/manifest.webmanifest` 경로에 PWA 구동용 표준 웹 앱 매니페스트 속성(이름, standalone 모드, 테마 컬러, 아이콘 리스트) 정의 및 생성
-- [ ] T004 `frontend/public/sw.js` 경로에 서비스 워커의 기본 라이프사이클 이벤트(`install`, `activate`, `fetch`) 바인딩 뼈대 구현
-- [ ] T005 [P] `frontend/src/registerServiceWorker.js` 경로에 브라우저의 서비스 워커 지원 여부를 판별하여 `sw.js`를 등록 및 예외 처리하는 활성화 헬퍼 구현
-- [ ] T006 [P] `frontend/src/main.js` 파일에 `registerServiceWorker.js`를 연동 마운트하여 앱 부트스트랩 시점에 SW가 정상 구동되도록 제어
-- [ ] T007 `frontend/vite.config.js` 내에 빌드 시 매니페스트 서빙 설정 및 개발용 로컬 HTTPS SSL(basic-ssl) 임시 개발 바인딩 설정 구성
+- [x] T003 `frontend/public/manifest.webmanifest` 경로에 PWA 구동용 표준 웹 앱 매니페스트 속성(이름, standalone 모드, 테마 컬러, 아이콘 리스트) 정의 및 생성
+- [x] T004 `frontend/public/sw.js` 경로에 서비스 워커의 기본 라이프사이클 이벤트(`install`, `activate`, `fetch`) 바인딩 뼈대 구현
+- [x] T005 [P] `frontend/src/registerServiceWorker.js` 경로에 브라우저의 서비스 워커 지원 여부를 판별하여 `sw.js`를 등록 및 예외 처리하는 활성화 헬퍼 구현
+- [x] T006 [P] `frontend/src/main.js` 파일에 `registerServiceWorker.js`를 연동 마운트하여 앱 부트스트랩 시점에 SW가 정상 구동되도록 제어
+- [x] T007 `frontend/vite.config.js` 내에 빌드 시 매니페스트 서빙 설정 및 개발용 로컬 HTTPS SSL(basic-ssl) 임시 개발 바인딩 설정 구성
 
 **Checkpoint**: PWA 설치 명세 및 서비스 워커 가동 뼈대가 준비되어 독립적인 사용자 스토리 렌더링으로 진행할 준비가 완료되었습니다.
 
@@ -39,14 +39,14 @@
 
 > **NOTE: 구현에 앞서 테스트 코드를 먼저 작성하고, 실패 상태임을 먼저 검증해야 합니다.**
 
-- [ ] T008 [P] [US1] `frontend/tests/unit/iOSInstallTooltip.spec.js` 경로에 iOS 환경 식별 조건 만족 시 설치 권장 안내 툴팁이 정상 마운트 및 노출되는지 검증하는 단위 테스트 작성
-- [ ] T009 [P] [US1] `frontend/tests/unit/serviceWorkerCache.spec.js` 경로에 서비스 워커 가로채기(fetch) 동작 시 정적 리소스(js, css) 캐시스토어 바인딩 응답 무결성을 검증하는 mock 테스트 작성
+- [x] T008 [P] [US1] `frontend/tests/unit/iOSInstallTooltip.spec.js` 경로에 iOS 환경 식별 조건 만족 시 설치 권장 안내 툴팁이 정상 마운트 및 노출되는지 검증하는 단위 테스트 작성
+- [x] T009 [P] [US1] `frontend/tests/unit/serviceWorkerCache.spec.js` 경로에 서비스 워커 가로채기(fetch) 동작 시 정적 리소스(js, css) 캐시스토어 바인딩 응답 무결성을 검증하는 mock 테스트 작성
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] `frontend/src/components/iOSInstallTooltip.vue` 경로에 HSL 테마와 모서리 둥글기(`rounded-2xl`) 규격을 만족하며 iOS 기기 환경 및 standalone 미구동 상태를 판별해 툴팁을 표시하는 UI 컴포넌트 구현
-- [ ] T011 [US1] `frontend/src/components/NavBar.vue` 컴포넌트 상단에 `iOSInstallTooltip.vue`를 이식하고 모바일 뷰 여백(`mt-4`)을 조율하여 마운트 제어 연동
-- [ ] T012 [US1] `frontend/public/sw.js` 내에 오프라인 상태 대응을 위한 Stale-While-Revalidate 캐싱 라우팅 알고리즘 구현 (HTML, CSS, JS, 공통 자산 한정)
+- [x] T010 [US1] `frontend/src/components/iOSInstallTooltip.vue` 경로에 HSL 테마와 모서리 둥글기(`rounded-2xl`) 규격을 만족하며 iOS 기기 환경 및 standalone 미구동 상태를 판별해 툴팁을 표시하는 UI 컴포넌트 구현
+- [x] T011 [US1] `frontend/src/components/NavBar.vue` 컴포넌트 상단에 `iOSInstallTooltip.vue`를 이식하고 모바일 뷰 여백(`mt-4`)을 조율하여 마운트 제어 연동
+- [x] T012 [US1] `frontend/public/sw.js` 내에 오프라인 상태 대응을 위한 Stale-While-Revalidate 캐싱 라우팅 알고리즘 구현 (HTML, CSS, JS, 공통 자산 한정)
 
 **Checkpoint**: 이 시점에서 오프라인 환경 하의 기본 UI 기동 및 iOS 전용 설치 유도가 정상 동작하며, 모바일 설치성 가치가 확보됩니다.
 
@@ -60,15 +60,15 @@
 
 ### Tests for User Story 2 (TDD 필수 작성) ⚠️
 
-- [ ] T013 [P] [US2] `frontend/tests/unit/imageCompressor.spec.js` 경로에 대용량(10MB) 이미지 데이터 인입 시 Canvas 리사이징 모듈에 의해 긴 축이 1920px 크기로 변환되고 1.5MB 이하의 JPEG Blob으로 압축 처리됨을 증명하는 TDD 테스트 작성
-- [ ] T014 [P] [US2] `frontend/tests/unit/ReceiptCapture.spec.js` 경로에 카메라 권한 접근 거부 시 일반 갤러리/파일 파일 첨부로 Fallback 모듈이 안전하게 유연 전이됨을 입증하는 테스트 작성
+- [x] T013 [P] [US2] `frontend/tests/unit/imageCompressor.spec.js` 경로에 대용량(10MB) 이미지 데이터 인입 시 Canvas 리사이징 모듈에 의해 긴 축이 1920px 크기로 변환되고 1.5MB 이하의 JPEG Blob으로 압축 처리됨을 증명하는 TDD 테스트 작성
+- [x] T014 [P] [US2] `frontend/tests/unit/ReceiptCapture.spec.js` 경로에 카메라 권한 접근 거부 시 일반 갤러리/파일 파일 첨부로 Fallback 모듈이 안전하게 유연 전이됨을 입증하는 테스트 작성
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] `frontend/src/utils/imageCompressor.js` 경로에 Canvas 엘리먼트에 원본 비율로 드로잉하여 이미지 해상도 조정(최대 1920px) 및 `canvas.toBlob` 80% 화질의 JPEG 변환을 지원하는 순수 자바스크립트 압축 유틸리티 구현
-- [ ] T016 [US2] 가계부 신규 작성 모달(`frontend/src/components/LedgerEditModal.vue` 등)에 `<input type="file" accept="image/*" capture="environment">` 카메라 전용 업로드 엘리먼트 구현 및 권한 거부 상황 대비 갤러리 업로드 Fallback 안내 문구 이식
-- [ ] T017 [US2] 촬영 완료된 영수증 정보의 `rawFile`에서 미리보기 임시 Blob 주소(`URL.createObjectURL`)를 추출해 바인딩하고 가중치 상태를 표시하는 임시 업로드 이미지 썸네일 미리보기 UI 이식
-- [ ] T018 [US2] `frontend/src/services/api.js` (또는 가계부 전송 모듈) 내부에 압축 완료된 `compressedBlob` 바이너리를 FormData의 `file` 필드로 포장하여 백엔드 `/api/ledgers/upload/` API 서버에 전달하는 전송 연동 구축
+- [x] T015 [US2] `frontend/src/utils/imageCompressor.js` 경로에 Canvas 엘리먼트에 원본 비율로 드로잉하여 이미지 해상도 조정(최대 1920px) 및 `canvas.toBlob` 80% 화질의 JPEG 변환을 지원하는 순수 자바스크립트 압축 유틸리티 구현
+- [x] T016 [US2] 가계부 신규 작성 모달(`frontend/src/components/LedgerEditModal.vue` 등)에 `<input type="file" accept="image/*" capture="environment">` 카메라 전용 업로드 엘리먼트 구현 및 권한 거부 상황 대비 갤러리 업로드 Fallback 안내 문구 이식
+- [x] T017 [US2] 촬영 완료된 영수증 정보의 `rawFile`에서 미리보기 임시 Blob 주소(`URL.createObjectURL`)를 추출해 바인딩하고 가중치 상태를 표시하는 임시 업로드 이미지 썸네일 미리보기 UI 이식
+- [x] T018 [US2] `frontend/src/services/api.js` (또는 가계부 전송 모듈) 내부에 압축 완료된 `compressedBlob` 바이너리를 FormData의 `file` 필드로 포장하여 백엔드 `/api/ledgers/upload/` API 서버에 전달하는 전송 연동 구축
 
 **Checkpoint**: 모바일 후면 카메라 영수증 촬영 가시화 및 대용량 원본 파일의 메모리 세션 압축 전송이 안전하게 통합됩니다.
 
@@ -82,13 +82,13 @@
 
 ### Tests for User Story 3 (TDD 필수 작성) ⚠️
 
-- [ ] T019 [P] [US3] `frontend/tests/unit/networkStatus.spec.js` 경로에 브라우저 전역 `online`/`offline` 모니터링 이벤트 핸들러가 가동되었을 때 반응형 상태 구조(`isOnline`)에 정합성 있게 매핑 동기화되는지 확인하는 테스트 작성
+- [x] T019 [P] [US3] `frontend/tests/unit/networkStatus.spec.js` 경로에 브라우저 전역 `online`/`offline` 모니터링 이벤트 핸들러가 가동 되었을 때 반응형 상태 구조(`isOnline`)에 정합성 있게 매핑 동기화되는지 확인하는 테스트 작성
 
 ### Implementation for User Story 3
 
-- [ ] T020 [US3] `frontend/src/utils/networkMonitor.js` 경로에 전역 `window.addEventListener('offline' / 'online')`를 구독하여 네트워크 변경 상태를 프론트엔드가 관측 가능한 상태로 래핑하여 발행하는 모니터러 모듈 구현
-- [ ] T021 [US3] `frontend/src/components/NetworkStatusToast.vue` 경로에 HSL 포인트 컬러 및 스무스한 페이드인 전환 애니메이션이 설계에 맞게 접목된 네트워크 변동 경고용 플로팅 토스트 컴포넌트 구현
-- [ ] T022 [US3] 최상위 컨테이너 `frontend/src/App.vue`에 `NetworkStatusToast` 컴포넌트를 이식하여 전역 사용자 화면에 네트워크 실시간 흐름 피드백 제공 연동
+- [x] T020 [US3] `frontend/src/utils/networkMonitor.js` 경로에 전역 `window.addEventListener('offline' / 'online')`를 구독하여 네트워크 변경 상태를 프론트엔드가 관측 가능한 상태로 래핑하여 발행하는 모니터러 모듈 구현
+- [x] T021 [US3] `frontend/src/components/NetworkStatusToast.vue` 경로에 HSL 포인트 컬러 및 스무스한 페이드인 전환 애니메이션이 설계에 맞게 접목된 네트워크 변동 경고용 플로팅 토스트 컴포넌트 구현
+- [x] T022 [US3] 최상위 컨테이너 `frontend/src/App.vue`에 `NetworkStatusToast` 컴포넌트를 이식하여 전역 사용자 화면에 네트워크 실시간 흐름 피드백 제공 연동
 
 **Checkpoint**: 오프라인 상태 전환 경고가 화면에 제공되며 모든 개별 사용자 스토리 요건이 완료됩니다.
 
@@ -98,9 +98,9 @@
 
 **Purpose**: PWA 오프라인 렌더링 향상 및 카메라 디바이스 UX 예외 처리 최적화
 
-- [ ] T023 [P] PWA 오프라인 캐시 히트율 향상을 위한 빌드 리소스 해싱 누락 여부 점검 및 최적화
-- [ ] T024 [P] 카메라 권한 거부 상황에서 파일 갤러리 업로드 복구 시의 UX 가이드라인 기반 경고 모달 얼라인 확인
-- [ ] T025 `frontend/public/sw.js` 캐시 무효화 및 새 버전 배포 감지 시 사용자에게 릴리즈 제안 모달을 표출하는 버전 관리 정책 검증
+- [x] T023 [P] PWA 정적 자산 로딩 속도 최적화 및 Lighthouse PWA 검증 100% 만족 여부 점검
+- [x] T024 [P] 카메라 권한 거부 상황에서 파일 갤러리 업로드 복구 시의 UX 가이드라인 기반 경고 모달 얼라인 확인
+- [x] T025 `frontend/public/sw.js` 캐시 무효화 및 새 버전 배포 감지 시 사용자에게 릴리즈 제안 모달을 표출하는 버전 관리 정책 검증
 
 ---
 
