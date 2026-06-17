@@ -20,8 +20,8 @@
 
 **Purpose**: Project initialization and basic structure creation
 
-- [ ] T001 `frontend/src/components/PwaInstallBanner.vue` 경로에 신규 PWA 설치 유도 제어 컴포넌트 기본 스켈레톤 파일 생성
-- [ ] T002 [P] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 Vitest 유닛 테스트용 테스트 스켈레톤 파일 생성
+- [X] T001 `frontend/src/components/PwaInstallBanner.vue` 경로에 신규 PWA 설치 유도 제어 컴포넌트 기본 스켈레톤 파일 생성
+- [X] T002 [P] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 Vitest 유닛 테스트용 테스트 스켈레톤 파일 생성
 
 ---
 
@@ -29,8 +29,8 @@
 
 **Purpose**: Helper utility logic for platform detection and storage check
 
-- [ ] T003 `frontend/src/utils/pwa-helper.js` 경로에 PWA 브라우저 환경 판단, Standalone 모드 식별, LocalStorage 쿨다운 확인을 전담할 유틸리티 파일 생성
-- [ ] T004 [P] `frontend/public/sw.js` 및 `frontend/src/registerServiceWorker.js`를 확인하여 PWA 웹 앱의 설치 조건 충족에 필요한 매니페스트와 서비스 워커 세팅 상태 점검
+- [X] T003 `frontend/src/utils/pwa-helper.js` 경로에 PWA 브라우저 환경 판단, Standalone 모드 식별, LocalStorage 쿨다운 확인을 전담할 유틸리티 파일 생성
+- [X] T004 [P] `frontend/public/sw.js` 및 `frontend/src/registerServiceWorker.js`를 확인하여 PWA 웹 앱의 설치 조건 충족에 필요한 매니페스트와 서비스 워커 세팅 상태 점검
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -46,14 +46,14 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T005 [P] [US1] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 `beforeinstallprompt` 이벤트 가로채기(preventDefault) 및 커스텀 배너 노출 플래그 동작을 검증하는 실패하는 단위 테스트 작성
-- [ ] T006 [P] [US1] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 "설치" 버튼 클릭 시 캡처된 프롬프트 API(.prompt())가 호출되는지 및 "닫기" 클릭 시 로컬 저장소 쿨다운(7일) 상태가 기록되는지 검증하는 실패하는 단위 테스트 작성
+- [X] T005 [P] [US1] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 `beforeinstallprompt` 이벤트 가로채기(preventDefault) 및 커스텀 배너 노출 플래그 동작을 검증하는 실패하는 단위 테스트 작성
+- [X] T006 [P] [US1] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 "설치" 버튼 클릭 시 캡처된 프롬프트 API(.prompt())가 호출되는지 및 "닫기" 클릭 시 로컬 저장소 쿨다운(7일) 상태가 기록되는지 검증하는 실패하는 단위 테스트 작성
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] `frontend/src/utils/pwa-helper.js` 경로에 beforeinstallprompt 지원 여부 및 LocalStorage 쿨다운 만료(7일 차이 대조) 판별 헬퍼 함수 구현 (T005, T006 테스트 대상)
-- [ ] T008 [US1] `frontend/src/components/PwaInstallBanner.vue` 경로에 Android용 하단 고정식 가로 배너 UI(앱 타이틀, 설치 권장 문구, "설치하기" 버튼, "닫기" X 아이콘) 마크업 및 3초 지연 타이머(`setTimeout`) 연동 구현
-- [ ] T009 [US1] `frontend/src/components/PwaInstallBanner.vue` 경로에 beforeinstallprompt 이벤트 캡처 바인딩, 설치 실행 시 `prompt()` 호출 및 닫기 클릭 시 7일 쿨다운 저장 연동 구현
+- [X] T007 [P] [US1] `frontend/src/utils/pwa-helper.js` 경로에 beforeinstallprompt 지원 여부 및 LocalStorage 쿨다운 만료(7일 차이 대조) 판별 헬퍼 함수 구현 (T005, T006 테스트 대상)
+- [X] T008 [US1] `frontend/src/components/PwaInstallBanner.vue` 경로에 Android용 하단 고정식 가로 배너 UI(앱 타이틀, 설치 권장 문구, "설치하기" 버튼, "닫기" X 아이콘) 마크업 및 3초 지연 타이머(`setTimeout`) 연동 구현
+- [X] T009 [US1] `frontend/src/components/PwaInstallBanner.vue` 경로에 beforeinstallprompt 이벤트 캡처 바인딩, 설치 실행 시 `prompt()` 호출 및 닫기 클릭 시 7일 쿨다운 저장 연동 구현
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently (Vitest US1 tests pass)
 
@@ -69,14 +69,14 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US2] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 iOS Safari 기기 감지 시 iOS 수동 안내 툴팁 노출 플래그 활성화를 검증하는 실패하는 단위 테스트 작성
-- [ ] T011 [P] [US2] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 툴팁 내 "닫기" 버튼 클릭 시 LocalStorage에 7일 쿨다운 시각이 정상 저장되고 숨김 처리되는지 검증하는 실패하는 단위 테스트 작성
+- [X] T010 [P] [US2] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 iOS Safari 기기 감지 시 iOS 수동 안내 툴팁 노출 플래그 활성화를 검증하는 실패하는 단위 테스트 작성
+- [X] T011 [P] [US2] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 툴팁 내 "닫기" 버튼 클릭 시 LocalStorage에 7일 쿨다운 시각이 정상 저장되고 숨김 처리되는지 검증하는 실패하는 단위 테스트 작성
 
 ### Implementation for User Story 2
 
-- [ ] T012 [P] [US2] `frontend/src/utils/pwa-helper.js` 경로에 iOS 기기 판별 및 타사 브라우저(Chrome/웹뷰 등)를 배제하고 순정 Safari만 골라내는 유저 에이전트(UA) 판별 헬퍼 함수 구현 (T010 테스트 대상)
-- [ ] T013 [US2] `frontend/src/components/PwaInstallBanner.vue` 경로에 iOS Safari 전용 하단 말풍선 가이드 UI(공유 가이드 문구, Apple 표준 공유 아이콘, X 닫기 버튼, 하단 삼각형 꼬리 CSS 데코) 마크업 및 3초 지연 노출 구현
-- [ ] T014 [US2] `frontend/src/components/PwaInstallBanner.vue` 경로에 iOS 툴팁의 닫기 핸들러 및 7일 쿨다운 LocalStorage 저장 연동 구현
+- [X] T012 [P] [US2] `frontend/src/utils/pwa-helper.js` 경로에 iOS 기기 판별 및 타사 브라우저(Chrome/웹뷰 등)를 배제하고 순정 Safari만 골라내는 유저 에이전트(UA) 판별 헬퍼 함수 구현 (T010 테스트 대상)
+- [X] T013 [US2] `frontend/src/components/PwaInstallBanner.vue` 경로에 iOS Safari 전용 하단 말풍선 가이드 UI(공유 가이드 문구, Apple 표준 공유 아이콘, X 닫기 버튼, 하단 삼각형 꼬리 CSS 데코) 마크업 및 3초 지연 노출 구현
+- [X] T014 [US2] `frontend/src/components/PwaInstallBanner.vue` 경로에 iOS 툴팁의 닫기 핸들러 및 7일 쿨다운 LocalStorage 저장 연동 구현
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently (Vitest US1 & US2 tests pass)
 
@@ -92,12 +92,12 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T015 [P] [US3] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 브라우저가 Standalone 실행 중일 때 설치 유도 UI 렌더링이 원천 차단(배너/툴팁 노출 생략)되는지 검증하는 실패하는 단위 테스트 작성
+- [X] T015 [P] [US3] `frontend/src/__tests__/PwaInstallBanner.spec.js` 경로에 브라우저가 Standalone 실행 중일 때 설치 유도 UI 렌더링이 원천 차단(배너/툴팁 노출 생략)되는지 검증하는 실패하는 단위 테스트 작성
 
 ### Implementation for User Story 3
 
-- [ ] T016 [P] [US3] `frontend/src/utils/pwa-helper.js` 경로에 `window.navigator.standalone` 속성 및 `window.matchMedia('(display-mode: standalone)')` 미디어를 활용해 독립 모드 여부를 판단하는 헬퍼 함수 구현 (T015 테스트 대상)
-- [ ] T017 [US3] `frontend/src/components/PwaInstallBanner.vue` 경로에 컴포넌트 라이프사이클 마운트 진입점 단계에서 standalone 감정 시 3초 타이머 작동 차단 및 UI 은닉 제어 분기 구현
+- [X] T016 [P] [US3] `frontend/src/utils/pwa-helper.js` 경로에 `window.navigator.standalone` 속성 및 `window.matchMedia('(display-mode: standalone)')` 미디어를 활용해 독립 모드 여부를 판단하는 헬퍼 함수 구현 (T015 테스트 대상)
+- [X] T017 [US3] `frontend/src/components/PwaInstallBanner.vue` 경로에 컴포넌트 라이프사이클 마운트 진입점 단계에서 standalone 감정 시 3초 타이머 작동 차단 및 UI 은닉 제어 분기 구현
 
 **Checkpoint**: All user stories should now be independently functional (All Vitest unit tests pass)
 
@@ -107,9 +107,9 @@
 
 **Purpose**: Integration into layout, manual E2E validation, and formatting check
 
-- [ ] T018 `frontend/src/App.vue` 경로의 최상위 프론트엔드 엔트리 파일에 `PwaInstallBanner` 컴포넌트를 이식 및 마운트하여 전역 페이지 통합 완료
-- [ ] T019 [P] `specs/025-pwa-install-banner/quickstart.md`에 정의된 iOS 디바이스 모의(UserAgent 변경) 및 LocalStorage 쿨다운 시간 변경 디버깅 방식을 적용해 브라우저 E2E 수동 교차 검증 완료
-- [ ] T020 [P] `frontend/` 경로에서 `npm run test` 실행으로 Vitest 테스트 스위트 100% 그린 패스 및 pre-commit Ruff/포맷 자동화 린트 최종 검증 완수
+- [X] T018 `frontend/src/App.vue` 경로의 최상위 프론트엔드 엔트리 파일에 `PwaInstallBanner` 컴포넌트를 이식 및 마운트하여 전역 페이지 통합 완료
+- [X] T019 [P] `specs/025-pwa-install-banner/quickstart.md`에 정의된 iOS 디바이스 모의(UserAgent 변경) 및 LocalStorage 쿨다운 시간 변경 디버깅 방식을 적용해 브라우저 E2E 수동 교차 검증 완료
+- [X] T020 [P] `frontend/` 경로에서 `npm run test` 실행으로 Vitest 테스트 스위트 100% 그린 패스 및 pre-commit Ruff/포맷 자동화 린트 최종 검증 완수
 
 ---
 

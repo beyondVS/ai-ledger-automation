@@ -2,17 +2,21 @@
   <router-view />
   <!-- 전역 네트워크 상태 감지 토스트 배너 -->
   <NetworkStatusToast />
+  <!-- PWA 설치 유도 배너 및 iOS Safari 수동 가이드 -->
+  <PwaInstallBanner />
 </template>
 
 <script>
 import { onMounted, onUnmounted } from 'vue';
 import NetworkStatusToast from './components/NetworkStatusToast.vue';
+import PwaInstallBanner from './components/PwaInstallBanner.vue';
 import { initNetworkMonitor, destroyNetworkMonitor } from './utils/networkMonitor';
 
 export default {
   name: 'App',
   components: {
-    NetworkStatusToast
+    NetworkStatusToast,
+    PwaInstallBanner
   },
   setup() {
     onMounted(() => {
