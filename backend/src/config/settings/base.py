@@ -149,7 +149,7 @@ GEMINI_ENABLED = env.bool("GEMINI_ENABLED", default=False)
 GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
 GEMINI_MODEL = env("GEMINI_MODEL", default="gemini-2.5-flash")
 
-OLLAMA_MODEL = env("OLLAMA_MODEL", default="gemma4:e4b")
+OLLAMA_MODEL = env("OLLAMA_MODEL", default="qwen2.5:14b-instruct-q4_K_M")
 OLLAMA_API_BASE = env("OLLAMA_API_BASE", default="http://localhost:11434")
 
 # =========================================================================

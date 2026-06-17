@@ -1,8 +1,8 @@
 # check_ollama.ps1
-# 로컬 개발 환경에서 Ollama 서비스의 구동 여부 및 gemma4:e4b 모델 존재 여부를 검증합니다.
+# 로컬 개발 환경에서 Ollama 서비스의 구동 여부 및 qwen2.5:14b-instruct-q4_K_M 모델 존재 여부를 검증합니다.
 
 $OLLAMA_API = "http://localhost:11434"
-$MODEL_NAME = "gemma4:e4b"
+$MODEL_NAME = "qwen2.5:14b-instruct-q4_K_M"
 
 Write-Host "Checking Ollama status at $OLLAMA_API..." -ForegroundColor Cyan
 
