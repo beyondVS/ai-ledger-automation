@@ -23,7 +23,7 @@ graph TD
     UI["PWA Vue App (Manifest/SW)"] -->|카메라 촬영 & 압축 전송| API_Server["API 서버 (Django)"]
     API_Server -->|비동기 작업 발행| Redis["Redis Event Queue"]
     Redis -->|작업 소비| Celery["Celery Worker"]
-    Celery -->|1차 파싱 시도| Ollama["로컬 Ollama (gemma4:e4b)"]
+    Celery -->|1차 파싱 시도| Ollama["로컬 Ollama (qwen2.5:14b-instruct-q4_K_M)"]
     Celery -.->|2~3차 폴백| Gemini["Gemini-2.5-Flash API"]
     Celery -->|단일 트랜잭션 적재| DB[("PostgreSQL DB (psycopg3)")]
     DB -.->|대시보드 동기 조회| UI

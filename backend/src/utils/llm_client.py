@@ -69,7 +69,7 @@ class ReceiptLLMClient:
         gemini_api_key = getattr(settings, "GEMINI_API_KEY", None) or os.environ.get("GEMINI_API_KEY")
         gemini_model = getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
 
-        ollama_model = getattr(settings, "OLLAMA_MODEL", "gemma4:e4b")
+        ollama_model = getattr(settings, "OLLAMA_MODEL", "qwen2.5:14b-instruct-q4_K_M")
         ollama_api_base = getattr(settings, "OLLAMA_API_BASE", "http://localhost:11434")
 
         # LiteLLM 형식 명세 보정
@@ -131,7 +131,7 @@ class ReceiptLLMClient:
 
     def parse_receipt_local(self, raw_ocr_text: str) -> ReceiptSchema | None:
         """
-        로컬 OCR 텍스트를 입력받아 로컬 Ollama 모델(gemma4:e4b)을 호출해 JSON 스키마로 구조화하고,
+        로컬 OCR 텍스트를 입력받아 로컬 Ollama 모델(qwen2.5:14b-instruct-q4_K_M)을 호출해 JSON 스키마로 구조화하고,
         상세 품목 금액 합산 정합성을 검증한 뒤 결과를 반환합니다.
         """
         try:

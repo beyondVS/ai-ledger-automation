@@ -507,7 +507,7 @@ networks:
 * [x] **11일차:** **[추가 계획] 프론트엔드 로그인 상태 체크(인증 토큰 기반 라우터 가드 구현) 및 실제 사용자 로그인/회원가입 UI 화면 개발.** 모바일 사용자 전용 클라이언트 사이드 이미지 리사이징 모듈 내장 (HTML5 Canvas API를 이용하여 업로드 단추를 누르기 직전 1000px 규격 최적화 압축 처리 가동하여 네트워크 트래픽 절감).  
 * [x] **12일차:** 대시보드 메인 가계부 리스트 뷰 및 개별 상세 내역 조회 아코디언 컴포넌트 개발. API 서버를 통해 Django ORM에서 누적 적재 데이터를 받아와 화면에 정상 렌더링 확인. (이미 10일차에 구현된 로그인 기능을 바탕으로 실제 인증된 사용자의 가계부 데이터를 호출하여 렌더링)  
 * [x] **13일차:** 가계부 상세 레코드 수동 정정(가맹점명 변경, 오분류 카테고리 교정 등) 및 수동 삭제(CRUD) 프론트엔드 모달 다이얼로그 기능 최종 개발 및 연결.  
-* [x] **14일차:** 2주차 동기식 MVP 완전체 통합 테스트 및 AI 분석 모듈 현대화. 지원 종료된 `google-generativeai` SDK를 완전히 배제하고, `litellm.Router`를 도입하여 로컬 환경(DEBUG=True)에서는 로컬 Ollama `gemma4:e4b`를 최우선 및 폴백으로 단독 가동하며 프로덕션 환경(DEBUG=False)에서만 외부 Gemini-2.5-Flash를 우선 라우팅하는 다이내믹 라우터(`ReceiptLLMClient`)를 구축 완료. PDF 파일 업로드 시 Pillow 전처리 오류를 예외 분기 처리하여 원본 PDF Bytes 데이터 및 MIME 타입을 API에 직접 전달하는 전처리 고도화 구현. 백엔드 pytest 49개 및 프론트엔드 테스트 38개 전원 그린 패스 완료.
+* [x] **14일차:** 2주차 동기식 MVP 완전체 통합 테스트 및 AI 분석 모듈 현대화. 지원 종료된 `google-generativeai` SDK를 완전히 배제하고, `litellm.Router`를 도입하여 로컬 환경(DEBUG=True)에서는 로컬 Ollama `qwen2.5:14b-instruct-q4_K_M`을 최우선 및 폴백으로 단독 가동하며 프로덕션 환경(DEBUG=False)에서만 외부 Gemini-2.5-Flash를 우선 라우팅하는 다이내믹 라우터(`ReceiptLLMClient`)를 구축 완료. PDF 파일 업로드 시 Pillow 전처리 오류를 예외 분기 처리하여 원본 PDF Bytes 데이터 및 MIME 타입을 API에 직접 전달하는 전처리 고도화 구현. 백엔드 pytest 49개 및 프론트엔드 테스트 38개 전원 그린 패스 완료.
 
 ### **6.3. 3주차: 비동기 분산 아키텍처 및 비용/보안 고도화 (15일차 \~ 21일차)**
 
@@ -522,13 +522,13 @@ networks:
 ### **6.4. 4주차: PWA 플랫폼 최적화, Web Push 및 프로덕션 배포 (22일차 \~ 29일차)**
 
 * [x] **22일차:** 3단계 하이브리드 영수증 파싱 전략(3-Tier Hybrid Pipeline) 구축 및 기존 정규식 바이패스(Bypass) 템플릿 아키텍처 제거/정리.
-  * **1단계 (Local Hybrid)**: PDF(PyMuPDF) 또는 이미지(Tesseract)를 사용한 1차 로컬 OCR 문자열 획득 후, 로컬 Ollama `gemma4:e4b` 텍스트 모델을 통한 JSON 스키마 구조화 시도 (비용 0원 달성).
+  * **1단계 (Local Hybrid)**: PDF(PyMuPDF) 또는 이미지(Tesseract)를 사용한 1차 로컬 OCR 문자열 획득 후, 로컬 Ollama `qwen2.5:14b-instruct-q4_K_M` 텍스트 모델을 통한 JSON 스키마 구조화 시도 (비용 0원 달성).
   * **2단계 (Cloud Text-only Fallback)**: 로컬 모델의 스키마 붕괴 또는 금액 정합성(Checksum) 검증 실패 시, 이미 확보된 로컬 OCR 문자열만 Gemini-2.5-Flash API로 전송하여 입력 이미지 토큰 비용을 95% 이상 절감하는 초저비용 구조화 시도.
   * **3단계 (Cloud Vision Fallback)**: 로컬 OCR 문자 추출 실패 또는 앞선 텍스트 파싱 오류 발생 시 최후의 보루로 영수증 원본 이미지(WebP 변환 데이터) 혹은 PDF를 Gemini-2.5-Flash 멀티모달로 송신하여 99% 파싱 무결성 수호.
   * **레거시 정리**: 기존 `BypassParser` 매칭, `promotion.py` 일관성/승격 및 `self_healing` 자가치유 Celery 태스크 등 정적 정규식 기반 캐시 파이프라인의 안전 비활성화 및 청소.
 * [x] **23일차:** 3주차 비동기 아키텍처 튜닝 및 부하 테스트. 웹 업로드 경로로 유입되는 영수증 50종 일시 유입 부하 테스트를 통해 데이터 누락 및 트랜잭션 정합성 검증 완료.  
 * [x] **24일차:** PWA Manifest/Service Worker 캐시 연동 및 HTML5 Capture API 모바일 기기 카메라 연동.  
-* [ ] **25일차:** 스마트 단말기(iOS, Android)의 beforeinstallprompt 제어 배너 설계 및 사파리 수동 툴팁 A2HS 레이아웃 가이드 구현.  
+* [x] **25일차:** 스마트 단말기(iOS, Android)의 beforeinstallprompt 제어 배너 설계 및 사파리 수동 툴팁 A2HS 레이아웃 가이드 구현.  
 * [ ] **26일차:** 백그라운드 VAPID 표준 V2 VAPID 푸시 발송 큐(Notification Queue) 파이프라인 개설 및 FCM/APNs 연동 웹 푸시 비동기 발송 모듈 독립 기동.  
 * [ ] **27일차:** 비동기 워커 알림 소비 태스크 오프라인 수신 단말 E2E 모바일 푸시 알림 도달 및 디바이스 캐싱 데이터 무결 테스트 완료.  
 * [ ] **28일차:** 대규모 실 인프라용 docker-compose.prod.yml 튜닝 설계 및 호스트 포트 접근 보안 제어.  

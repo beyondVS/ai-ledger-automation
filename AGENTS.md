@@ -76,8 +76,8 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 
 - **아키텍처 결정의 이유**:
   - 금융 가계부 데이터의 강력한 일관성을 지키며 중복 입력을 인덱스 상에서 사전에 효율적으로 방지하고 월별 지출 애그리게이션 성능을 최적화하기 위해 NoSQL 대신 **관계형 PostgreSQL(최신 v18+)**을 주 데이터베이스로 선정하고, 미정형 파서 백업을 위해 JSONB 필드 결합. (v18의 Native UUIDv7 시계열 인덱스 및 AIO 비동기 I/O 성능 혜택 적극 활용)
-  - 유료 멀티모달 LLM API 연동에 수반되는 예산 비용을 95% 이상 최적화하기 위해, 로컬 OCR 및 로컬 LLM(Ollama gemma4:e4b)을 1차 기동하고 실패 시 Gemini 텍스트 및 비전 폴백을 차례대로 태우는 3단계 하이브리드 영수증 파싱 전략(3-Tier Hybrid Pipeline)을 구축함.
-  - 구글 공식 지원이 종료된 `google-generativeai`를 완전히 배제하고 `litellm.Router`를 활용하여 로컬 개발 환경(DEBUG=True)에서는 로컬 Ollama 모델(`gemma4:e4b`)을 최우선 및 폴백 모델로 단독 기동하고, 프로덕션 환경(DEBUG=False)에서만 외부 `gemini-2.5-flash` 모델을 우선적으로 호출하도록 동적 라우팅을 통제함. 특히 폴백 재시도 과정에서 base64 이미지 인코딩 규격의 접두사 유무 충돌(OllamaException: illegal base64 data) 문제를 극복하기 위해, Gemini 실패 감지 시 Ollama에 전달할 messages 페이로드에 접두사(prefix)가 제거된 순수 base64 바이트 데이터를 동적으로 재조립해 주입하도록 설계함.
+  - 유료 멀티모달 LLM API 연동에 수반되는 예산 비용을 95% 이상 최적화하기 위해, 로컬 OCR 및 로컬 LLM(Ollama qwen2.5:14b-instruct-q4_K_M)을 1차 기동하고 실패 시 Gemini 텍스트 및 비전 폴백을 차례대로 태우는 3단계 하이브리드 영수증 파싱 전략(3-Tier Hybrid Pipeline)을 구축함.
+  - 구글 공식 지원이 종료된 `google-generativeai`를 완전히 배제하고 `litellm.Router`를 활용하여 로컬 개발 환경(DEBUG=True)에서는 로컬 Ollama 모델(`qwen2.5:14b-instruct-q4_K_M`)을 최우선 및 폴백 모델로 단독 기동하고, 프로덕션 환경(DEBUG=False)에서만 외부 `gemini-2.5-flash` 모델을 우선적으로 호출하도록 동적 라우팅을 통제함. 특히 폴백 재시도 과정에서 base64 이미지 인코딩 규격의 접두사 유무 충돌(OllamaException: illegal base64 data) 문제를 극복하기 위해, Gemini 실패 감지 시 Ollama에 전달할 messages 페이로드에 접두사(prefix)가 제거된 순수 base64 바이트 데이터를 동적으로 재조립해 주입하도록 설계함.
   - 도커 볼륨 마운트 (`./backend:/app`) 가동 시 컨테이너 빌드 시점에 설치된 외부 패키지가 호스트 환경의 내용으로 덮어써져 Celery 등이 누락되는 현상을 완벽히 방어하고자, 컨테이너 내부 가상환경의 설치 타겟을 WORKDIR 외부인 `/venv` 절대 경로로 완전히 분리 격리하여 실시간 핫 리로딩 개발 편의성을 보장함.
   - 도커 서비스 호스트명에 언더스코어(`_`)가 혼입되면 RFC 1034/1035 도메인 규격 미준수로 Django 호스트 검증기(Allowed Hosts)에서 HTTP 400 에러를 반환하는 문제를 방지하기 위해, compose 서비스명을 `api_server`가 아닌 대시가 포함된 `api-server`로 전격 변경하고 `extra_hosts`를 통한 게이트웨이 포워딩 지정.
 - **엄격한 접근 제약**:
@@ -139,5 +139,5 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/024-pwa-camera-integration/plan.md)
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/025-pwa-install-banner/plan.md)
 <!-- SPECKIT END -->
