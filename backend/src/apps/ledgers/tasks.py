@@ -59,6 +59,21 @@ def extract_receipt_task(self, task_id: str, file_path: str):
             logger.info(f"[Celery] ReceiptTask completed with failure: {task_id}")
             return res
 
+        # 알림 트리거 연동: ReceiptTask 성공 시 유저에게 영수증 처리 완료 푸시 알림 발송
+        try:
+            task.refresh_from_db()
+            if task.ledger:
+                from apps.notifications.services import enqueue_receipt_notification
+
+                enqueue_receipt_notification(
+                    user_id=str(task.user_id),
+                    ledger_id=str(task.ledger.id),
+                    vendor_name=task.ledger.vendor_name,
+                    total_amount=str(task.ledger.total_amount),
+                )
+        except Exception as notify_err:
+            logger.error(f"[Celery] Failed to enqueue receipt notification: {str(notify_err)}")
+
         logger.info(f"[Celery] ReceiptTask completed successfully: {task_id}")
 
     except Exception as exc:

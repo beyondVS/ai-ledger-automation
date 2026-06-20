@@ -98,8 +98,12 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
   - 로컬 PC 개발 환경 및 도커 실행 환경에서의 개발 편의성을 극대화하고, 불필요한 SSL 핸드셰이크 프로토콜/암호화 협상 에러(ERR_SSL_VERSION_OR_CIPHER_MISMATCH)를 방어하기 위해 `frontend/vite.config.js` 상의 `https` 옵션을 비활성화하여 일반 HTTP(`http://localhost:5173`)로 기동함. 단, `localhost` 도메인은 안전한 보안 컨텍스트(Secure Context)로 브라우저가 인정하므로 PWA 설치 및 디바이스(카메라) 캡처 연동은 정상 작동함.
   - 서비스 워커(`sw.js`)의 `fetch` 이벤트 리스너 상에서 크롬 확장 프로그램이 유발하는 `chrome-extension://` 등 비-HTTP/HTTPS 스키마 요청을 가로채서 캐시 스토리지(`Cache.put`)에 기록하려 할 때 발생하는 `TypeError` 예외(Request scheme is unsupported)를 차단하기 위해, fetch 리스너 진입부에 `http://` 및 `https://` 외의 스키마 요청을 사전에 우회 격리하는 방어 코드를 필수 수호함.
   - 브라우저가 PWA 설치성(Installability)을 정상적으로 인지하여 데스크톱 및 모바일에서 설치 아이콘을 띄울 수 있도록 `index.html`에 `manifest.webmanifest` 링크를 명시하고, 비표준 경고를 해소하기 위해 표준 규격인 `<meta name="mobile-web-app-capable" content="yes">`와 iOS 호환용 `<meta name="apple-mobile-web-app-capable" content="yes">`를 병렬 탑재함.
+  - iOS Safari 및 FCM 표준 규격을 단일 VAPID 프로토콜(pywebpush)로 통일 처리하여 발송하며, 별도의 APNs p8 인증서나 구형 FCM OAuth2 연동 없이 통일된 암호화 서명을 전송함.
+  - 웹 푸시 알림 발송 실패 시, 브라우저 푸시 서버(FCM/APNs)로부터 410 Gone 또는 404 Not Found 응답 수신 시 단말 만료 상태로 자동 판단하여 UserPushSubscription의 is_active 상태를 False로 비활성화하고 재시도를 영구 배제함. 그 외 일시 장애는 최대 3회 지수 백오프 Celery 재시도 수행.
+  - 예산 초과 알림(BUDGET_THRESHOLD_ALERT)은 동일 월 내 80% 및 100% 임계치 알림이 각각 정상 발송될 수 있도록 idempotency_key 생성 규칙에 threshold_percent를 추가하고, DB 60초 시간 윈도우 중복 검사에서도 이를 구별하여 중복 방지를 우회함.
+  - 30일이 경과한 NotificationLog 레코드들은 매일 새벽 2시 Celery Beat의 cleanup_old_notification_logs 태스크를 통해 자동으로 일괄 퍼지 정리됨.
 - **해결되지 않은 기술 부채**:
-  - AWS Free tier, Supabase Free plan 등 제한된 DBMS의 최대 가용 커넥션 풀 크기 병목 고갈을 예방하기 위해, 풀 제한 크기를 api_server 컨테이너 최대 5개, Celery async_worker 최대 3개, 전체 합산 8개 이하로 엄격하게 제약 통제 필수.
+  - 없음 (이전에 존재하던 AWS Free tier 및 Supabase Free plan 커넥션 제한 규정은 v1.22.0 개정에 따라 삭제됨)
 
 ---
 
@@ -139,5 +143,5 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/025-pwa-install-banner/plan.md)
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/026-vapid-push-queue/plan.md)
 <!-- SPECKIT END -->

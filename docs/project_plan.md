@@ -529,7 +529,7 @@ networks:
 * [x] **23일차:** 3주차 비동기 아키텍처 튜닝 및 부하 테스트. 웹 업로드 경로로 유입되는 영수증 50종 일시 유입 부하 테스트를 통해 데이터 누락 및 트랜잭션 정합성 검증 완료.  
 * [x] **24일차:** PWA Manifest/Service Worker 캐시 연동 및 HTML5 Capture API 모바일 기기 카메라 연동.  
 * [x] **25일차:** 스마트 단말기(iOS, Android)의 beforeinstallprompt 제어 배너 설계 및 사파리 수동 툴팁 A2HS 레이아웃 가이드 구현.  
-* [ ] **26일차:** 백그라운드 VAPID 표준 V2 VAPID 푸시 발송 큐(Notification Queue) 파이프라인 개설 및 FCM/APNs 연동 웹 푸시 비동기 발송 모듈 독립 기동.  
+* [x] **26일차:** 백그라운드 VAPID 표준 V2 VAPID 푸시 발송 큐(Notification Queue) 파이프라인 개설 및 FCM/APNs 연동 웹 푸시 비동기 발송 모듈 독립 기동.  
 * [ ] **27일차:** 비동기 워커 알림 소비 태스크 오프라인 수신 단말 E2E 모바일 푸시 알림 도달 및 디바이스 캐싱 데이터 무결 테스트 완료.  
 * [ ] **28일차:** 대규모 실 인프라용 docker-compose.prod.yml 튜닝 설계 및 호스트 포트 접근 보안 제어.  
 * [ ] **29일차:** 서버 실 프로덕션 환경 HTTPS SSL 보안 인증 및 Nginx 리버스 프록시 탑재, 웹 업로드 및 PWA/웹푸시 기반 전 과정 E2E 통합 알림망 정식 릴리즈 완료.

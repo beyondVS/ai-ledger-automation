@@ -13,4 +13,6 @@ urlpatterns = [
     # [T007] 영수증 업로드 및 상태 조회 API 연동
     path("api/v1/ledgers/", include("apps.ledgers.urls")),
     path("api/v1/receipts/", include("apps.ledgers.urls")),  # 프론트엔드 receipts 호출 호환 추가
+    # 알림 서비스 API 연동
+    path("api/v1/notifications/", include("apps.notifications.urls")),
 ]

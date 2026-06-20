@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.ledgers",
     "apps.tasks",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -175,3 +176,27 @@ import sys
 if "test" in sys.argv or "pytest" in sys.argv or any("pytest" in arg for arg in sys.argv):
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = False
+
+# =========================================================================
+# 5. VAPID & Web Push 알림 설정
+# =========================================================================
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
+VAPID_CLAIMS_EMAIL = env("VAPID_CLAIMS_EMAIL", default="mailto:admin@example.com")
+GOOGLE_APPLICATION_CREDENTIALS_JSON = env("GOOGLE_APPLICATION_CREDENTIALS_JSON", default="")
+
+# Celery Task Routing (비동기 큐 격리)
+CELERY_TASK_ROUTES = {
+    "apps.notifications.tasks.*": {"queue": "notifications"},
+}
+
+# Celery Beat Schedule (30일 이력 정리)
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "cleanup-old-notification-logs": {
+        "task": "apps.notifications.tasks.cleanup_old_notification_logs",
+        "schedule": crontab(hour=2, minute=0),  # 매일 새벽 2시 실행
+        "options": {"queue": "notifications"},
+    },
+}

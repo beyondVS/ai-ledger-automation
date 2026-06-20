@@ -1,9 +1,6 @@
 from django.apps import AppConfig
 
 
-class LedgersConfig(AppConfig):
+class NotificationsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "apps.ledgers"
-
-    def ready(self):
-        pass
+    name = "apps.notifications"
