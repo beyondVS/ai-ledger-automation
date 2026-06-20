@@ -12,6 +12,7 @@
 
 - **하이브리드 비용 최적화 (3-Tier Hybrid Pipeline):** 로컬 OCR 및 로컬 LLM을 1차 기동하고, 실패 시 텍스트 기반 Gemini API 폴백을 태워 API 비용을 95% 이상 절감합니다.
 - **모바일 하이브리드 최적화 (Installable PWA):** 모바일 홈 화면 설치(A2HS), 네이티브 카메라 다이렉트 엑세스, HTML5 Canvas 1차 이미지 압축(최대 1920px, 1.5MB 이하)을 지원합니다.
+- **실시간 비동기 알림망 (VAPID Push Notification Queue):** 알림 전용 Celery 큐와 Redis 분산 락 및 60초 DB 멱등 윈도우 방어막을 장착하고, iOS/APNs 및 Android/FCM 규격을 Generic VAPID 프로토콜로 단일화 처리하여 전송 지연을 제거한 실시간 웹 푸시 알림망을 제공합니다.
 - **구조화된 AI 분석:** 영수증 레이아웃과 텍스트를 판독해 완벽히 일관된 JSON 스키마로 강제 변환합니다.
 
 ---
@@ -26,6 +27,9 @@ graph TD
     Celery -->|1차 파싱 시도| Ollama["로컬 Ollama (qwen2.5:14b-instruct-q4_K_M)"]
     Celery -.->|2~3차 폴백| Gemini["Gemini-2.5-Flash API"]
     Celery -->|단일 트랜잭션 적재| DB[("PostgreSQL DB (psycopg3)")]
+    Celery -->|비동기 알림 이벤트 발행| NotificationQueue["Celery Notification Queue"]
+    NotificationQueue -->|VAPID 웹푸시 발송| Gateways["Push Gateways (FCM / APNs)"]
+    Gateways -.->|백그라운드 푸시 수신| UI
     DB -.->|대시보드 동기 조회| UI
 ```
 
