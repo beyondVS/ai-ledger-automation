@@ -63,3 +63,52 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+// push 이벤트 핸들러: 실시간 백그라운드 웹 푸시 알림 수신
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  let data = {};
+  try {
+    data = event.data.json();
+  } catch (err) {
+    data = {
+      title: "가계부 알림",
+      body: event.data.text(),
+      action_url: "/"
+    };
+  }
+
+  const options = {
+    body: data.body,
+    icon: "/icons/icon-192x192.png",
+    badge: "/icons/badge-72x72.png",
+    data: { actionUrl: data.action_url || "/" },
+    requireInteraction: false,
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || "가계부 알림", options)
+  );
+});
+
+// notificationclick 이벤트 핸들러: 알림 클릭 시 대시보드 또는 액션 URL로 포커싱 및 이동
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const actionUrl = event.notification.data?.actionUrl || "/";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(actionUrl) && "focus" in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(actionUrl);
+        }
+      })
+  );
+});
+

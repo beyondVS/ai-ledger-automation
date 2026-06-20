@@ -106,6 +106,28 @@ services:
     networks:
       - ai_ledger_network
 
+  notification_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: ai-ledger-notification-worker
+    command: /venv/bin/celery -A config worker --loglevel=info -Q notifications -c 2
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env.docker
+    environment:
+      - PYTHONPATH=/app/src
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - ai_ledger_network
+
   frontend_dev:
     build:
       context: ./frontend

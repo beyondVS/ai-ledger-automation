@@ -75,6 +75,13 @@ class UserPushSubscription(models.Model):
     endpoint = models.URLField(max_length=2000)
     p256dh = models.CharField(max_length=255)
     auth = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
+    device_hint = models.CharField(
+        max_length=20,
+        choices=[("FCM", "Firebase Cloud Messaging"), ("APPLE", "Apple Web Push"), ("GENERIC", "Generic Web Push")],
+        default="GENERIC",
+        blank=True,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 

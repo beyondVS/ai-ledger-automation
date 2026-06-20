@@ -78,14 +78,14 @@
 
 ### Tests for User Story 2 (TDD - Write FIRST, Fail FIRST)
 
-- [ ] T021 [P] [US2] backend/tests/apps/notifications/test_tasks.py 경로에 Celery 비동기 발송 태스크(send_push_notification_task, dispatch_user_notifications_task) 및 Redis 락 + DB 60초 윈도우 중복 방지 멱등성 테스트 작성 (DB 결합: django.test.TestCase 상속)
+- [X] T021 [P] [US2] backend/tests/apps/notifications/test_tasks.py 경로에 Celery 비동기 발송 태스크(send_push_notification_task, dispatch_user_notifications_task) 및 Redis 락 + DB 60초 윈도우 중복 방지 멱등성 테스트 작성 (DB 결합: django.test.TestCase 상속)
 
 ### Implementation for User Story 2
 
-- [ ] T022 [P] [US2] backend/src/apps/notifications/tasks.py 경로에 send_push_notification_task(지수 백오프 재시도 포함, max_retries=3) 및 dispatch_user_notifications_task 비동기 Celery 태스크 구현 (T021 테스트 통과)
-- [ ] T023 [US2] backend/src/apps/ledgers/tasks.py 경로의 extract_receipt_task 영수증 파싱 완료 블록 내에 알림 큐 적재 트리거(enqueue_receipt_notification) 로직 연동
-- [ ] T024 [US2] backend/src/apps/ledgers/views.py 또는 services에서 월별 예산 임계값(80%) 초과 감지 시 알림 큐 적재 트리거(enqueue_budget_alert_notification) 로직 연동
-- [ ] T025 [US2] pytest를 기동하여 Celery 비동기 태스크 및 멱등성 이중 방어 로직의 단위/통합 테스트 통과 확인
+- [X] T022 [P] [US2] backend/src/apps/notifications/tasks.py 경로에 send_push_notification_task(지수 백오프 재시도 포함, max_retries=3) 및 dispatch_user_notifications_task 비동기 Celery 태스크 구현 (T021 테스트 통과)
+- [X] T023 [US2] backend/src/apps/ledgers/tasks.py 경로의 extract_receipt_task 영수증 파싱 완료 블록 내에 알림 큐 적재 트리거(enqueue_receipt_notification) 로직 연동
+- [X] T024 [US2] backend/src/apps/ledgers/views.py 또는 services에서 월별 예산 임계값(80%) 초과 감지 시 알림 큐 적재 트리거(enqueue_budget_alert_notification) 로직 연동
+- [X] T025 [US2] pytest를 기동하여 Celery 비동기 태스크 및 멱등성 이중 방어 로직의 단위/통합 테스트 통과 확인
 
 **Checkpoint**: User Story 2 구현 완료. 비동기 알림 전용 Celery 큐 및 이벤트 트리거 연동이 정상 작동하여 비동기 알림 발송이 가능합니다.
 
@@ -99,13 +99,13 @@
 
 ### Tests for User Story 3 (TDD - Write FIRST, Fail FIRST)
 
-- [ ] T026 [P] [US3] backend/tests/apps/notifications/test_routing.py 경로에 엔드포인트 도메인별 푸시 채널 판별 로직 및 FCM v1 JWT 생성 유틸리티 테스트 작성 (순수 로직: unittest.TestCase 상속)
+- [X] T026 [P] [US3] backend/tests/apps/notifications/test_routing.py 경로에 엔드포인트 도메인별 푸시 채널 판별 로직 및 FCM v1 JWT 생성 유틸리티 테스트 작성 (순수 로직: unittest.TestCase 상속)
 
 ### Implementation for User Story 3
 
-- [ ] T027 [US3] backend/src/apps/notifications/sender.py 경로에 google-auth 기반 OAuth 2.0 Bearer 토큰 생성 및 FCM v1 API 연동 로직과 Apple Web Push (VAPID) 발송 라우팅 구현 완성 (T026 테스트 통과)
-- [ ] T028 [P] [US3] backend/src/apps/notifications/admin.py 경로에 NotificationTask 및 NotificationLog 모델을 Django Admin 관리 인터페이스에 등록하여 운영자 조회 기능 구현
-- [ ] T029 [US3] pytest를 기동하여 이중 채널 발송 라우팅 및 감사 로그 생성 유틸리티 테스트 통과 확인
+- [X] T027 [US3] backend/src/apps/notifications/sender.py 경로에 google-auth 기반 OAuth 2.0 Bearer 토큰 생성 및 FCM v1 API 연동 로직과 Apple Web Push (VAPID) 발송 라우팅 구현 완성 (T026 테스트 통과)
+- [X] T028 [P] [US3] backend/src/apps/notifications/admin.py 경로에 NotificationTask 및 NotificationLog 모델을 Django Admin 관리 인터페이스에 등록하여 운영자 조회 기능 구현
+- [X] T029 [US3] pytest를 기동하여 이중 채널 발송 라우팅 및 감사 로그 생성 유틸리티 테스트 통과 확인
 
 **Checkpoint**: User Story 3 구현 완료. 서로 다른 모바일/데스크톱 기기 플랫폼으로의 발송 라우팅 및 관리자 이력 조회가 가능합니다.
 
@@ -119,13 +119,13 @@
 
 ### Tests for User Story 4 (TDD - Write FIRST, Fail FIRST)
 
-- [ ] T030 [P] [US4] backend/tests/apps/notifications/test_cleanup.py 경로에 410 Gone 수신 시 구독 자동 비활성화 로직 및 30일 초과 로그 정리 태스크에 대한 통합 테스트 작성 (DB 결합: django.test.TestCase 상속)
+- [X] T030 [P] [US4] backend/tests/apps/notifications/test_cleanup.py 경로에 410 Gone 수신 시 구독 자동 비활성화 로직 및 30일 초과 로그 정리 태스크에 대한 통합 테스트 작성 (DB 결합: django.test.TestCase 상속)
 
 ### Implementation for User Story 4
 
-- [ ] T031 [US4] backend/src/apps/notifications/tasks.py 경로에 cleanup_old_notification_logs Celery Beat 태스크를 구현하고, backend/src/config/settings/base.py에 매일 새벽 2시 구동을 위한 CELERY_BEAT_SCHEDULE 스케줄러 등록
-- [ ] T032 [US4] backend/src/apps/notifications/sender.py 경로의 pywebpush 예외 처리 블록 내에 410 Gone 수신 시 해당 UserPushSubscription의 is_active 필드를 False로 갱신하는 로직 추가 (T030 테스트 통과)
-- [ ] T033 [US4] pytest를 기동하여 410 Gone 자동 처리 및 30일 정리 비동기 태스크의 테스트 통과 확인
+- [X] T031 [US4] backend/src/apps/notifications/tasks.py 경로에 cleanup_old_notification_logs Celery Beat 태스크를 구현하고, backend/src/config/settings/base.py에 매일 새벽 2시 구동을 위한 CELERY_BEAT_SCHEDULE 스케줄러 등록
+- [X] T032 [US4] backend/src/apps/notifications/sender.py 경로의 pywebpush 예외 처리 블록 내에 410 Gone 수신 시 해당 UserPushSubscription의 is_active 필드를 False로 갱신하는 로직 추가 (T030 테스트 통과)
+- [X] T033 [US4] pytest를 기동하여 410 Gone 자동 처리 및 30일 정리 비동기 태스크의 테스트 통과 확인
 
 **Checkpoint**: User Story 4 구현 완료. 만료 구독에 대한 자가 치유(Self-cleaning)와 감사 로그 정리 배치가 원활하게 유지됩니다.
 
@@ -135,13 +135,13 @@
 
 **Purpose**: 시스템 전반의 최적화, 스크립트화, 헌법 준수성 강화 및 최종 문서 동기화
 
-- [ ] T034 [P] Windows(scripts/start-notification-worker.ps1) 및 Linux/macOS(scripts/start-notification-worker.sh) 환경 모두에서 알림 워커를 독립 구동할 수 있는 대칭형 기동 스크립트 작성 (헌법 VI조 수호)
-- [ ] T035 backend/src/config/settings/base.py 및 docker-compose.yml 경로 상에서 notification_worker의 DB 커넥션 풀(max_size) 및 Celery concurrency 설정을 로컬 가동 사양에 맞춰 최적화 설정
-- [ ] T036 backend/src/apps/notifications/tasks.py 경로 및 관련 서비스 로직에 전체 JSON 직렬화 페이로드 크기가 4,096 bytes를 초과하는 경우 에러 처리하거나 body를 안전하게 Truncate하는 방어 코드 검토 및 보완
-- [ ] T037 [P] 프로젝트 루트의 README.md, AGENTS.md, .specify/memory/constitution.md 간의 기술 스택 및 구조에 오류가 없는지 유기적으로 정합성을 확인하고 필요 시 업데이트 수행 (헌법 VI조 수호)
-- [ ] T038 backend 디렉토리에서 uv run ruff check 및 uv run ruff format을 구동하고 pre-commit 훅을 통과시켜 소스코드 포맷팅 무결성을 완벽하게 확인
-- [ ] T039 specs/026-vapid-push-queue/quickstart.md에 설명된 테스트 시나리오에 입각하여 전체 알림 파이프라인 E2E 연동 및 실 동작 수동 확인 검증
-- [ ] T040 [P] docs/vapid-key-rotation.md 경로에 VAPID 키 교체 전략 및 절차 가이드라인 문서 작성
+- [X] T034 [P] Windows(scripts/start-notification-worker.ps1) 및 Linux/macOS(scripts/start-notification-worker.sh) 환경 모두에서 알림 워커를 독립 구동할 수 있는 대칭형 기동 스크립트 작성 (헌법 VI조 수호)
+- [X] T035 backend/src/config/settings/base.py 및 docker-compose.yml 경로 상에서 notification_worker의 DB 커넥션 풀(max_size) 및 Celery concurrency 설정을 로컬 가동 사양에 맞춰 최적화 설정
+- [X] T036 backend/src/apps/notifications/tasks.py 경로 및 관련 서비스 로직에 전체 JSON 직렬화 페이로드 크기가 4,096 bytes를 초과하는 경우 에러 처리하거나 body를 안전하게 Truncate하는 방어 코드 검토 및 보완
+- [X] T037 [P] 프로젝트 루트의 README.md, AGENTS.md, .specify/memory/constitution.md 간의 기술 스택 및 구조에 오류가 없는지 유기적으로 정합성을 확인하고 필요 시 업데이트 수행 (헌법 VI조 수호)
+- [X] T038 backend 디렉토리에서 uv run ruff check 및 uv run ruff format을 구동하고 pre-commit 훅을 통과시켜 소스코드 포맷팅 무결성을 완벽하게 확인
+- [X] T039 specs/026-vapid-push-queue/quickstart.md에 설명된 테스트 시나리오에 입각하여 전체 알림 파이프라인 E2E 연동 및 실 동작 수동 확인 검증
+- [X] T040 [P] docs/vapid-key-rotation.md 경로에 VAPID 키 교체 전략 및 절차 가이드라인 문서 작성
 
 ---
 
