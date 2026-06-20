@@ -37,7 +37,6 @@ VAPID V2 표준 규격(RFC 8292, RFC 8291)을 준수하는 웹 푸시 알림 시
 
 **Constraints**:
 - 알림 페이로드: ≤ 4,096 bytes
-- DB 커넥션 풀: api_server≤5, celery≤3, notification_worker≤2, 합산≤10 (헌법 II조 준수, notification_worker 추가 고려)
 - HTTPS 강제 (프로덕션) / localhost HTTP 허용 (개발)
 
 **Scale/Scope**: 기존 사용자 기반, 다중 기기(평균 2~3기기/사용자) 병렬 발송
@@ -181,13 +180,10 @@ scripts/
     └── 신규 이벤트 → 발송 진행
 ```
 
-### 커넥션 풀 재산정 (헌법 II조)
+### 커넥션 풀 할당
 
-| 컨테이너 | max_size | 비고 |
-|---------|---------|------|
-| api_server | 5 | 기존 유지 |
-| async_worker | 3 | 기존 유지 |
-| notification_worker | 2 | 신규 추가 |
-| **합산** | **10** | 기존 8 → 10으로 증가. 헌법 II조 상한(8) 초과 → **헌법 개정 또는 notification_worker max_size=1 검토 필요** |
+로컬 Docker 개발 환경 및 가동 사양 편의성을 위해 DB 커넥션 풀에 강제적인 개수 제약은 없으며, 서비스별 안정적인 트랜잭션과 비동기 작업을 처리할 수 있는 합리적인 기본값으로 가동합니다.
+* `api_server`: max_size=5 (기본)
+* `async_worker`: max_size=3 (기본)
+* `notification_worker`: max_size=2 (기본)
 
-> ⚠️ **주의**: notification_worker 추가 시 커넥션 풀 합산이 10으로 헌법 II조의 8 상한을 초과합니다. tasks.md 수립 시 이를 명시하고, notification_worker DB 커넥션을 최소화(max_size=1, 또는 DB 미접근 발송 전용 워커 설계)하는 방안을 검토해야 합니다.

@@ -136,11 +136,12 @@
 **Purpose**: 시스템 전반의 최적화, 스크립트화, 헌법 준수성 강화 및 최종 문서 동기화
 
 - [ ] T034 [P] Windows(scripts/start-notification-worker.ps1) 및 Linux/macOS(scripts/start-notification-worker.sh) 환경 모두에서 알림 워커를 독립 구동할 수 있는 대칭형 기동 스크립트 작성 (헌법 VI조 수호)
-- [ ] T035 backend/src/config/settings/base.py 및 docker-compose.yml 경로 상에서 notification_worker의 DB 커넥션 풀 max_size를 1로 제약하여, 전체 서비스의 총 DB 커넥션이 헌법 II조 제한치(8개 이하)를 넘지 않도록 최적화
+- [ ] T035 backend/src/config/settings/base.py 및 docker-compose.yml 경로 상에서 notification_worker의 DB 커넥션 풀(max_size) 및 Celery concurrency 설정을 로컬 가동 사양에 맞춰 최적화 설정
 - [ ] T036 backend/src/apps/notifications/tasks.py 경로 및 관련 서비스 로직에 전체 JSON 직렬화 페이로드 크기가 4,096 bytes를 초과하는 경우 에러 처리하거나 body를 안전하게 Truncate하는 방어 코드 검토 및 보완
 - [ ] T037 [P] 프로젝트 루트의 README.md, AGENTS.md, .specify/memory/constitution.md 간의 기술 스택 및 구조에 오류가 없는지 유기적으로 정합성을 확인하고 필요 시 업데이트 수행 (헌법 VI조 수호)
 - [ ] T038 backend 디렉토리에서 uv run ruff check 및 uv run ruff format을 구동하고 pre-commit 훅을 통과시켜 소스코드 포맷팅 무결성을 완벽하게 확인
 - [ ] T039 specs/026-vapid-push-queue/quickstart.md에 설명된 테스트 시나리오에 입각하여 전체 알림 파이프라인 E2E 연동 및 실 동작 수동 확인 검증
+- [ ] T040 [P] docs/vapid-key-rotation.md 경로에 VAPID 키 교체 전략 및 절차 가이드라인 문서 작성
 
 ---
 

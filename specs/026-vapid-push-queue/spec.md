@@ -131,7 +131,7 @@
 - 프론트엔드(Vue.js PWA)에는 이미 서비스 워커(sw.js)가 존재하며, 해당 서비스 워커에 `push` 이벤트 핸들러를 추가하는 방식으로 클라이언트측 알림 수신을 구현한다.
 - VAPID 키 쌍은 최초 1회 생성 후 환경 변수(`.env`)로 관리되며, 운영 중 동적 교체는 이번 범위에서 제외하고 추후 확장 백로그로 이관한다.
 - 알림 발송 대상 이벤트는 v1에서 ① 영수증 처리 완료, ② 월별 예산 임계 초과(기본값 80%) 2종으로 확정한다. 가계부 수동 수정 저장 등 추가 이벤트는 v2 백로그로 이관하며, 이벤트 유형은 확장 가능한 구조로 설계한다.
-- FCM은 Google Firebase Cloud Messaging HTTP v1 API를 사용하며, APNs는 JWT 기반 토큰 인증 방식의 HTTP/2 연결을 사용한다. FCM 서비스 계정 JSON 자격증명은 단일 환경 변수(`GOOGLE_APPLICATION_CREDENTIALS_JSON`)에 JSON 문자열로 주입하며, 파일 볼륨 마운트 방식은 사용하지 않는다. APNs는 팀 ID, 키 ID, 활성 인증 키(p8 형식)를 각각 환경 변수로 분리 주입한다.
+- FCM은 Google Firebase Cloud Messaging HTTP v1 API를 사용하며, APNs는 W3C Web Push 표준을 따르는 Apple Web Push (VAPID) 연결을 사용한다. FCM 서비스 계정 JSON 자격증명은 단일 환경 변수(GOOGLE_APPLICATION_CREDENTIALS_JSON)에 JSON 문자열로 주입하며, 파일 볼륨 마운트 방식은 사용하지 않는다. Apple Web Push (APNs) 역시 VAPID 공개키/비밀키와 서명 클레임을 활용하여 동일한 pywebpush 래퍼로 통일 처리한다.
 - VAPID V2 서명은 RFC 8292 표준을 준수하며, 알림 페이로드 암호화는 RFC 8291(Message Encryption for Web Push) 규격을 따른다.
 - 알림 페이로드 크기 제한은 FCM 기준 4KB를 상한선으로 적용한다.
 - 구독 정보는 기존 PostgreSQL 데이터베이스에 저장하며, 별도 NoSQL 저장소는 사용하지 않는다.

@@ -99,7 +99,7 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
   - 서비스 워커(`sw.js`)의 `fetch` 이벤트 리스너 상에서 크롬 확장 프로그램이 유발하는 `chrome-extension://` 등 비-HTTP/HTTPS 스키마 요청을 가로채서 캐시 스토리지(`Cache.put`)에 기록하려 할 때 발생하는 `TypeError` 예외(Request scheme is unsupported)를 차단하기 위해, fetch 리스너 진입부에 `http://` 및 `https://` 외의 스키마 요청을 사전에 우회 격리하는 방어 코드를 필수 수호함.
   - 브라우저가 PWA 설치성(Installability)을 정상적으로 인지하여 데스크톱 및 모바일에서 설치 아이콘을 띄울 수 있도록 `index.html`에 `manifest.webmanifest` 링크를 명시하고, 비표준 경고를 해소하기 위해 표준 규격인 `<meta name="mobile-web-app-capable" content="yes">`와 iOS 호환용 `<meta name="apple-mobile-web-app-capable" content="yes">`를 병렬 탑재함.
 - **해결되지 않은 기술 부채**:
-  - AWS Free tier, Supabase Free plan 등 제한된 DBMS의 최대 가용 커넥션 풀 크기 병목 고갈을 예방하기 위해, 풀 제한 크기를 api_server 컨테이너 최대 5개, Celery async_worker 최대 3개, 전체 합산 8개 이하로 엄격하게 제약 통제 필수.
+  - 없음 (이전에 존재하던 AWS Free tier 및 Supabase Free plan 커넥션 제한 규정은 v1.22.0 개정에 따라 삭제됨)
 
 ---
 
