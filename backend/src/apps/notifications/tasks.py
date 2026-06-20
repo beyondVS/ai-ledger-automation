@@ -47,8 +47,32 @@ def send_push_notification_task(self, notification_task_id: str) -> dict:
     subscription_info = {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}}
     payload = {"title": task.title, "body": task.body, "action_url": task.action_url}
 
-    # 외부 웹 푸시 전송 시도
-    result = send_web_push(subscription_info, payload)
+    # 외부 웹 푸시 전송 시도 (예외 발생 시 고스트 태스크 방지 방어 코드 적용)
+    from apps.notifications.sender import PushPayloadTooLargeError, detect_push_channel
+
+    try:
+        result = send_web_push(subscription_info, payload)
+    except PushPayloadTooLargeError as exc:
+        logger.error(f"VAPID payload size limit exceeded for task {notification_task_id}: {exc}")
+        with transaction.atomic():
+            task.status = "FAILED"
+            task.save()
+            NotificationLog.objects.create(
+                task=task,
+                user=task.user,
+                channel=detect_push_channel(sub.endpoint),
+                endpoint_hint=sub.endpoint[:255],
+                http_status_code=None,
+                response_body=str(exc)[:2000],
+                is_success=False,
+            )
+        return {"status": "FAILED", "error": "Payload size limit exceeded"}
+    except Exception as exc:
+        logger.error(f"Unexpected error in send_web_push for task {notification_task_id}: {exc}")
+        with transaction.atomic():
+            task.status = "FAILED"
+            task.save()
+        raise exc
 
     if result["is_success"]:
         # 성공 시 이력 기록 및 상태 변경
