@@ -102,6 +102,10 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
   - 웹 푸시 알림 발송 실패 시, 브라우저 푸시 서버(FCM/APNs)로부터 410 Gone 또는 404 Not Found 응답 수신 시 단말 만료 상태로 자동 판단하여 UserPushSubscription의 is_active 상태를 False로 비활성화하고 재시도를 영구 배제함. 그 외 일시 장애는 최대 3회 지수 백오프 Celery 재시도 수행.
   - 예산 초과 알림(BUDGET_THRESHOLD_ALERT)은 동일 월 내 80% 및 100% 임계치 알림이 각각 정상 발송될 수 있도록 idempotency_key 생성 규칙에 threshold_percent를 추가하고, DB 60초 시간 윈도우 중복 검사에서도 이를 구별하여 중복 방지를 우회함.
   - 30일이 경과한 NotificationLog 레코드들은 매일 새벽 2시 Celery Beat의 cleanup_old_notification_logs 태스크를 통해 자동으로 일괄 퍼지 정리됨.
+  - 오프라인 단말 복귀 시 지연 도달한 알림을 유실 없이 IndexedDB 저장소에 `CachedNotification` 레코드로 자동 영속 캐싱하고 백엔드 수신 확인 API(Acknowledgment POST)를 연동함.
+  - 네트워크 플래핑 스트레스 환경에서도 중복 레코드가 발생하지 않도록 알림의 고유 UUIDv7 키를 대조하여 IndexedDB 내의 멱등성(Upsert)을 보장함.
+  - 로컬 IndexedDB 캐시는 30일을 초과하거나 100개 상한을 넘어설 시 백그라운드 가비지 컬렉터(GC)에 의해 자동 퍼지(Purge)되며, 비동기 대기로 인한 브라우저의 트랜잭션 자동 만료(TransactionInactiveError) 예방을 위해 매 GC 단계(30일 경과 삭제, 100개 상한 초과분 삭제)는 독립된 readwrite 트랜잭션을 수립하여 격리 처리함.
+  - 프로젝트 헌법 제VIII조(테스트 격리)에 따라 백엔드 뷰에 테스트용 분기를 심어 임시 세팅해주는 구조를 전면 배제하고, E2E 테스트(`offline-push.spec.js`) 내부에서 직접 `child_process.execSync`로 백엔드 CLI 쉘 기동을 통해 모킹 DB 시딩 및 정리(Clean before recreate)를 일임하여 테스트 고립성을 확보함.
 - **해결되지 않은 기술 부채**:
   - 없음 (이전에 존재하던 AWS Free tier 및 Supabase Free plan 커넥션 제한 규정은 v1.22.0 개정에 따라 삭제됨)
 
