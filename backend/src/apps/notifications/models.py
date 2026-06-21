@@ -82,6 +82,17 @@ class NotificationLog(models.Model):
     http_status_code = models.PositiveSmallIntegerField(null=True, blank=True)
     response_body = models.TextField(null=True, blank=True, max_length=2000)
     is_success = models.BooleanField(db_index=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("PENDING", "대기 중"),
+            ("SENT", "발송 완료"),
+            ("DELIVERED", "수신 완료"),
+            ("FAILED", "실패"),
+        ],
+        default="PENDING",
+        db_index=True,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 

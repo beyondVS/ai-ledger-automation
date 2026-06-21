@@ -89,6 +89,22 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     self.registration.showNotification(data.title || "가계부 알림", options)
+      .then(() => {
+        // [T015] 로컬 IndexedDB 캐싱 연동
+        if (data.id) {
+          return saveNotificationToIndexedDB({
+            id: data.id,
+            title: data.title,
+            body: data.body,
+            status: "UNREAD",
+            created_at: data.created_at
+          })
+          .then(() => {
+            // [T016] 백엔드 Acknowledge 전송
+            return sendAcknowledgeToBackend(data.id);
+          });
+        }
+      })
   );
 });
 
@@ -110,5 +126,201 @@ self.addEventListener("notificationclick", (event) => {
         }
       })
   );
+});
+
+// IndexedDB 헬퍼 함수 정의 (sw.js 독립 실행 환경 수호)
+const DB_NAME = "ai-ledger-notifications";
+const DB_VERSION = 1;
+const STORE_NAME = "notifications";
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = (event) => reject(event.target.error);
+    request.onsuccess = (event) => resolve(event.target.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
+        store.createIndex("created_at", "created_at", { unique: false });
+      }
+    };
+  });
+}
+
+function saveNotificationToIndexedDB(notification) {
+  return openDB().then((db) => {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORE_NAME], "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.put({
+        id: notification.id,
+        title: notification.title,
+        body: notification.body,
+        status: notification.status || "UNREAD",
+        created_at: notification.created_at || new Date().toISOString(),
+        synced_at: new Date().toISOString(),
+      });
+      request.onsuccess = () => resolve(true);
+      request.onerror = (e) => reject(e.target.error);
+    });
+  });
+}
+
+function getAuthTokenFromDB() {
+  return openDB().then((db) => {
+    return new Promise((resolve) => {
+      try {
+        const transaction = db.transaction([STORE_NAME], "readonly");
+        const store = transaction.objectStore(STORE_NAME);
+        const req = store.get("__auth_token__");
+        req.onsuccess = () => {
+          if (req.result && req.result.token) {
+            resolve(req.result.token);
+          } else {
+            resolve(null);
+          }
+        };
+        req.onerror = () => resolve(null);
+      } catch (err) {
+        resolve(null);
+      }
+    });
+  });
+}
+
+// 백엔드 수신 확인(Acknowledge) API 송신 헬퍼
+function sendAcknowledgeToBackend(notificationId) {
+  return getAuthTokenFromDB().then((token) => {
+    if (!token) {
+      console.warn("Acknowledge skipped: No auth token found in IndexedDB");
+      return Promise.resolve();
+    }
+    const url = `/api/v1/notifications/${notificationId}/acknowledge/`;
+    return fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        status: "DELIVERED",
+        delivered_at: new Date().toISOString()
+      })
+    })
+    .then((res) => {
+      if (!res.ok) {
+        console.error("Acknowledge API request failed status:", res.status);
+      } else {
+        console.log("Acknowledge API request successfully dispatched");
+      }
+    })
+    .catch((err) => {
+      console.error("Acknowledge API network dispatch error:", err);
+    });
+  });
+}
+
+let isTestMode = false;
+let mockNotifications = [];
+
+// 테스트 에뮬레이션용 message 이벤트 수집 (E2E 테스트 시 가상 push 동작용)
+self.addEventListener("message", (event) => {
+  console.log("sw.js received message payload:", event.data);
+  
+  if (event.data && event.data.type === "SET_TOKEN") {
+    const token = event.data.token;
+    event.waitUntil(
+      openDB().then((db) => {
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction([STORE_NAME], "readwrite");
+          const store = transaction.objectStore(STORE_NAME);
+          const req = store.put({
+            id: "__auth_token__",
+            token: token,
+            created_at: new Date().toISOString()
+          });
+          req.onsuccess = () => {
+            console.log("sw.js successfully saved auth token to IndexedDB");
+            resolve();
+          };
+          req.onerror = (e) => reject(e.target.error);
+        });
+      })
+    );
+    return;
+  }
+  
+  if (event.data && event.data.type === "SET_TEST_MODE") {
+    isTestMode = true;
+    try {
+      Object.defineProperty(self.registration, 'showNotification', {
+        value: function(title, options) {
+          console.log("[MOCK] showNotification called:", title, options);
+          mockNotifications.push({ title: title, body: options.body });
+          return Promise.resolve();
+        },
+        configurable: true,
+        writable: true
+      });
+      Object.defineProperty(self.registration, 'getNotifications', {
+        value: function() {
+          return Promise.resolve(mockNotifications);
+        },
+        configurable: true,
+        writable: true
+      });
+      console.log("sw.js successfully mocked showNotification and getNotifications");
+    } catch (e) {
+      console.error("sw.js failed to mock notifications:", e);
+    }
+    return;
+  }
+
+  if (event.data && event.data.type === "MOCK_PUSH") {
+    const payload = event.data.payload;
+    const options = {
+      body: payload.body,
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/badge-72x72.png",
+      data: { actionUrl: payload.action_url || "/" },
+      requireInteraction: false,
+    };
+    
+    console.log("sw.js triggering showNotification for title:", payload.title);
+    event.waitUntil(
+      self.registration.showNotification(payload.title || "가계부 알림", options)
+        .then(() => {
+          console.log("sw.js showNotification completed successfully");
+          // 로컬 IndexedDB 캐싱 연동
+          return saveNotificationToIndexedDB({
+            id: payload.id,
+            title: payload.title,
+            body: payload.body,
+            status: "UNREAD",
+            created_at: payload.created_at
+          })
+          .then(() => {
+            // 백엔드 Acknowledge 전송
+            return sendAcknowledgeToBackend(payload.id);
+          })
+          .then(() => {
+            return self.clients.matchAll().then(clients => {
+              clients.forEach(client => {
+                client.postMessage({ type: "MOCK_PUSH_SUCCESS", title: payload.title, body: payload.body });
+              });
+            });
+          });
+        })
+        .catch(err => {
+          console.error("sw.js showNotification failed error:", err);
+          return self.clients.matchAll().then(clients => {
+            clients.forEach(client => {
+              client.postMessage({ type: "MOCK_PUSH_ERROR", error: err.toString() });
+            });
+          });
+        })
+    );
+  }
 });
 

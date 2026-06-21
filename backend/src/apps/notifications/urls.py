@@ -1,4 +1,9 @@
-from apps.notifications.views import UserPushSubscriptionViewSet, VapidPublicKeyView
+from apps.notifications.views import (
+    NotificationAcknowledgementView,
+    NotificationSyncView,
+    UserPushSubscriptionViewSet,
+    VapidPublicKeyView,
+)
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
@@ -9,5 +14,7 @@ router.register("subscriptions", UserPushSubscriptionViewSet, basename="subscrip
 
 urlpatterns = [
     path("vapid-public-key/", VapidPublicKeyView.as_view(), name="vapid-public-key"),
+    path("<uuid:id>/acknowledge/", NotificationAcknowledgementView.as_view(), name="acknowledge"),
+    path("sync/", NotificationSyncView.as_view(), name="sync"),
     path("", include(router.urls)),
 ]

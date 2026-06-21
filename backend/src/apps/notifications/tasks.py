@@ -65,6 +65,7 @@ def send_push_notification_task(self, notification_task_id: str) -> dict:
                 http_status_code=None,
                 response_body=str(exc)[:2000],
                 is_success=False,
+                status="FAILED",
             )
         return {"status": "FAILED", "error": "Payload size limit exceeded"}
     except Exception as exc:
@@ -87,6 +88,7 @@ def send_push_notification_task(self, notification_task_id: str) -> dict:
                 http_status_code=result["http_status_code"],
                 response_body=result["response_body"],
                 is_success=True,
+                status="SENT",
             )
         return {"status": "SUCCESS", "task_id": notification_task_id}
 
@@ -113,6 +115,7 @@ def send_push_notification_task(self, notification_task_id: str) -> dict:
                     http_status_code=status_code,
                     response_body=result["response_body"],
                     is_success=False,
+                    status="FAILED",
                 )
             return {"status": "FAILED", "error": "Subscription expired"}
 
@@ -137,6 +140,7 @@ def send_push_notification_task(self, notification_task_id: str) -> dict:
                         http_status_code=status_code,
                         response_body=result["response_body"],
                         is_success=False,
+                        status="FAILED",
                     )
                 return {"status": "FAILED", "error": "Max retries exceeded"}
 

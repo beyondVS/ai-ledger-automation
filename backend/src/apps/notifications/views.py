@@ -1,6 +1,12 @@
+from datetime import timedelta
+
 from apps.accounts.models import UserPushSubscription
+from apps.notifications.models import NotificationLog
 from apps.notifications.serializers import UserPushSubscriptionSerializer
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -50,3 +56,70 @@ class UserPushSubscriptionViewSet(viewsets.ModelViewSet):
         instance.is_active = False
         instance.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class NotificationAcknowledgementView(APIView):
+    """
+    [T016] 웹 푸시 수신 확인 API 뷰
+    - 단말의 서비스 워커가 푸시 메시지를 수신했을 때 백엔드 상태를 DELIVERED로 갱신합니다.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        try:
+            log = NotificationLog.objects.get(id=id, user=request.user)
+        except (NotificationLog.DoesNotExist, ValueError, ValidationError):
+            return Response({"detail": "Notification log record not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        status_val = request.data.get("status")
+        if status_val != "DELIVERED":
+            return Response(
+                {"detail": "Invalid status value. Only 'DELIVERED' status update is permitted via this endpoint."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        log.status = "DELIVERED"
+        log.save()
+
+        return Response({"success": True, "id": str(log.id), "status": "DELIVERED"}, status=status.HTTP_200_OK)
+
+
+class NotificationSyncView(APIView):
+    """
+    [T017] 알림 델타 동기화 API 뷰
+    - 앱 포그라운드 진입 시 로컬 캐시(IndexedDB)와 백엔드 이력을 대조하고 읽음 상태 등을 보정합니다.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        synced_at = timezone.now()
+        queryset = NotificationLog.objects.filter(user=request.user).select_related("task")
+
+        last_synced_at_str = request.query_params.get("last_synced_at")
+        last_synced_at = None
+        if last_synced_at_str:
+            last_synced_at = parse_datetime(last_synced_at_str)
+
+        if last_synced_at:
+            queryset = queryset.filter(created_at__gt=last_synced_at)
+        else:
+            cutoff = timezone.now() - timedelta(days=30)
+            queryset = queryset.filter(created_at__gte=cutoff).order_by("-created_at")[:100]
+
+        notifications_data = []
+        for log in queryset:
+            notifications_data.append(
+                {
+                    "id": str(log.id),
+                    "title": log.task.title,
+                    "body": log.task.body,
+                    "status": log.status,
+                    "created_at": log.created_at.isoformat(),
+                }
+            )
+
+        return Response(
+            {"synced_at": synced_at.isoformat(), "notifications": notifications_data}, status=status.HTTP_200_OK
+        )

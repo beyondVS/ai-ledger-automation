@@ -110,3 +110,37 @@ export async function unregisterSubscription(subscriptionId) {
 
   return true;
 }
+
+/**
+ * 알림 델타 동기화 API
+ * @param {string} lastSyncedAt - 최종 동기화 시각 (ISO-8601 UTC)
+ * @returns {Promise<object>} - { synced_at: "...", notifications: [...] }
+ */
+export async function syncNotificationsApi(lastSyncedAt) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...getAuthHeader()
+  };
+
+  let url = `${BASE_URL}/sync/`;
+  if (lastSyncedAt) {
+    url += `?last_synced_at=${encodeURIComponent(lastSyncedAt)}`;
+  }
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers
+  });
+
+  if (response.status === 401) {
+    localStorage.removeItem('ai_ledger_auth_session');
+    window.location.hash = '/login';
+    throw new Error('인증 세션이 만료되었습니다. 다시 로그인해주세요.');
+  }
+
+  if (!response.ok) {
+    throw new Error('알림 동기화에 실패하였습니다.');
+  }
+
+  return response.json();
+}

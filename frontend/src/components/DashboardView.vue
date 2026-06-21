@@ -437,8 +437,10 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { syncNotificationsApi } from '../services/notificationService';
+import { saveNotification, purgeOldNotifications } from '../services/idb.js';
 import NavBar from './NavBar.vue';
 import Dropzone from './Dropzone.vue';
 import ReceiptList from './ReceiptList.vue';
@@ -605,6 +607,26 @@ export default {
       loadDashboardData();
     };
 
+    const triggerNotificationSync = async () => {
+      try {
+        // [T023] 30일 초과 / 100개 상한 로컬 가비지 컬렉션(Purge) 수행
+        await purgeOldNotifications().catch(err => console.error('[NotificationPurge] GC failed:', err));
+
+        const lastSyncedAt = localStorage.getItem('ai_ledger_last_notification_sync');
+        const response = await syncNotificationsApi(lastSyncedAt);
+        if (response && response.notifications) {
+          const promises = response.notifications.map(n => saveNotification(n));
+          await Promise.all(promises);
+          if (response.synced_at) {
+            localStorage.setItem('ai_ledger_last_notification_sync', response.synced_at);
+          }
+          console.log('[NotificationSync] Successfully synchronized notifications. Count:', response.notifications.length);
+        }
+      } catch (err) {
+        console.error('[NotificationSync] Failed to sync notifications:', err);
+      }
+    };
+
     onMounted(() => {
       // 테마 초기 로딩 동기화
       const savedTheme = localStorage.getItem('theme');
@@ -619,6 +641,9 @@ export default {
       loadUserTimezone();
       loadLedgerList();
       loadDashboardData();
+      triggerNotificationSync();
+      window.addEventListener('focus', triggerNotificationSync);
+      
       const sessionData = sessionStorage.getItem('ai_ledger_auth_session');
       if (sessionData) {
         try {
@@ -630,6 +655,10 @@ export default {
           console.error('Failed to parse session info', e);
         }
       }
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('focus', triggerNotificationSync);
     });
 
     const loadUserTimezone = async () => {
