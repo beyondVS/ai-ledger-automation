@@ -20,7 +20,7 @@ class UserPushSubscriptionAdmin(admin.ModelAdmin):
     - 단말 구독 정보를 리스트 조회 및 비활성화 처리할 수 있습니다.
     """
 
-    list_display = ("user", "get_endpoint_hint", "is_active", "device_hint", "created_at", "updated_at")
+    list_display = ("user", "get_endpoint_hint", "is_active", "device_hint", "created_at")
     list_filter = ("is_active", "device_hint")
     search_fields = ("user__username", "user__email", "endpoint")
     actions = ["deactivate_subscriptions", "activate_subscriptions"]

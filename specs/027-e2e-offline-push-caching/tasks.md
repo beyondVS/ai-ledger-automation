@@ -20,9 +20,9 @@
 
 **Purpose**: 프로젝트 기초 뼈대 구조 및 테스트 검증용 Playwright 환경 확인
 
-- [ ] T001 `specs/027-e2e-offline-push-caching/` 디렉토리에 필요한 테스트 사양 구조 및 퀵스타트 명세 확인
-- [ ] T002 `frontend/package.json`에 Playwright 및 모바일 오프라인 에뮬레이션 테스트를 위한 의존성 모듈 설치 및 셋업 확인
-- [ ] T003 [P] 백엔드 및 프론트엔드 로컬 린터(Ruff, ESLint) 및 git pre-commit 자동화 품질 가드 동작 여부 사전 확인
+- [X] T001 `specs/027-e2e-offline-push-caching/` 디렉토리에 필요한 테스트 사양 구조 및 퀵스타트 명세 확인
+- [X] T002 `frontend/package.json`에 Playwright 및 모바일 오프라인 에뮬레이션 테스트를 위한 의존성 모듈 설치 및 셋업 확인
+- [X] T003 [P] 백엔드 및 프론트엔드 로컬 린터(Ruff, ESLint) 및 git pre-commit 자동화 품질 가드 동작 여부 사전 확인
 
 ---
 
@@ -32,10 +32,10 @@
 
 **⚠️ CRITICAL**: 이 페이즈의 모든 핵심 인프라 구현이 완료되기 전까지는 개별 사용자 스토리 구현을 진행할 수 없습니다.
 
-- [ ] T004 백엔드 Django `backend/src/models/notification.py` 경로에서 알림의 수신 상태 관리를 위해 `NotificationLog` 모델에 `DELIVERED` 상태를 지원하도록 보완하고 마이그레이션 코드 생성 및 반영
-- [ ] T005 [P] 프론트엔드 `frontend/src/services/idb.js` 경로에 IndexedDB 데이터베이스(`ai-ledger-notifications`) 및 수신 알림 테이블(`notifications`) 초기 셋업용 영속 적재 래퍼 인터페이스 코딩
-- [ ] T006 [P] 프론트엔드 서비스 워커 `frontend/public/sw.js` 경로의 fetch 이벤트 처리기 내에 크롬 확장 프로그램이 유발하는 `chrome-extension://` 등 비-HTTP 요청의 간섭을 차단하고 바이패스하는 린팅 예외 방어 로직 추가
-- [ ] T007 프론트엔드 `frontend/playwright.config.js` 경로에 모바일 오프라인 모드 E2E 테스트 기동을 위한 Playwright 브라우저 및 네트워크 모킹 글로벌 설정 구성
+- [X] T004 백엔드 Django `backend/src/apps/notifications/models.py` 경로에서 알림의 수신 상태 관리를 위해 `NotificationLog` 모델에 `DELIVERED` 상태를 지원하도록 보완하고 마이그레이션 코드 생성 및 반영
+- [X] T005 [P] 프론트엔드 `frontend/src/services/idb.js` 경로에 IndexedDB 데이터베이스(`ai-ledger-notifications`) 및 수신 알림 테이블(`notifications`) 초기 셋업용 영속 적재 래퍼 인터페이스 코딩
+- [X] T006 [P] 프론트엔드 서비스 워커 `frontend/public/sw.js` 경로의 fetch 이벤트 처리기 내에 크롬 확장 프로그램이 유발하는 `chrome-extension://` 등 비-HTTP 요청의 간섭을 차단하고 바이패스하는 린팅 예외 방어 로직 추가
+- [X] T007 프론트엔드 `frontend/playwright.config.js` 경로에 모바일 오프라인 모드 E2E 테스트 기동을 위한 Playwright 브라우저 및 네트워크 모킹 글로벌 설정 구성
 
 **Checkpoint**: Foundation ready - 이제 사용자 스토리 단위로 병렬/순차 테스트 작성 및 구현에 진입할 수 있습니다.
 
@@ -49,14 +49,14 @@
 
 ### Tests for User Story 1 (TDD 우선) ⚠️
 
-- [ ] T008 [P] [US1] `frontend/tests/e2e/offline-push.spec.js` 경로에 오프라인 단말의 온라인 복귀 후 지연 푸시 도달을 검증하는 Playwright E2E 테스트 코드 작성 (구현 전 실행하여 테스트 실패 확인)
-- [ ] T009 [P] [US1] `backend/tests/integration/test_notifications.py` 경로에 Celery 비동기 알림 소비 워커의 외부 푸시 연동 상태를 확인하는 통합 테스트 코드 작성 (구현 전 실행하여 테스트 실패 확인)
+- [X] T008 [P] [US1] `frontend/tests/e2e/offline-push.spec.js` 경로에 오프라인 단말의 온라인 복귀 후 지연 푸시 도달을 검증하는 Playwright E2E 테스트 코드 작성 (구현 전 실행하여 테스트 실패 확인)
+- [X] T009 [P] [US1] `backend/tests/integration/test_notifications.py` 경로에 Celery 비동기 알림 소비 워커의 외부 푸시 연동 상태를 확인하는 통합 테스트 코드 작성 (구현 전 실행하여 테스트 실패 확인)
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] 백엔드 `backend/src/tasks/notification_tasks.py` 경로에 Celery 비동기 워커가 외부 푸시 서비스로 메시지를 안전하게 디스패치하는 백그라운드 소비 태스크 구현 및 예외 로직 적용
-- [ ] T011 [US1] 프론트엔드 서비스 워커 `frontend/public/sw.js` 경로에 `push` 이벤트 수신 리스너를 구현하여 백그라운드에서 지연 도달한 알림을 감지하고 Notification API를 통해 최종 사용자 화면에 노출하는 핸들러 코딩
-- [ ] T012 [US1] T008 및 T009에서 작성한 테스트 코드를 재구동하여 백엔드 발송과 프론트엔드 오프라인 복귀 도달 E2E 정합성 테스트가 100% 성공 완료됨을 증명
+- [X] T010 [US1] 백엔드 `backend/src/apps/notifications/tasks.py` 경로에 Celery 비동기 워커가 외부 푸시 서비스로 메시지를 안전하게 디스패치하는 백그라운드 소비 태스크 구현 및 예외 로직 적용
+- [X] T011 [US1] 프론트엔드 서비스 워커 `frontend/public/sw.js` 경로에 `push` 이벤트 수신 리스너를 구현하여 백그라운드에서 지연 도달한 알림을 감지하고 Notification API를 통해 최종 사용자 화면에 노출하는 핸들러 코딩
+- [X] T012 [US1] T008 및 T009에서 작성한 테스트 코드를 재구동하여 백엔드 발송과 프론트엔드 오프라인 복귀 도달 E2E 정합성 테스트가 100% 성공 완료됨을 증명
 
 **Checkpoint**: 이 시점에서 오프라인 단말 복귀 시의 지연 알림 도달 MVP 기능이 완벽하게 동작하며 독립적으로 테스트 완료됩니다.
 
@@ -70,16 +70,16 @@
 
 ### Tests for User Story 2 (TDD 우선) ⚠️
 
-- [ ] T013 [P] [US2] `frontend/tests/e2e/offline-push.spec.js` 경로에 도달한 푸시 알림의 로컬 스토리지 필드 무결성과 백엔드 수신 확인 상태를 동시 대조하는 Playwright E2E 검증 테스트 코드 작성 (구현 전 실패 확인)
-- [ ] T014 [P] [US2] `backend/tests/integration/test_notifications.py` 경로에 Acknowledgment API(수신확인) 및 Sync API(델타동기화)의 요청/응답 페이로드 규격을 검증하는 Django API 테스트 코드 작성 (구현 전 실패 확인)
+- [X] T013 [P] [US2] `frontend/tests/e2e/offline-push.spec.js` 경로에 도달한 푸시 알림의 로컬 스토리지 필드 무결성과 백엔드 수신 확인 상태를 동시 대조하는 Playwright E2E 검증 테스트 코드 작성 (구현 전 실패 확인)
+- [X] T014 [P] [US2] `backend/tests/integration/test_notifications.py` 경로에 Acknowledgment API(수신확인) 및 Sync API(델타동기화)의 요청/응답 페이로드 규격을 검증하는 Django API 테스트 코드 작성 (구현 전 실패 확인)
 
 ### Implementation for User Story 2
 
-- [ ] T015 [P] [US2] 프론트엔드 서비스 워커 `frontend/public/sw.js` 경로 내 푸시 핸들러 하위에 수신된 알림 객체를 `frontend/src/services/idb.js` 인터페이스를 호출해 IndexedDB에 즉시 `CachedNotification` 레코드로 자동 영속 캐싱하는 로직 구현
-- [ ] T016 [US2] 백엔드 `backend/src/api/views.py` 경로에 단말 수신 확인을 접수하여 `NotificationLog` 상태를 `DELIVERED`로 변경하는 Acknowledgment POST API 뷰 구현
-- [ ] T017 [US2] 백엔드 `backend/src/api/views.py` 경로에 사용자의 최종 동기화 시각 이후의 델타 알림 목록을 반환하는 Sync GET API 뷰 구현
-- [ ] T018 [US2] 프론트엔드 대시보드 진입 뷰 `frontend/src/pages/Dashboard.vue` 경로에 사용자의 Document Focus(포그라운드 진입) 이벤트를 바인딩하여 백엔드 Sync API를 호출하고 로컬 캐시를 갱신 및 상태 보정하는 트리거 코딩
-- [ ] T019 [US2] T013 및 T014에서 구축한 E2E 및 API 테스트를 구동하여 로컬 IndexedDB 캐시 스키마와 백엔드 API 간의 100% 필드 일치 및 데이터 무결성 검증 통과를 완수
+- [X] T015 [P] [US2] 프론트엔드 서비스 워커 `frontend/public/sw.js` 경로 내 푸시 핸들러 하위에 수신된 알림 객체를 `frontend/src/services/idb.js` 인터페이스를 호출해 IndexedDB에 즉시 `CachedNotification` 레코드로 자동 영속 캐싱하는 로직 구현
+- [X] T016 [US2] 백엔드 `backend/src/api/views.py` 경로에 단말 수신 확인을 접수하여 `NotificationLog` 상태를 `DELIVERED`로 변경하는 Acknowledgment POST API 뷰 구현
+- [X] T017 [US2] 백엔드 `backend/src/api/views.py` 경로에 사용자의 최종 동기화 시각 이후의 델타 알림 목록을 반환하는 Sync GET API 뷰 구현
+- [X] T018 [US2] 프론트엔드 대시보드 진입 뷰 `frontend/src/pages/Dashboard.vue` 경로에 사용자의 Document Focus(포그라운드 진입) 이벤트를 바인딩하여 백엔드 Sync API를 호출하고 로컬 캐시를 갱신 및 상태 보정하는 트리거 코딩
+- [X] T019 [US2] T013 및 T014에서 구축한 E2E 및 API 테스트를 구동하여 로컬 IndexedDB 캐시 스키마와 백엔드 API 간의 100% 필드 일치 및 데이터 무결성 검증 통과를 완수
 
 **Checkpoint**: 이 시점에서 수신된 알림의 로컬 영속 캐싱 및 포그라운드 진입 시의 자동 동기화 기능이 완료되어 정합성 무결성이 독립적으로 증명됩니다.
 
@@ -93,12 +93,12 @@
 
 ### Tests for User Story 3 (TDD 우선) ⚠️
 
-- [ ] T020 [P] [US3] `frontend/tests/e2e/offline-push.spec.js` 경로에 단시간 내 네트워크 플래핑 상황을 에뮬레이션하여 동일 푸시 메시지 수신 시 로컬 캐시의 중복 적재 유무를 확인하는 Playwright 스트레스 테스트 코드 작성 (구현 전 실패 확인)
+- [X] T020 [P] [US3] `frontend/tests/e2e/offline-push.spec.js` 경로에 단시간 내 네트워크 플래핑 상황을 에뮬레이션하여 동일 푸시 메시지 수신 시 로컬 캐시의 중복 적재 유무를 확인하는 Playwright 스트레스 테스트 코드 작성 (구현 전 실패 확인)
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] 프론트엔드 서비스 워커 `frontend/public/sw.js` 경로 내 로컬 캐시 쓰기 루틴에 알림 고유 UUIDv7 키 기준 중복 여부를 먼저 체크하는 멱등성 검사(Upsert 분기) 로직 구현
-- [ ] T022 [US3] T020의 플래핑 E2E 테스트를 구동하여 불안정한 네트워크 전환 도중에도 로컬 캐시 오염 및 알림 팝업 중복 노출이 완벽히 방어됨을 확인하고 성공 통과 보장
+- [X] T021 [US3] 프론트엔드 서비스 워커 `frontend/public/sw.js` 경로 내 로컬 캐시 쓰기 루틴에 알림 고유 UUIDv7 키 기준 중복 여부를 먼저 체크하는 멱등성 검사(Upsert 분기) 로직 구현
+- [X] T022 [US3] T020의 플래핑 E2E 테스트를 구동하여 불안정한 네트워크 전환 도중에도 로컬 캐시 오염 및 알림 팝업 중복 노출이 완벽히 방어됨을 확인하고 성공 통과 보장
 
 **Checkpoint**: 이 단계가 완료되면 불안정한 대역폭 환경 하에서의 멱등성 및 중복 방어 무결성 검증이 최종 완료됩니다.
 
@@ -108,9 +108,9 @@
 
 **Purpose**: 오래된 알림의 로컬 퍼지 처리, 기계적 린팅 품질 가드 수호 및 문서 실효성 검증
 
-- [ ] T023 [P] 프론트엔드 `frontend/src/services/idb.js` 경로의 IndexedDB 유틸리티 하위에 최근 30일 초과 혹은 누적 100개 한도를 벗어나는 오래된 캐시 데이터를 로컬 저장소에서 자동으로 제거(Purge)하는 가비지 컬렉션 함수 구현
-- [ ] T024 [P] 기기 오프라인 기획 문서인 `quickstart.md`에 기재된 모든 로컬 컴포즈 실행 흐름을 최종 재시뮬레이션하여 문서 가독성 및 정확성 수호
-- [ ] T025 `uv run ruff check` 및 `npm run lint` 포맷팅 점검 툴을 실행하여 전체 코드 수정본에 대해 헌법 규격의 기계적 린트 통과 보장
+- [X] T023 [P] 프론트엔드 `frontend/src/services/idb.js` 경로의 IndexedDB 유틸리티 하위에 최근 30일 초과 혹은 누적 100개 한도를 벗어나는 오래된 캐시 데이터를 로컬 저장소에서 자동으로 제거(Purge)하는 가비지 컬렉션 함수 구현
+- [X] T024 [P] 기기 오프라인 기획 문서인 `quickstart.md`에 기재된 모든 로컬 컴포즈 실행 흐름을 최종 재시뮬레이션하여 문서 가독성 및 정확성 수호
+- [X] T025 `uv run ruff check` 및 `npm run lint` 포맷팅 점검 툴을 실행하여 전체 코드 수정본에 대해 헌법 규격의 기계적 린트 통과 보장
 
 ---
 
