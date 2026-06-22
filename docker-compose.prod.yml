@@ -1,0 +1,146 @@
+version: '3.8'
+
+# =========================================================================
+# ai-ledger-automation 프로덕션 최적화 인프라 명세서 (docker-compose.prod.yml)
+# =========================================================================
+
+# 공통 로깅 옵션 선언
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres_db:
+    image: postgres:18-alpine
+    container_name: ai-ledger-prod-db
+    logging: *default-logging
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-ai_ledger_prod}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Secured_Password18!}
+      - TZ=Asia/Seoul
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - prod-bridge
+    deploy:
+      resources:
+        limits:
+          cpus: '2.00'
+          memory: 2G
+        reservations:
+          cpus: '0.50'
+          memory: 512M
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-ai_ledger_prod} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: >
+      -c client_encoding=UTF8
+      -c timezone=Asia/Seoul
+
+  redis_broker:
+    image: redis:7-alpine
+    container_name: ai-ledger-prod-redis
+    command: redis-server --appendonly yes
+    logging: *default-logging
+    networks:
+      - prod-bridge
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  api-server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: ai-ledger-prod-api
+    logging: *default-logging
+    env_file:
+      - ./backend/.env.docker
+    environment:
+      - PYTHONPATH=/app/src
+    networks:
+      - prod-bridge
+    deploy:
+      resources:
+        limits:
+          cpus: '1.50'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: "on-failure:5"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  async_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: ai-ledger-prod-worker
+    command: /venv/bin/celery -A config worker --loglevel=info
+    logging: *default-logging
+    env_file:
+      - ./backend/.env.docker
+    environment:
+      - PYTHONPATH=/app/src
+    networks:
+      - prod-bridge
+    deploy:
+      resources:
+        limits:
+          cpus: '1.50'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: "on-failure:5"
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: ai-ledger-prod-nginx
+    logging: *default-logging
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - prod-bridge
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
+    restart: always
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  prod-bridge:
+    driver: bridge
