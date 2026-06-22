@@ -26,8 +26,8 @@
 
 **Purpose**: 프로젝트 구조 초기화 및 기본 프로덕션 도커 파일 레이아웃 수립
 
-- [ ] T001 프로젝트 루트 경로에 `docker-compose.prod.yml` 파일을 새로 생성하고 기본 YAML 뼈대 구조를 정형화
-- [ ] T002 [P] 백엔드 `backend/pyproject.toml`에 인프라 설정 파싱 검증 및 테스트 가동에 필요한 종속성(pytest, pyyaml 등) 유무를 확인하고 `uv lock` 및 `uv sync`를 실행해 의존성 업데이트
+- [x] T001 프로젝트 루트 경로에 `docker-compose.prod.yml` 파일을 새로 생성하고 기본 YAML 뼈대 구조를 정형화
+- [x] T002 [P] 백엔드 `backend/pyproject.toml`에 인프라 설정 파싱 검증 및 테스트 가동에 필요한 종속성(pytest, pyyaml 등) 유무를 확인하고 `uv lock` 및 `uv sync`를 실행해 의존성 업데이트
 
 ---
 
@@ -37,8 +37,8 @@
 
 **⚠️ CRITICAL**: 이 페이즈가 완료되기 전까지는 개별 사용자 스토리 구현을 착수할 수 없습니다.
 
-- [ ] T003 `docker-compose.prod.yml` 파일 내에 컴포즈 전용 격리 브리지 네트워크(`prod-bridge`) 선언 및 PostgreSQL 데이터 영속화를 위한 도커 Named Volume (`postgres_data`) 바인딩 정의 추가
-- [ ] T004 [P] `docker-compose.prod.yml` 상에 글로벌 로깅 템플릿(json-file, max-size: 10m, max-file: 3)의 기본 정의를 수립
+- [x] T003 `docker-compose.prod.yml` 파일 내에 컴포즈 전용 격리 브리지 네트워크(`prod-bridge`) 선언 및 PostgreSQL 데이터 영속화를 위한 도커 Named Volume (`postgres_data`) 바인딩 정의 추가
+- [x] T004 [P] `docker-compose.prod.yml` 상에 글로벌 로깅 템플릿(json-file, max-size: 10m, max-file: 3)의 기본 정의를 수립
 
 **Checkpoint**: Foundational 설정 완료 - 이후 사용자 스토리 페이즈는 병렬 혹은 순차 진행이 가능합니다.
 
@@ -54,12 +54,12 @@
 
 > **NOTE: 구현 전에 아래 테스트 코드를 먼저 작성하고, 기동 시 실패(FAIL)하는 것을 입증해야 합니다.**
 
-- [ ] T005 [P] [US1] `backend/tests/test_infra_resource_limits.py` 경로에 `docker-compose.prod.yml` 파일을 로드하여 각 서비스의 CPU 및 메모리 limits/reservations 설정 유무와 헬스 체크 설정 규격을 검증하는 TDD 통합 테스트 코드를 구현
+- [x] T005 [P] [US1] `backend/tests/test_infra_resource_limits.py` 경로에 `docker-compose.prod.yml` 파일을 로드하여 각 서비스의 CPU 및 메모리 limits/reservations 설정 유무와 헬스 체크 설정 규격을 검증하는 TDD 통합 테스트 코드를 구현
 
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] `docker-compose.prod.yml` 내의 `postgres_db`, `redis_broker`, `api-server`, `async_worker`, `nginx` 개별 서비스 명세 내에 지정된 CPU 및 메모리 제한(limits 및 reservations) 절대 할당 설정값을 고정 선언 형태로 작성
-- [ ] T007 [US1] `docker-compose.prod.yml` 의 각 서비스별 `healthcheck` 실행 명령(pg_isready, redis-cli ping 등) 및 주기(interval), 타임아웃(timeout), 실패 임계치(retries)와 함께 컨테이너 비정상 감지 시 자동 복구를 유도하는 `restart` 옵션을 추가 기술
+- [x] T006 [US1] `docker-compose.prod.yml` 내의 `postgres_db`, `redis_broker`, `api-server`, `async_worker`, `nginx` 개별 서비스 명세 내에 지정된 CPU 및 메모리 제한(limits 및 reservations) 절대 할당 설정값을 고정 선언 형태로 작성
+- [x] T007 [US1] `docker-compose.prod.yml` 의 각 서비스별 `healthcheck` 실행 명령(pg_isready, redis-cli ping 등) 및 주기(interval), 타임아웃(timeout), 실패 임계치(retries)와 함께 컨테이너 비정상 감지 시 자동 복구를 유도하는 `restart` 옵션을 추가 기술
 
 **Checkpoint**: 이 시점에서 User Story 1(자원 튜닝 및 헬스 체크 자가 치유)은 독립적으로 구동되고 테스트 가능해야 합니다.
 
@@ -75,14 +75,14 @@
 
 > **NOTE: 구현 전에 아래 테스트 코드를 먼저 작성하고, 기동 시 실패(FAIL)하는 것을 입증해야 합니다.**
 
-- [ ] T008 [P] [US2] `backend/tests/test_infra_port_isolation.py` 경로에 `docker-compose.prod.yml` 스펙을 파싱하여 Nginx 컨테이너를 제외한 나머지 서비스들의 ports 매핑 선언이 비활성화되었는지 검증하는 TDD 테스트 코드를 작성
-- [ ] T009 [P] [US2] `scripts/run_port_scan.ps1` 및 `scripts/run_port_scan.sh` 경로에 nmap 또는 tcpport 기반 외부 격리 검증을 자동 수행하는 크로스 플랫폼 대칭형 검증 툴링 스크립트의 뼈대를 생성하고 실패 코드 상태를 유도
+- [x] T008 [P] [US2] `backend/tests/test_infra_port_isolation.py` 경로에 `docker-compose.prod.yml` 스펙을 파싱하여 Nginx 컨테이너를 제외한 나머지 서비스들의 ports 매핑 선언이 비활성화되었는지 검증하는 TDD 테스트 코드를 작성
+- [x] T009 [P] [US2] `scripts/run_port_scan.ps1` 및 `scripts/run_port_scan.sh` 경로에 nmap 또는 tcpport 기반 외부 격리 검증을 자동 수행하는 크로스 플랫폼 대칭형 검증 툴링 스크립트의 뼈대를 생성하고 실패 코드 상태를 유도
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] `docker-compose.prod.yml` 상에서 `postgres_db`, `redis_broker`, `api-server`, `async_worker` 서비스 정의 내의 호스트 `ports` 바인딩을 전면 영구 삭제하여 외부 노출을 제거
-- [ ] T011 [US2] `docker-compose.prod.yml` 에 Nginx 서비스 정의를 주입하고 호스트 `80:80`, `443:443` 포트를 매핑하며, `prod-bridge` 네트워크 내부에서 `api-server:8000`으로 통신을 위임 포워딩하도록 리버스 프록시를 바인딩 구성
-- [ ] T012 [US2] `scripts/run_port_scan.ps1` 및 `scripts/run_port_scan.sh` 경로의 스크립트 파일들에 배포 대상 공인 IP 포트 상태를 순차 테스트하여 closed/filtered 시 정상 종료하고, 포트 개방 감지 시 비정상 코드로 종료하는 대칭형 포트 스캔 검증 로직 구현을 완성 (T009 연계)
+- [x] T010 [US2] `docker-compose.prod.yml` 상에서 `postgres_db`, `redis_broker`, `api-server`, `async_worker` 서비스 정의 내의 호스트 `ports` 바인딩을 전면 영구 삭제하여 외부 노출을 제거
+- [x] T011 [US2] `docker-compose.prod.yml` 에 Nginx 서비스 정의를 주입하고 호스트 `80:80`, `443:443` 포트를 매핑하며, `prod-bridge` 네트워크 내부에서 `api-server:8000`으로 통신을 위임 포워딩하도록 리버스 프록시를 바인딩 구성
+- [x] T012 [US2] `scripts/run_port_scan.ps1` 및 `scripts/run_port_scan.sh` 경로의 스크립트 파일들에 배포 대상 공인 IP 포트 상태를 순차 테스트하여 closed/filtered 시 정상 종료하고, 포트 개방 감지 시 비정상 코드로 종료하는 대칭형 포트 스캔 검증 로직 구현을 완성 (T009 연계)
 
 **Checkpoint**: 이 단계가 완료되면 외부에서 DB 및 캐시 포트로의 비인가 직접 접근이 전면 격리 통제됩니다.
 
@@ -96,11 +96,11 @@
 
 ### Tests for User Story 3 (TDD Mandated) ⚠️
 
-- [ ] T013 [P] [US3] `backend/tests/test_infra_log_rotation.py` 경로에 `docker-compose.prod.yml` 내 개별 서비스의 로깅 드라이버 방식 및 max-size, max-file 한계 사양이 준수되었는지 체크하는 TDD 검증 테스트 코드를 구현
+- [x] T013 [P] [US3] `backend/tests/test_infra_log_rotation.py` 경로에 `docker-compose.prod.yml` 내 개별 서비스의 로깅 드라이버 방식 및 max-size, max-file 한계 사양이 준수되었는지 체크하는 TDD 검증 테스트 코드를 구현
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] `docker-compose.prod.yml` 상의 모든 개별 서비스 컴포넌트 하위에 json-file 로그 드라이버 및 `max-size: "10m"`, `max-file: "3"` 옵션 설정을 기입 완료
+- [x] T014 [US3] `docker-compose.prod.yml` 상의 모든 개별 서비스 컴포넌트 하위에 json-file 로그 드라이버 및 `max-size: "10m"`, `max-file: "3"` 옵션 설정을 기입 완료
 
 **Checkpoint**: 모든 사용자 스토리의 구현 및 테스트 코드가 독립적이고 유기적으로 완결되어 가동 가능해야 합니다.
 
@@ -110,9 +110,9 @@
 
 **Purpose**: 프로덕션 배포 전 민감 설정 안전성 정수 점검, 매뉴얼 문서화 및 통합 가동 확인
 
-- [ ] T015 [P] `docs/infrastructure_tuning_guide.md` 경로에 실 서비스 기동, 자원 할당량 조절 가이드 및 Named Volume 백업/복구 절차 매뉴얼을 문서화 작성
-- [ ] T016 [P] 프로젝트 루트에 배치될 배포 환경 변수 파일(`.env.prod`) 내에 비밀번호, API 키 등의 민감 정보 하드코딩 여부 교차 정수 검증 진행
-- [ ] T017 `quickstart.md`에 정의된 전체 가이드를 따라 `uv run pytest` 명령을 활용하여 로컬 인프라 테스트 정합성 최종 패스 검증 완료 및 ruff pre-commit 린트 무결성 확인
+- [x] T015 [P] `docs/infrastructure_tuning_guide.md` 경로에 실 서비스 기동, 자원 할당량 조절 가이드 및 Named Volume 백업/복구 절차 매뉴얼을 문서화 작성
+- [x] T016 [P] 프로젝트 루트에 배치될 배포 환경 변수 파일(`.env.prod`) 내에 비밀번호, API 키 등의 민감 정보 하드코딩 여부 교차 정수 검증 진행
+- [x] T017 `quickstart.md`에 정의된 전체 가이드를 따라 `uv run pytest` 명령을 활용하여 로컬 인프라 테스트 정합성 최종 패스 검증 완료 및 ruff pre-commit 린트 무결성 확인
 
 ---
 
