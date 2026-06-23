@@ -37,7 +37,54 @@ graph TD
 
 ## 🚀 로컬 실행 방법 (Quick Start)
 
-### 1. 백엔드 자동화 셋업 (setup_boilerplate)
+### 💻 일반 사용자용 원클릭 실행 (초보자 / 비개발자 권장)
+명령줄 터미널 환경이 낯선 분들도 더블클릭 한 번으로 가계부 프로그램을 즉시 구동하고 안전하게 종료할 수 있습니다.
+
+#### 1단계: 준비물 설치 (Docker Desktop)
+프로그램을 실행하기 위해서는 백그라운드에 가상화 엔진인 **Docker (도커)**가 켜져 있어야 합니다.
+1. [Docker Desktop 공식 다운로드](https://www.docker.com/products/docker-desktop/)에 접속합니다.
+2. 컴퓨터 운영체제(Windows / Mac)에 맞는 설치 프로그램을 받아 설치합니다.
+3. 설치 완료 후 **Docker Desktop** 프로그램을 실행합니다. (고래 모양 아이콘이 녹색으로 활성화될 때까지 약 1~2분 대기)
+
+#### 2단계: Gemini AI API 키 발급 및 설정
+영수증 구조화 판독에 활용되는 구글 Gemini API 키를 얻어 설정합니다.
+1. [Google AI Studio (구글 AI 스튜디오)](https://aistudio.google.com/)에 구글 계정으로 로그인합니다.
+2. **"Get API Key"** 버튼을 눌러 무료 API 키를 새로 발급받아 복사합니다.
+3. 프로젝트 폴더 내 `backend/` 폴더로 이동합니다.
+4. `.env.docker.example` 파일을 복제(또는 다른 이름으로 저장)하여 동일한 폴더에 [**`.env.docker`**](file:///D:/Projects/Private/ai-ledger-automation/backend/.env.docker) 파일을 생성합니다.
+5. 메모장 등 텍스트 에디터로 `.env.docker` 파일을 열어 복사한 키를 붙여넣고 저장합니다:
+   ```env
+   GEMINI_API_KEY=복사한_구글_API_키_여기에_붙여넣기
+   ```
+
+#### 3단계: 더블클릭하여 기동
+* **Windows 사용자:**
+  `scripts/` 폴더 내부에 위치한 [**`start_app.bat`**](file:///D:/Projects/Private/ai-ledger-automation/scripts/start_app.bat) 파일을 더블클릭합니다.
+* **macOS / Linux 사용자:**
+  터미널을 열어 실행 권한을 1회 부여한 뒤 더블클릭 또는 직접 실행합니다:
+  ```bash
+  chmod +x ./scripts/start_app.sh
+  ./scripts/start_app.sh
+  ```
+  *(컨테이너 부팅이 완료되면 웹 브라우저가 자동 기동되어 가계부 서비스로 즉시 진입합니다.)*
+
+#### 4단계: 브라우저 접속 및 계정 가입
+* **가계부 서비스 접속 주소:** [http://localhost:5173](http://localhost:5173)
+* 회원가입(Register)을 누르고 테스트용 계정을 생성하여 로그인하면 영수증 분석 기능을 즉시 이용할 수 있습니다.
+
+#### 5단계: 프로그램 종료 및 자원 반환
+이용을 마치고 컴퓨터 메모리 자원을 깨끗이 돌려주기 위해 종료 스크립트를 더블클릭하여 안전하게 끕니다.
+* **Windows 사용자:**
+  `scripts/` 폴더 내부에 위치한 [**`stop_app.bat`**](file:///D:/Projects/Private/ai-ledger-automation/scripts/stop_app.bat) 파일을 더블클릭합니다.
+* **macOS / Linux 사용자:**
+  `scripts/` 폴더 내부의 `stop_app.sh`를 실행하거나 더블클릭합니다.
+
+---
+
+### 🛠️ 개발자 전용 수동 빌드 (Developer Quick Start)
+개발 환경 디버깅 또는 pytest 테스트 러너 구동을 위한 수동 설정 절차입니다.
+
+#### 1. 로컬 의존성 및 백엔드 환경 자동 셋업 (setup_boilerplate)
 * **Windows (PowerShell):**
   ```powershell
   Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -49,17 +96,15 @@ graph TD
   ./scripts/setup_boilerplate.sh
   ```
 
-### 2. 환경 변수 설정
-`backend/.env` 파일 내에 `GEMINI_API_KEY`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD` 등의 필수 자격 증명을 입력합니다.
+#### 2. 로컬 개발 환경 변수 기입
+`backend/.env` 파일 내에 `GEMINI_API_KEY`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD` 등 상세 자격 증명을 기입합니다.
 
-### 3. Docker Compose 로컬 통합 기동
-Celery 워커, Redis 브로커, 프론트엔드, 백엔드 API 서버 등 전체 서비스를 기동합니다:
+#### 3. Docker Compose 통합 서비스 기동
 ```bash
 docker compose up -d --build
 ```
-기동 후 브라우저에서 아래의 주소로 각각 접속할 수 있습니다:
-* **프론트엔드 웹 앱**: [http://localhost:5173](http://localhost:5173) (일반 HTTP로 즉시 접속 가능)
-* **백엔드 API 서버 및 어드민**: [http://localhost:8000](http://localhost:8000)
+* **프론트엔드 웹 앱**: [http://localhost:5173](http://localhost:5173)
+* **백엔드 API 서버 & 어드민**: [http://localhost:8000](http://localhost:8000)
 
 ### 4. 운영 및 진단 CLI 도구 (Production & Diagnostics)
 * **Nginx 리버스 프록시 및 SSL Offloading:**
