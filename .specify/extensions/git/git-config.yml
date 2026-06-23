@@ -38,7 +38,7 @@ auto_commit:
     message: "[Spec Kit] Add project constitution"
   after_specify:
     enabled: true
-    message: "[Spec Kit] Add specification"
+    message: "docs: 029 프로덕션 SSL 설정 및 E2E 통합 알림망 정식 릴리즈 피처 명세 및 품질 검증 완료"
   after_clarify:
     enabled: true
     message: "[Spec Kit] Clarify specification"
