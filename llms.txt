@@ -11,6 +11,7 @@
 - **백엔드 API (Backend API)**: JWT 인증 검증, 파일 업로드 엔드포인트 제공 및 파싱 결과 조율을 처리하는 Django REST Framework.
 - **비동기 워커 및 큐 (Worker & Queue)**: Redis 브로커를 활용하여 OCR 비동기 처리, LLM 추론 및 DB 트랜잭션 적재를 분산 실행하는 Celery 시스템.
 - **데이터베이스 (Storage)**: 시계열 성능 극대화를 위한 Native UUIDv7 기반 PostgreSQL v18+ 및 미정형 백업용 JSONB 필드 결합.
+- **실시간 웹푸시 알림망 (Notification)**: VAPID v2 표준 규격을 이용해 iOS(APNs) 및 Android(FCM) 푸시 서버와 통신하는 Generic VAPID 알림망 및 IndexedDB 오프라인 멱등 캐싱.
 
 ## 필수 제약 조건 및 규칙 (Constraints & Rules)
 
@@ -18,7 +19,7 @@
 
 ### 1. 데이터베이스 및 트랜잭션 무결성
 - 영수증 1장 적재 시 `ledgers` 및 `ledger_items` 연산은 반드시 단 하나의 Django ORM 트랜잭션 세션 블록(`transaction.atomic()`) 내에서 원자적으로 처리 및 롤백이 보장되어야 합니다.
-- 가용 커넥션 풀 크기는 API 서버 최대 5개, Celery 워커 최대 3개, 전체 합산 최대 8개 커넥션 이하로 엄격히 제약됩니다.
+- 기존 Supabase/AWS 인프라 제약으로 존재했던 RDBMS 커넥션 풀 최대 8개 강제 제약은 v1.22.0 개정에 따라 삭제되었으며, 개별 워커 및 API 서버 부하에 맞춰 유연하게 풀을 할당합니다.
 - 중복 적재 방지를 위해 `UNIQUE (user_id, vendor_registration_number, transaction_date, total_amount)` 복합 고유 제약조건이 DB에 강력히 강제됩니다.
 - 60초 임계 시각 윈도우 기반 연속 결제 방어 및 카드 승인번호 매칭 고유 필터링 알고리즘을 적용합니다.
 
@@ -27,14 +28,24 @@
 - **2단계 (클라우드 텍스트 폴백)**: 1단계 실패 시, 이미 확보한 로컬 OCR 텍스트만 Gemini-2.5-Flash API로 전송하여 이미지 토큰 비용 절감 (최대 95% 비용 최적화).
 - **3단계 (클라우드 비전 폴백)**: 2단계까지 실패 시 최후의 보루로 영수증 이미지 원본을 Gemini-2.5-Flash 멀티모달 API로 전송하여 99% 파싱 무결성 수호.
 
-### 3. PWA 및 디바이스 연동 규격
+### 3. VAPID 웹푸시 및 IndexedDB 오프라인 캐싱
+- **푸시 발송 정책**: Celery 전용 notification 큐를 타며, 404/410 Gone 수신 시 해당 디바이스 구독을 영구 비활성화 처리하고 일시적인 오류는 지수 백오프로 최대 3회 재시도합니다.
+- **오프라인 캐싱 및 멱등성**: 오프라인 상태 단말이 복귀할 때 지연 수신된 알림을 IndexedDB에 UUIDv7 키 기반으로 멱등적으로 영속 캐싱(UNREAD)하고 백엔드 수신 확인 API(Acknowledge POST)를 호출합니다. 포그라운드 복귀 시에는 Sync GET API로 델타 동기화합니다.
+- **캐시 가비지 컬렉션(GC)**: 30일이 경과하거나 100개 상한을 넘어설 시 독립된 readwrite 트랜잭션을 새로 수립하여 자동 퍼지 처리합니다.
+
+### 4. PWA 및 디바이스 연동 규격
 - **로컬 개발 서버**: SSL 핸드셰이크 프로토콜/암호화 협상 에러(ERR_SSL_VERSION_OR_CIPHER_MISMATCH) 방지를 위해 일반 HTTP(`http://localhost:5173`)로 기동합니다. 단, `localhost`는 브라우저가 안전한 보안 컨텍스트로 인정하므로 PWA 설치 및 카메라 연동은 정상 지원됩니다.
 - **서비스 워커 예외 방어**: `sw.js` fetch 리스너 진입부에서 크롬 확장 프로그램 스킴(`chrome-extension://`) 등 비-HTTP 스키마 요청을 사전에 차단/우회시켜 `TypeError: Request scheme is unsupported` 오류를 방어합니다.
 - **PWA 가용성**: `<meta name="mobile-web-app-capable" content="yes">` 표준 태그 및 `manifest.webmanifest` 정합성을 수호합니다.
+
+### 5. 진단 도구 및 크로스 플랫폼 대칭성
+- **진단 커맨드**: 배포 서버 건전성 진단을 위해 Celery 비동기 대기열을 우회하여 즉시 동기 푸시를 전송하는 커스텀 Django 커맨드 `trigger_test_push`를 지원합니다.
+- **대칭형 테스트 러너**: 포트 가동을 확인하고 Playwright E2E 통합 테스트를 자동 구동하는 크로스 플랫폼 대칭형 검증 스크립트(`scripts/run_e2e_push_test.ps1`/`run_e2e_push_test.sh`)를 `scripts/` 폴더 내에 배치 및 수호합니다.
 
 ## 디렉토리 지도 및 참조 링크
 - [.specify/memory/constitution.md](file:///.specify/memory/constitution.md) - 프로젝트 헌법 및 데이터 무결성 9대 원칙
 - [AGENTS.md](file:///AGENTS.md) - 개발 에이전트 행동 지침 및 비직관적 도메인 지식
 - [README.md](file:///README.md) - 개발자를 위한 직관적인 퀵스타트 가이드
+- [llms.txt](file:///llms.txt) - AI 에이전트를 위한 마스터 컨텍스트 및 아키텍처 지식 저장소
 - [backend/](file:///backend/) - Django Rest Framework 백엔드 소스 코드
 - [frontend/](file:///frontend/) - Vue.js 3 PWA 프론트엔드 소스 코드
