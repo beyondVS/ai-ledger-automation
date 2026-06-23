@@ -106,6 +106,7 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
   - 네트워크 플래핑 스트레스 환경에서도 중복 레코드가 발생하지 않도록 알림의 고유 UUIDv7 키를 대조하여 IndexedDB 내의 멱등성(Upsert)을 보장함.
   - 로컬 IndexedDB 캐시는 30일을 초과하거나 100개 상한을 넘어설 시 백그라운드 가비지 컬렉터(GC)에 의해 자동 퍼지(Purge)되며, 비동기 대기로 인한 브라우저의 트랜잭션 자동 만료(TransactionInactiveError) 예방을 위해 매 GC 단계(30일 경과 삭제, 100개 상한 초과분 삭제)는 독립된 readwrite 트랜잭션을 수립하여 격리 처리함.
   - 프로젝트 헌법 제VIII조(테스트 격리)에 따라 백엔드 뷰에 테스트용 분기를 심어 임시 세팅해주는 구조를 전면 배제하고, E2E 테스트(`offline-push.spec.js`) 내부에서 직접 `child_process.execSync`로 백엔드 CLI 쉘 기동을 통해 모킹 DB 시딩 및 정리(Clean before recreate)를 일임하여 테스트 고립성을 확보함.
+  - 배포 상태의 VAPID 알림망 건전성 진단을 위해 Celery 비동기 대기열(queue)을 타지 않고 즉시 VAPID 푸시를 전송하는 Django 커스텀 커맨드 `trigger_test_push`는 `--username`을 필수로 인입받으며, 대상 유저의 모든 활성 단말에 즉각 동기 전송 후 `NotificationLog`에 영속 감사 로그를 남김. 또한 E2E 통합 테스트 러너 `scripts/run_e2e_push_test.ps1` 및 `.sh`는 활성 포트 건전성을 1차 체크하고 Playwright E2E를 자동 구동하여 알림망 건전성을 원버튼 진단함.
 - **해결되지 않은 기술 부채**:
   - 없음 (이전에 존재하던 AWS Free tier 및 Supabase Free plan 커넥션 제한 규정은 v1.22.0 개정에 따라 삭제됨)
 

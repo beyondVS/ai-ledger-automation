@@ -33,7 +33,7 @@ class TestInfraPortIsolation(TestCase):
             ), f"Security Violation: Service '{s_name}' is exposing ports to host: {s_config.get('ports')}"
 
     def test_nginx_gateway_ports_mapped(self):
-        """Nginx 서비스에 포트 매핑(80, 443 등)이 지정되어 외부 트래픽 수신이 가능한지 검증"""
+        """Nginx 서비스에 포트 매핑(80 포트)이 지정되어 외부 트래픽 수신이 가능한지 검증 (SSL Offloading 적용)"""
         with open(self.compose_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
@@ -52,7 +52,7 @@ class TestInfraPortIsolation(TestCase):
         has_443 = any("443:443" in p or "443" in p for p in mapped_ports)
 
         assert has_80, f"Gateway 'nginx' is missing Port 80 binding: {mapped_ports}"
-        assert has_443, f"Gateway 'nginx' is missing Port 443 binding: {mapped_ports}"
+        assert not has_443, f"Gateway 'nginx' should not expose Port 443 during SSL Offloading: {mapped_ports}"
 
     def test_network_isolation_unified(self):
         """모든 컨테이너가 동일한 가상 격리 네트워크(prod-bridge)를 사용하는지 검증"""
