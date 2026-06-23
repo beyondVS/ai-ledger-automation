@@ -61,6 +61,19 @@ docker compose up -d --build
 * **프론트엔드 웹 앱**: [http://localhost:5173](http://localhost:5173) (일반 HTTP로 즉시 접속 가능)
 * **백엔드 API 서버 및 어드민**: [http://localhost:8000](http://localhost:8000)
 
+### 4. 운영 및 진단 CLI 도구 (Production & Diagnostics)
+* **Nginx 리버스 프록시 및 SSL Offloading:**
+  실서버 프로덕션 배포는 `docker-compose.prod.yml`을 통해 PostgreSQL 및 Redis의 호스트 포트 외부 노출을 완벽히 차단하고 Nginx 게이트웨이를 전면 탑재합니다. 외부 로드밸런서(Cloudflare, AWS ALB 등)로부터 HTTPS Offloading을 적용받기 위해 컨테이너는 포트 80만 개방하며, HTTP 접속을 HTTPS로 301 리다이렉트 처리합니다. 프론트엔드 SPA 자산(`/`) 및 백엔드 API(`/api/`)를 단일 도메인 subpath 구조로 중계하여 CORS 오버헤드 없이 서빙합니다.
+* **VAPID 웹푸시 E2E 진단 CLI 커맨드:**
+  정규 Celery 비동기 큐를 완전히 우회하여 특정 사용자에게 VAPID 테스트 푸시를 즉시 동기 발송하고 결과를 데이터베이스 감사 로그에 영속화하는 관리자용 Django 커스텀 명령어를 지원합니다:
+  ```bash
+  uv run python src/manage.py trigger_test_push --username <대상유저명>
+  ```
+* **크로스 플랫폼 E2E 통합 테스트 러너:**
+  프론트엔드 및 백엔드 서버의 포트 가동 상태를 자율 진단하고, Playwright 브라우저 에뮬레이터로 네트워크 단절 상황(오프라인 -> 온라인)에서의 푸시 캐싱, 멱등성 및 ACK 백엔드 피드백 정합성을 100% 자동 검증하는 크로스 플랫폼 대칭형 러너를 제공합니다:
+  * **Windows (PowerShell):** `.\scripts\run_e2e_push_test.ps1`
+  * **macOS / Linux / WSL (Bash):** `./scripts/run_e2e_push_test.sh`
+
 ---
 
 ## 📁 주요 문서 링크 및 지도

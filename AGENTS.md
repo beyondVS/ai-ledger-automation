@@ -106,6 +106,7 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
   - 네트워크 플래핑 스트레스 환경에서도 중복 레코드가 발생하지 않도록 알림의 고유 UUIDv7 키를 대조하여 IndexedDB 내의 멱등성(Upsert)을 보장함.
   - 로컬 IndexedDB 캐시는 30일을 초과하거나 100개 상한을 넘어설 시 백그라운드 가비지 컬렉터(GC)에 의해 자동 퍼지(Purge)되며, 비동기 대기로 인한 브라우저의 트랜잭션 자동 만료(TransactionInactiveError) 예방을 위해 매 GC 단계(30일 경과 삭제, 100개 상한 초과분 삭제)는 독립된 readwrite 트랜잭션을 수립하여 격리 처리함.
   - 프로젝트 헌법 제VIII조(테스트 격리)에 따라 백엔드 뷰에 테스트용 분기를 심어 임시 세팅해주는 구조를 전면 배제하고, E2E 테스트(`offline-push.spec.js`) 내부에서 직접 `child_process.execSync`로 백엔드 CLI 쉘 기동을 통해 모킹 DB 시딩 및 정리(Clean before recreate)를 일임하여 테스트 고립성을 확보함.
+  - 배포 상태의 VAPID 알림망 건전성 진단을 위해 Celery 비동기 대기열(queue)을 타지 않고 즉시 VAPID 푸시를 전송하는 Django 커스텀 커맨드 `trigger_test_push`는 `--username`을 필수로 인입받으며, 대상 유저의 모든 활성 단말에 즉각 동기 전송 후 `NotificationLog`에 영속 감사 로그를 남김. 또한 E2E 통합 테스트 러너 `scripts/run_e2e_push_test.ps1` 및 `.sh`는 활성 포트 건전성을 1차 체크하고 Playwright E2E를 자동 구동하여 알림망 건전성을 원버튼 진단함.
 - **해결되지 않은 기술 부채**:
   - 없음 (이전에 존재하던 AWS Free tier 및 Supabase Free plan 커넥션 제한 규정은 v1.22.0 개정에 따라 삭제됨)
 
@@ -138,7 +139,7 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 - **Why 중심 주석**: 주석은 코드가 '무엇(What)'을 하는지 번역하지 않습니다. '왜(Why)' 비직관적인 로직을 선택했는지, 어떤 예외를 방어하는지만 설명하십시오.
 - **양대 쉘(PowerShell & Bash) 대칭적 동등 지원**: [**최상위 프로젝트 헌법 제VI조**](file:///.specify/memory/constitution.md)에 수립된 크로스 플랫폼 대칭 툴링 원칙을 영구 수호하기 위해, 에이전트는 로컬 기동 및 인프라 관리 도구 수정 시 Windows(PowerShell, `*.ps1`)와 macOS/Linux/WSL(Bash, `*.sh`) 환경 모두에 호환되는 대칭형 스크립트를 동등하게 제공해야 합니다.
 - **프로젝트 관리용 스크립트 격리 배치**: 프로젝트의 로컬 제어, 빌드, RDBMS 환경 기동, 마이그레이션, 테스트 등 프로젝트 개발 관리에 요구되는 모든 커스텀 자동화 스크립트/도구 파일들은 반드시 프로젝트 루트의 `scripts/` 디렉토리 하위에 직접 생성 및 배치해야 합니다. `.specify/` 디렉토리는 오직 Spec-Kit 프레임워크 고유 자산 및 빌트인 템플릿으로만 정결하게 유지되어야 하며, 임의의 커스텀 관리 도구가 혼입되는 것을 엄격히 금지합니다.
-- **3대 코어 문서 및 설정 자율 교차 동기화**: [**최상위 프로젝트 헌법 제VI조**](file:///.specify/memory/constitution.md)에 명문화된 동기화 규정에 따라, 에이전트는 기술 스택, 셋업, 아키텍처적 사양 변경 발생 시 사용자의 명시적 지시가 없더라도 주도적으로 3대 핵심 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`)와 모노레포 설정 파일(`pyproject.toml`, `backend/pyproject.toml`) 간의 정합성을 유기적으로 교차 검증하고 자동 동기화 및 프로젝트 버전 일치 업데이트를 완수해야 합니다.
+- **4대 코어 문서 및 설정 자율 교차 동기화**: [**최상위 프로젝트 헌법 제VI조**](file:///.specify/memory/constitution.md)에 명문화된 동기화 규정에 따라, 에이전트는 기술 스택, 셋업, 아키텍처적 사양 변경 발생 시 사용자의 명시적 지시가 없더라도 주도적으로 4대 핵심 문서(`README.md`, `AGENTS.md`, `.specify/memory/constitution.md`, `llms.txt`)와 모노레포 설정 파일(`pyproject.toml`, `backend/pyproject.toml`) 간의 정합성을 유기적으로 교차 검증하고 자동 동기화 및 프로젝트 버전 일치 업데이트를 완수해야 합니다.
 - **선언적 의존성 통제 표준 (Package Dependency Control)**: 파이썬 의존성 패키지를 추가하거나 버전을 변경할 때, 결코 런타임 가상 환경에 직접 수동 설치하지 않고 반드시 `pyproject.toml`을 편집한 후 `uv lock` 및 `uv sync`를 통해 락 파일을 갱신하고 가상 환경의 일치(100% parity)를 달성해야 합니다.
 - **하이브리드 테스트 작성 규약 (Hybrid Test Strategy)**: [**최상위 프로젝트 헌법 제VIII조**](file:///.specify/memory/constitution.md)에 의거하여, DB 결합 백엔드 테스트(ORM, API 뷰 등)는 반드시 `django.test.TestCase`를 상속받고 `setUpTestData(cls)`를 사용하여 초기 DB 오버헤드를 극소화하여야 합니다. 반면, DB 조회가 없는 순수 유틸리티 테스트는 `unittest.TestCase`를 상속받아 장고 부트스트랩을 우회하고 속도를 극대화해야 합니다. 전체 테스트 실행은 강력하고 지능적인 `pytest` 러너를 활용해 초고속 피드백 루프를 수호합니다.
 - **커밋 메시지 규약 (Commit Conventions)**: 커밋 메시지는 Conventional Commits 규약(`feat:`, `fix:`, `docs:`, `refactor:` 등)을 준수하여 작성하십시오. 프로젝트 내 특정 언어 규칙(예: 한글 작성 등)이 있다면 이를 최우선으로 따르십시오.
@@ -147,5 +148,5 @@ AI 에이전트는 주관적인 판단(Hallucination)을 배제하고 아래의 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/028-docker-compose-prod-tuning/plan.md)
+[plan.md](file:///D:/Projects/Private/ai-ledger-automation/specs/029-prod-ssl-nginx-push/plan.md)
 <!-- SPECKIT END -->
